@@ -1,11 +1,10 @@
-// API Endpoint
+
 const API_URL = 'api.php';
 let clientsData = [];
 let loansData = [];
 let pendingLoans = [];
 let branchChartInstance = null;
 
-// Utility to show messages via the dedicated modal
 function showMessageModal(title, message, type = 'success') {
     const modal = document.getElementById('adminMessageModal');
     const modalTitle = document.getElementById('adminModalTitle');
@@ -34,12 +33,10 @@ document.getElementById('closeAdminMessageModal').addEventListener('click', func
     document.getElementById('adminMessageModal').classList.add('hidden');
 });
 
-// Function to format currency
 function formatCurrency(amount) {
     return `₱${parseFloat(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-// --- Data Fetching ---
 
 async function fetchAdminData() {
     try {
@@ -54,12 +51,12 @@ async function fetchAdminData() {
             return;
         }
 
-        // Store data globally
+    
         clientsData = data.clients;
         loansData = data.loans;
         pendingLoans = data.pending_loans;
 
-        // Update UI components
+    
         updateDashboardStats();
         populatePendingLoans();
         populateClientsTable();
@@ -72,7 +69,6 @@ async function fetchAdminData() {
     }
 }
 
-// --- UI Updates ---
 
 function updateDashboardStats() {
     const totalClients = clientsData.length;
@@ -84,30 +80,7 @@ function updateDashboardStats() {
     document.getElementById('activeLoansCount').textContent = activeLoans;
     document.getElementById('pendingLoansCount').textContent = pendingCount;
     document.getElementById('totalOutstandingAmount').textContent = formatCurrency(totalOutstanding);
-    
-    // Update quick view pending loans
-    const quickViewBody = document.getElementById('latestPendingLoans');
-    quickViewBody.innerHTML = '';
-    const latest = pendingLoans.slice(0, 5); // Show top 5
 
-    if (latest.length === 0) {
-        quickViewBody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-gray-500">No pending loans.</td></tr>';
-        return;
-    }
-
-    latest.forEach(loan => {
-        const row = quickViewBody.insertRow();
-        row.innerHTML = `
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${loan.client_name}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatCurrency(loan.loan_amount)}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${loan.client_branch}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${new Date(loan.application_date).toLocaleDateString()}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                <button onclick="showApproveLoanModal(${loan.loan_id})" class="text-green-600 hover:text-green-900 mx-1"><i class="fas fa-check"></i></button>
-                <button onclick="declineLoan(${loan.loan_id})" class="text-red-600 hover:text-red-900 mx-1"><i class="fas fa-times"></i></button>
-            </td>
-        `;
-    });
 }
 
 function updateBranchStatistics() {
@@ -131,7 +104,7 @@ function updateBranchStatistics() {
             datasets: [{
                 label: 'Total Active/Paid Loans',
                 data: loanCounts,
-                backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444'], // Blue, Green, Yellow, Red
+                backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444'],
                 borderRadius: 4
             }]
         },
@@ -263,9 +236,7 @@ function populatePendingLoans() {
     });
 }
 
-// --- Modals and Actions ---
 
-// Add Client Modal
 document.getElementById('showAddClientModal').addEventListener('click', () => document.getElementById('addClientModal').classList.remove('hidden'));
 document.getElementById('closeAddClientModal').addEventListener('click', () => document.getElementById('addClientModal').classList.add('hidden'));
 
@@ -299,7 +270,6 @@ document.getElementById('addClientForm').addEventListener('submit', async functi
     }
 });
 
-// Approve Loan Modal
 window.showApproveLoanModal = function(loanId) {
     const loan = pendingLoans.find(l => l.loan_id == loanId);
     if (!loan) {
@@ -307,13 +277,13 @@ window.showApproveLoanModal = function(loanId) {
         return;
     }
 
-    // Set modal values
+
     document.getElementById('loanIdToApprove').value = loanId;
     document.getElementById('approveClientName').textContent = loan.client_name;
     document.getElementById('approveLoanAmount').textContent = formatCurrency(loan.loan_amount);
     document.getElementById('approveLoanTerm').textContent = `${loan.term_months} Months`;
     
-    // Auto-calculate monthly payment (simple interest assumption)
+
     const principal = parseFloat(loan.loan_amount);
     const termMonths = parseInt(loan.term_months);
     const annualRate = parseFloat(document.getElementById('approveInterestRate').value);
@@ -328,7 +298,6 @@ window.showApproveLoanModal = function(loanId) {
     document.getElementById('approveLoanModal').classList.remove('hidden');
 }
 
-// Event listener for interest rate change to recalculate monthly payment
 document.getElementById('approveInterestRate').addEventListener('input', function() {
     const loanId = document.getElementById('loanIdToApprove').value;
     const loan = pendingLoans.find(l => l.loan_id == loanId);
@@ -339,7 +308,7 @@ document.getElementById('approveInterestRate').addEventListener('input', functio
     const annualRate = parseFloat(this.value);
 
     const monthlyRate = (annualRate / 100) / 12;
-    // Handle division by zero/zero interest case gracefully
+
     let monthlyPayment;
     if (termMonths <= 0 || monthlyRate <= 0) {
         monthlyPayment = principal / termMonths;
@@ -391,7 +360,6 @@ document.getElementById('approveLoanForm').addEventListener('submit', async func
     }
 });
 
-// Decline Loan Action
 window.declineLoan = async function(loanId) {
     const loan = pendingLoans.find(l => l.loan_id == loanId);
     if (!loan) {
@@ -399,16 +367,14 @@ window.declineLoan = async function(loanId) {
         return;
     }
     
-    // Using message modal for confirmation
     showMessageModal(
         'Confirm Decline', 
         `Are you sure you want to decline the loan application for ${loan.client_name} (₱${parseFloat(loan.loan_amount).toLocaleString()})?`, 
         'info'
     );
-    
-    // Replace the default close button action with the decline logic
+
     document.getElementById('closeAdminMessageModal').onclick = async function() {
-        document.getElementById('adminMessageModal').classList.add('hidden'); // Close modal immediately
+        document.getElementById('adminMessageModal').classList.add('hidden');
         
         try {
             const formData = new FormData();
@@ -427,15 +393,13 @@ window.declineLoan = async function(loanId) {
         } catch (error) {
             showMessageModal('Network Error', 'Could not connect to the server.', 'error');
         } finally {
-             // Reset the close button handler to default
-             document.getElementById('closeAdminMessageModal').onclick = function() {
+            document.getElementById('closeAdminMessageModal').onclick = function() {
                 document.getElementById('adminMessageModal').classList.add('hidden');
-             };
+            };
         }
     };
 }
 
-// Record Payment Modal (Manual Entry)
 document.getElementById('showPaymentQRModal').addEventListener('click', () => document.getElementById('qrScannerModal').classList.remove('hidden'));
 document.getElementById('closeQRScannerModal').addEventListener('click', () => document.getElementById('qrScannerModal').classList.add('hidden'));
 
@@ -474,42 +438,28 @@ document.getElementById('recordPaymentForm').addEventListener('submit', async fu
     }
 });
 
-// Search functionality
 document.getElementById('clientSearch').addEventListener('input', (e) => populateClientsTable(e.target.value));
 document.getElementById('loanSearch').addEventListener('input', (e) => populateLoansTable(e.target.value));
 
 
-// Sidebar Toggle for Mobile
 const sidebar = document.getElementById('sidebar');
 const sidebarToggle = document.getElementById('sidebarToggle');
 sidebarToggle.addEventListener('click', () => {
     sidebar.classList.toggle('-translate-x-full');
 });
 
-// Tab Navigation
 document.querySelectorAll('#sidebar a[data-tab]').forEach(tabLink => {
     tabLink.addEventListener('click', function(e) {
         e.preventDefault();
-        
-        // Close sidebar on mobile
         sidebar.classList.add('-translate-x-full');
-
-        // Remove active class from all links
         document.querySelectorAll('#sidebar a').forEach(link => link.classList.remove('active-link', 'bg-white', 'text-primary'));
-        
-        // Add active class to the clicked link
         this.classList.add('active-link', 'bg-white', 'text-primary');
-
-        // Hide all tab contents
         document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
-        
-        // Show the corresponding tab content
         const targetId = this.getAttribute('data-tab');
         document.getElementById(targetId).classList.remove('hidden');
     });
 });
 
-// Logout functionality
 document.getElementById('logoutBtn').addEventListener('click', function(e) {
     e.preventDefault();
     showMessageModal(
@@ -517,16 +467,14 @@ document.getElementById('logoutBtn').addEventListener('click', function(e) {
         'Are you sure you want to log out of the admin dashboard?', 
         'info'
     );
-    // Replace the default close button action with the actual logout
+
     document.getElementById('closeAdminMessageModal').onclick = function() {
         window.location.href = "logout.php";
     };
 });
 
-// Initial data fetch on load
 document.addEventListener('DOMContentLoaded', fetchAdminData);
 
-// Close modals when clicking outside
 window.addEventListener('click', function(e) {
     if (e.target.classList.contains('fixed')) {
         e.target.classList.add('hidden');

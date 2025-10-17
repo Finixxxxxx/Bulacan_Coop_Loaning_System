@@ -1,13 +1,12 @@
 <?php
 session_start();
 
-// Check if the user is logged in and is an admin, otherwise redirect to login page
 if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true || $_SESSION["role"] !== "admin"){
     header("location: index.php");
     exit;
 }
 
-$admin_name = $_SESSION["admin_name"] ?? "Admin"; // Added null coalescing for safety
+$admin_name = $_SESSION["admin_name"] ?? "Admin";
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -24,12 +23,11 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin"; // Added null coalescing for s
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
         
-        /* --- Styles Reverted to Original sky/Standard Theme --- */
         :root {
-            --primary-color: #2563EB; /* Tailwind sky-600 */
-            --primary-light: #BFDBFE; /* Tailwind sky-200 */
-            --primary-dark: #1D4ED8; /* Tailwind sky-700 */
-            --background-soft: #f4f6f9; /* Off-white, soft background */
+            --primary-color: #2563EB;
+            --primary-light: #BFDBFE;
+            --primary-dark: #1D4ED8;
+            --background-soft: #f4f6f9;
         }
         body { 
             font-family: 'Inter', sans-serif; 
@@ -38,34 +36,29 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin"; // Added null coalescing for s
         .bg-primary { background-color: var(--primary-color); } 
         .hover\:bg-primary-dark:hover { background-color: var(--primary-dark); }
         .text-primary { color: var(--primary-color); }
-
-        /* Sidebar Navigation Styling */
         #sidebar {
-            width: 16rem; /* w-64 */
+            width: 16rem;
             z-index: 50;
             box-shadow: 0 0 15px rgba(0, 0, 0, 0.05);
         }
         .sidebar-nav-item {
             transition: all 0.2s;
-            /* Default styling for inactive links */
-            color: #4B5563; /* text-gray-600 */
+            color: #4B5563;
             background-color: transparent;
         }
         .sidebar-nav-item:hover {
-            color: #1F2937; /* text-gray-900 */
-            background-color: #F9FAFB; /* bg-gray-50 */
+            color: #1F2937;
+            background-color: #F9FAFB;
         }
         .sidebar-nav-item.active {
             color: var(--primary-color) !important; 
-            background-color: #EFF6FF !important; /* bg-sky-50 */
+            background-color: #EFF6FF !important;
             font-weight: 600;
         }
-
-        /* Card and Table Overhaul */
         .card-flat { 
             transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-            border-radius: 0.75rem; /* rounded-xl */
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1); /* shadow-md */
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
         }
         .card-flat:hover { 
             transform: translateY(-2px); 
@@ -204,8 +197,8 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin"; // Added null coalescing for s
                 <section id="overview" class="tab-content">
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                        <!-- Total Clients (TODO: Navigate to 'Clients' tab when clicked) -->
-                        <div class="stat-card bg-gradient-to-r from-sky-500 to-sky-600 p-6 rounded-xl shadow-lg text-white">
+                        <!-- Total Clients -->
+                        <div id="totalClientsCard" class="stat-card bg-gradient-to-r from-sky-500 to-sky-600 p-6 rounded-xl shadow-lg text-white cursor-pointer" data-tab="clients">
                             <div class="flex items-center justify-between">
                                 <div>
                                     <p class="text-sky-100 text-sm font-medium">Total Clients</p>
@@ -245,7 +238,7 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin"; // Added null coalescing for s
                                 </div>
                             </div>
                         </div>
-                        <!-- Pending Loan Applications (TODO: Navigate to 'Loans' tab when clicked) -->
+                        <!-- Pending Loan Applications -->
                         <div id="pendingLoanCard" class="stat-card bg-gradient-to-r from-yellow-500 to-yellow-600 p-6 rounded-xl shadow-lg text-white cursor-pointer" data-tab="loans">
                             <div class="flex items-center justify-between">
                                 <div>
@@ -261,31 +254,13 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin"; // Added null coalescing for s
                     </div>
 
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        <div class="bg-white p-6 rounded-xl shadow-md lg:col-span-2 card-flat">
+                        <div class="bg-white p-6 rounded-xl shadow-md lg:col-span-3 card-flat">
                             <h3 class="text-xl font-bold text-gray-800 mb-4 border-b pb-3">Branch Statistics (Total Loans)</h3>
                             <div style="height: 350px;">
                                 <canvas id="branchChart" style="max-height: 350px;"></canvas>
                             </div>
                         </div>
                         <!-- TODO: Add Statistic Charts: Bar Chart - Loan Issued vs. Payments, Total Outstanding Balance Over Time, Line Chart - Loan Interest Overtime -->
-                        <!-- TODO: Remove Latest Pending List Here -->
-                        <div class="bg-white p-6 rounded-xl shadow-md lg:col-span-1 card-flat">
-                            <h3 class="text-xl font-bold text-gray-800 mb-4 border-b pb-3">Latest Pending</h3>
-                            <div class="overflow-x-auto">
-                                <table class="min-w-full divide-y divide-gray-200">
-                                    <thead class="bg-gray-50">
-                                        <tr>
-                                            <th class="px-3 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Client</th>
-                                            <th class="px-3 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Amount</th>
-                                            <th class="px-3 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Act</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="latestPendingLoans" class="bg-white divide-y divide-gray-100 text-sm">
-                                        <tr><td colspan="3" class="text-center py-4 text-gray-500">No pending loans.</td></tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
                     </div>
                 </section>
                 <!-- Client Section -->
@@ -781,7 +756,7 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin"; // Added null coalescing for s
     </div>
     
     <script>
-        // Tab & Layout Logic
+    
         document.addEventListener('DOMContentLoaded', () => {
             const sidebar = document.getElementById('sidebar');
             const sidebarOverlay = document.getElementById('sidebarOverlay');
@@ -791,7 +766,7 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin"; // Added null coalescing for s
             const allTabs = document.querySelectorAll('.tab-content');
             const allLinks = document.querySelectorAll('.sidebar-nav-item');
             
-            // --- Sidebar Toggle Logic (Re-implemented from Original HTML for Mobile) ---
+        
             function openSidebar() {
                 sidebar.classList.remove('-translate-x-full');
                 sidebarOverlay.classList.remove('hidden');
@@ -805,7 +780,7 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin"; // Added null coalescing for s
             closeSidebar.addEventListener('click', closeSidebarFn);
             sidebarOverlay.addEventListener('click', closeSidebarFn);
 
-            // Function to handle tab switching
+        
             function switchTab(targetId) {
                 allTabs.forEach(tab => tab.classList.add('hidden'));
                 const targetTab = document.getElementById(targetId);
@@ -817,7 +792,7 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin"; // Added null coalescing for s
                 const activeLink = document.querySelector(`[data-tab="${targetId}"]`);
                 if (activeLink) {
                     activeLink.classList.add('active');
-                    // Update the main header title
+                
                     let title = activeLink.textContent.trim();
                     if (title.includes('Loans & Pending')) {
                         title = 'Loans & Pending Management';
@@ -829,17 +804,17 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin"; // Added null coalescing for s
                     pageTitle.textContent = title;
                 }
                 
-                // Close sidebar on mobile after clicking a link
+            
                 if (window.innerWidth < 1024) {
                     closeSidebarFn();
                 }
             }
 
-            // Initial tab load (check URL hash or default to overview)
+        
             const initialTab = window.location.hash.substring(1) || 'overview';
             switchTab(initialTab);
 
-            // Sidebar Navigation
+        
             allLinks.forEach(link => {
                 link.addEventListener('click', (e) => {
                     e.preventDefault();
@@ -849,7 +824,20 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin"; // Added null coalescing for s
                 });
             });
 
-            // Re-define message modal function with new primary color
+        
+            document.getElementById('totalClientsCard').addEventListener('click', (e) => {
+                e.preventDefault();
+                window.location.hash = 'clients';
+                switchTab('clients');
+            });
+
+            document.getElementById('pendingLoanCard').addEventListener('click', (e) => {
+                e.preventDefault();
+                window.location.hash = 'loans';
+                switchTab('loans');
+            });
+
+        
             function showMessageModal(title, message, type = 'success') {
                 const modal = document.getElementById('adminMessageModal');
                 const modalTitle = document.getElementById('adminModalTitle');
@@ -876,16 +864,16 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin"; // Added null coalescing for s
                 modal.classList.remove('hidden');
             }
             
-            // Expose for use by admin.js
+        
             window.showMessageModal = showMessageModal;
 
-            // Simple Modal Toggle (for the new, transition-based modals)
+        
             function toggleModal(modalId, show) {
                 const modal = document.getElementById(modalId);
                 const modalContent = modal.querySelector('.modal-content');
                 if (show) {
                     modal.classList.remove('hidden');
-                    // Use a small timeout for the transition to be visible
+                
                     setTimeout(() => {
                         modalContent.classList.remove('scale-95');
                         modalContent.classList.add('scale-100', 'opacity-100');
@@ -893,7 +881,7 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin"; // Added null coalescing for s
                 } else {
                     modalContent.classList.remove('scale-100', 'opacity-100');
                     modalContent.classList.add('scale-95');
-                    // Hide the modal completely after the transition (300ms)
+                
                     setTimeout(() => {
                         modal.classList.add('hidden');
                     }, 300);

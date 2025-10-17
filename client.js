@@ -1,8 +1,5 @@
-// API Endpoint
 const API_URL = 'api.php';
 let activeLoan = null;
-
-// Utility to show messages via the dedicated modal
 function showMessageModal(title, message, type = 'success') {
     const modal = document.getElementById('messageModal');
     const modalTitle = document.getElementById('modalTitle');
@@ -12,7 +9,6 @@ function showMessageModal(title, message, type = 'success') {
     modalTitle.textContent = title;
     modalMessage.textContent = message;
     
-    // Set icon and color based on type
     modalIcon.className = 'mx-auto flex items-center justify-center h-12 w-12 rounded-full mb-4';
     if (type === 'success') {
         modalIcon.classList.add('bg-green-100');
@@ -27,18 +23,12 @@ function showMessageModal(title, message, type = 'success') {
 
     modal.classList.remove('hidden');
 }
-
-// Function to safely close the message modal
 document.getElementById('closeMessageModal').addEventListener('click', function() {
     document.getElementById('messageModal').classList.add('hidden');
 });
-
-// Function to format currency
 function formatCurrency(amount) {
     return `₱${parseFloat(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
-
-// Helper to set quick payment amounts
 window.setQuickAmount = function(amount) {
     const paymentAmountInput = document.getElementById('paymentAmount');
     let value = parseFloat(amount);
@@ -47,8 +37,6 @@ window.setQuickAmount = function(amount) {
     }
     paymentAmountInput.value = value.toFixed(2);
 }
-
-// --- Data Fetching and UI Update ---
 
 async function fetchClientData() {
     try {
@@ -66,7 +54,7 @@ async function fetchClientData() {
         updateLoanStatus(data.active_loan);
         updatePaymentHistory(data.payment_history);
         
-        // Auto-fill next payment amount on load
+
         if (data.active_loan) {
             document.getElementById('paymentAmount').value = data.active_loan.monthly_payment;
             activeLoan = data.active_loan;
@@ -94,7 +82,7 @@ function updateLoanStatus(loan) {
         
         const badge = document.getElementById('loanStatusBadge');
         badge.textContent = loan.loan_status;
-        badge.className = 'status-badge'; // Reset classes
+        badge.className = 'status-badge'
         
         if (loan.loan_status === 'Active') {
             badge.classList.add('bg-blue-100', 'text-blue-800');
@@ -103,18 +91,15 @@ function updateLoanStatus(loan) {
         } else if (loan.loan_status === 'Overdue') {
             badge.classList.add('bg-red-100', 'text-red-800');
         }
-
-        // Calculate days until payment
         const now = new Date();
         const nextPayment = new Date(loan.next_payment_date);
         const daysUntilPayment = Math.ceil((nextPayment - now) / (1000 * 60 * 60 * 24));
         document.querySelector('[data-due-days]').textContent = daysUntilPayment > 0 
             ? `(${daysUntilPayment} days to go)` 
             : '(Due Date Passed)';
-
     } else {
         noActiveLoanMessage.classList.remove('hidden');
-        // Clear loan details if no active loan
+
         document.getElementById('currentBalance').textContent = formatCurrency(0);
         monthlyPaymentInput.textContent = formatCurrency(0);
         document.getElementById('nextPaymentDate').textContent = '--';
@@ -126,7 +111,7 @@ function updateLoanStatus(loan) {
 
 function updatePaymentHistory(payments) {
     const historyBody = document.getElementById('paymentHistoryBody');
-    historyBody.innerHTML = ''; // Clear existing rows
+    historyBody.innerHTML = ''
 
     if (!payments || payments.length === 0) {
         historyBody.innerHTML = '<tr><td colspan="3" class="text-center py-4 text-gray-500">No payment history found for active loans.</td></tr>';
@@ -143,9 +128,6 @@ function updatePaymentHistory(payments) {
     });
 }
 
-
-// --- QR Code Generation ---
-
 document.getElementById('generatePaymentQR').addEventListener('click', function() {
     const amountInput = document.getElementById('paymentAmount');
     const amount = parseFloat(amountInput.value);
@@ -161,17 +143,13 @@ document.getElementById('generatePaymentQR').addEventListener('click', function(
     }
     
     if (amount > activeLoan.current_balance) {
-        // Use the custom modal for confirmation
         showMessageModal(
             'Overpayment Warning', 
             `The payment amount (${formatCurrency(amount)}) exceeds your current balance (${formatCurrency(activeLoan.current_balance)}). Continue with overpayment?`, 
             'info'
         );
-        // In a real app, you would need a more complex modal that handles yes/no action.
-        // For this simple implementation, we assume they proceed after warning.
     }
     
-    // Generate QR code data
     const paymentData = {
         type: 'loan_payment',
         client_id: activeLoan.client_id, 
@@ -191,7 +169,7 @@ document.getElementById('generatePaymentQR').addEventListener('click', function(
         margin: 1,
         width: 200,
         color: {
-            dark: '#0369A1', // Primary color
+            dark: '#0369A1',
             light: '#FFFFFF'
         }
     }, function (error) {
@@ -203,13 +181,9 @@ document.getElementById('generatePaymentQR').addEventListener('click', function(
         }
     });
 });
-
-// Close QR modal functionality
 document.getElementById('closeQRModal').addEventListener('click', function() {
     document.getElementById('qrModal').classList.add('hidden');
 });
-
-// --- Loan Application Submission ---
 
 document.getElementById('loanApplicationForm').addEventListener('submit', async function(e) {
     e.preventDefault();
@@ -218,19 +192,16 @@ document.getElementById('loanApplicationForm').addEventListener('submit', async 
         showMessageModal('Application Failed', 'You already have an active loan. Please settle it or wait for approval.', 'info');
         return;
     }
-
     const amount = document.getElementById('loanAmountInput').value;
     const term = document.getElementById('loanTermInput').value;
     const purpose = document.getElementById('loanPurposeInput').value;
     const submitBtn = document.getElementById('submitLoanBtn');
     const initialBtnText = submitBtn.innerHTML;
 
-    // Simple validation
     if (amount < 1000 || purpose.length < 10) {
         showMessageModal('Validation Error', 'Please enter a loan amount of at least ₱1,000 and a detailed purpose.', 'error');
         return;
     }
-
     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Submitting...';
     submitBtn.disabled = true;
 
@@ -250,7 +221,7 @@ document.getElementById('loanApplicationForm').addEventListener('submit', async 
         
         if (result.success) {
             showMessageModal('Application Submitted!', result.message, 'success');
-            this.reset(); // Clear form
+            this.reset()
         } else {
             showMessageModal('Submission Failed', result.message || 'An unexpected error occurred.', 'error');
         }
@@ -261,37 +232,28 @@ document.getElementById('loanApplicationForm').addEventListener('submit', async 
     } finally {
         submitBtn.innerHTML = initialBtnText;
         submitBtn.disabled = false;
-        // Refresh data to show new pending application (if applicable)
+
         fetchClientData(); 
     }
 });
 
-
-// --- Initialization and Events ---
-
 document.addEventListener('DOMContentLoaded', fetchClientData);
-
-// Logout functionality
 document.getElementById('logoutBtn').addEventListener('click', function() {
-    // Use the custom modal for confirmation
     showMessageModal(
         'Confirm Logout', 
         'Are you sure you want to log out of the client portal?', 
         'info'
     );
-    // Replace the default close button action with the actual logout
     document.getElementById('closeMessageModal').onclick = function() {
         window.location.href = "logout.php";
     };
 });
-
-// Close modals when clicking outside
 window.addEventListener('click', function(e) {
     if (e.target.id === 'qrModal' || e.target.id === 'messageModal') {
         e.target.classList.add('hidden');
-        // Reset message modal close button action
+
         if (e.target.id === 'messageModal') {
-             document.getElementById('closeMessageModal').onclick = function() {
+                document.getElementById('closeMessageModal').onclick = function() {
                 document.getElementById('messageModal').classList.add('hidden');
             };
         }

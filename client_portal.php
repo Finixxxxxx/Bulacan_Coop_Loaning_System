@@ -1,7 +1,5 @@
 <?php
 session_start();
-
-// Check if the user is logged in and is a client, otherwise redirect to login page
 if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true || $_SESSION["role"] !== "client"){
     header("location: index.php");
     exit;
@@ -60,7 +58,6 @@ $member_id = $_SESSION["member_id"];
     <!-- Main Content Grid -->
     <main class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        <!-- Column 1: Loan Status and Quick Pay -->
         <div class="lg:col-span-2 space-y-6">
 
             <!-- Active Loan Status Card -->
@@ -70,7 +67,6 @@ $member_id = $_SESSION["member_id"];
                 </h2>
                 
                 <div id="loanDetailsContainer" class="space-y-4">
-                    <!-- Data will be populated by client.js -->
                     <div class="grid grid-cols-2 gap-4 text-gray-600">
                         <div>
                             <p class="text-sm font-medium">Current Balance</p>
@@ -90,13 +86,11 @@ $member_id = $_SESSION["member_id"];
                             <span id="loanStatusBadge" class="status-badge bg-gray-100 text-gray-600">Loading...</span>
                         </div>
                     </div>
-
                     <div id="noActiveLoanMessage" class="hidden text-center p-8 bg-blue-50 rounded-lg">
                         <i class="fas fa-info-circle text-blue-500 text-2xl mb-2"></i>
                         <p class="text-lg font-medium text-blue-800">No Active Loan Found.</p>
                         <p class="text-sm text-blue-700">Apply for a new loan below!</p>
                     </div>
-
                 </div>
             </section>
 
@@ -115,7 +109,6 @@ $member_id = $_SESSION["member_id"];
                             </tr>
                         </thead>
                         <tbody id="paymentHistoryBody" class="bg-white divide-y divide-gray-200">
-                            <!-- Data populated by client.js -->
                             <tr><td colspan="3" class="text-center py-4 text-gray-500">No payment history found.</td></tr>
                         </tbody>
                     </table>
@@ -123,9 +116,7 @@ $member_id = $_SESSION["member_id"];
             </section>
         </div>
 
-        <!-- Column 2: Payment and Application -->
         <div class="lg:col-span-1 space-y-6">
-            
             <!-- Quick Payment Card -->
             <section class="bg-white p-6 rounded-2xl shadow-lg border-l-4 border-green-500 card-hover fade-in">
                 <h2 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
@@ -135,7 +126,7 @@ $member_id = $_SESSION["member_id"];
                 <div class="space-y-3">
                     <label for="paymentAmount" class="block text-sm font-medium text-gray-700">Payment Amount (₱)</label>
                     <input type="number" id="paymentAmount" value="0.00" min="100" placeholder="e.g. 2500" 
-                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition duration-150">
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition duration-150">
                 </div>
                 
                 <div class="flex space-x-2 mt-3 mb-4">
@@ -158,7 +149,7 @@ $member_id = $_SESSION["member_id"];
                     <div>
                         <label for="loanAmountInput" class="block text-sm font-medium text-gray-700 mb-1">Amount (₱)</label>
                         <input type="number" id="loanAmountInput" required min="1000" step="500" placeholder="e.g. 50000"
-                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition duration-150">
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition duration-150">
                     </div>
                     <div>
                         <label for="loanTermInput" class="block text-sm font-medium text-gray-700 mb-1">Term (Months)</label>
@@ -173,7 +164,7 @@ $member_id = $_SESSION["member_id"];
                     <div>
                         <label for="loanPurposeInput" class="block text-sm font-medium text-gray-700 mb-1">Purpose</label>
                         <textarea id="loanPurposeInput" rows="3" required placeholder="e.g. Educational expenses for child, business expansion"
-                                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition duration-150"></textarea>
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition duration-150"></textarea>
                     </div>
                     <div id="applicationMessage" class="hidden p-3 text-center rounded-lg text-sm"></div>
                     <button type="submit" id="submitLoanBtn"
@@ -216,7 +207,6 @@ $member_id = $_SESSION["member_id"];
         <div class="relative p-6 border w-96 shadow-2xl rounded-xl bg-white transform scale-100 transition-transform">
             <div class="text-center">
                 <div id="modalIcon" class="mx-auto flex items-center justify-center h-12 w-12 rounded-full mb-4">
-                    <!-- Icon will be injected -->
                 </div>
                 <h3 id="modalTitle" class="text-lg font-semibold text-gray-900 mb-2"></h3>
                 <p id="modalMessage" class="text-gray-600 mb-6"></p>
