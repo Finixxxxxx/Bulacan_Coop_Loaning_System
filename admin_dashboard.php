@@ -210,11 +210,11 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                                 </div>
                             </div>
                         </div>
-                        <!-- Total Issued Loan -->
+                        <!-- Total Issued Loan (TODO: Change to active loans only)-->
                         <div class="stat-card bg-gradient-to-r from-rose-500 to-rose-600 p-6 rounded-xl shadow-lg text-white">
                             <div class="flex items-center justify-between">
                                 <div>
-                                    <p class="text-rose-100 text-sm font-medium">Total Issued Loan</p>
+                                    <p class="text-rose-100 text-sm font-medium">Total Active Loan</p>
                                     <p id="totalOutstandingAmount" class="text-3xl font-bold">₱0</p>
                                     <p class="text-rose-100 text-xs mt-1">Active Loans <strong class="text-md font-base bg-rose-200/50 rounded-full py-1 px-2 ml-1" id="activeLoansCount">0</strong></p>
                                 </div>
@@ -252,17 +252,38 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                             </div>
                         </div>
                     </div>
-
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        <div class="bg-white p-6 rounded-xl shadow-md lg:col-span-3 card-flat">
-                            <h3 class="text-xl font-bold text-gray-800 mb-4 border-b pb-3">Branch Statistics (Total Loans)</h3>
+                    
+                    <!-- Statistic Charts -->
+                    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6"> 
+                        <!-- Total Loans per Branch -->
+                        <div class="bg-white p-6 rounded-xl shadow-md lg:col-span-2 card-flat">
+                            <h3 class="text-xl font-bold text-gray-800 mb-4 border-b pb-3">Total Loans per Branch</h3>
                             <div style="height: 350px;">
                                 <canvas id="branchChart" style="max-height: 350px;"></canvas>
                             </div>
                         </div>
-                        <!-- TODO: Add Statistic Charts: Bar Chart - Loan Issued vs. Payments, Total Outstanding Balance Over Time, Line Chart - Loan Interest Overtime -->
+                        <!-- TODO: Total Outstanding Balance Line Chart -->
+                        <div class="bg-white p-6 rounded-xl shadow-md lg:col-span-2 card-flat">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="text-xl font-bold text-gray-800 border-b pb-3">Total Outstanding Balance Overtime</h3>
+                                <select id="outstandingBalanceFilte" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                                    <option value="today">Today</option>
+                                    <option value="thisWeek">This Week</option>
+                                    <option value="thisMonth">This Month</option>
+                                    <option value="last30Days">Last 30 Days</option>
+                                    <option value="last3Months">Last 3 Months</option>
+                                    <option value="last6Months">Last 6 Months</option>
+                                    <option value="thisYear">This Year</option>
+                                    <option value="allTime">All Time</option>
+                                    </select>
+                            </div>
+                            <div style="height: 350px;">
+                                <canvas id="totalOutstandingBalanceChart" style="max-height: 350px;"></canvas>
+                            </div>
+                        </div>
                     </div>
                 </section>
+
                 <!-- Client Section -->
                 <section id="clients" class="tab-content hidden">
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
@@ -360,6 +381,7 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                             <h2 class="text-2xl font-bold text-gray-900">Active & Paid Loan History</h2>
                             <p class="text-gray-600 text-sm mt-1">Track all active and completed loan transactions.</p>
                         </div>
+                        <!-- TODO: Add a Filter for Active and Paid -->
                         <div class="flex flex-wrap justify-between items-center space-y-3 sm:space-y-0 sm:space-x-4">
                             <input type="text" id="loanSearch" placeholder="Search by Loan ID or Client..." class="w-full sm:max-w-sm px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition shadow-sm">
                         </div>
@@ -465,7 +487,7 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                     </div>
                 </section>
                 
-                <!-- Reports Section (TODO: Generate choose from PDF, Excel, or CSV files for reports, Also have Advanced Analytics Such as rates of payment, total yield of interest and such) -->
+                <!-- Reports Section (TODO: Generate choose from PDF, Excel, or CSV files for reports) -->
                 <section id="reports" class="tab-content hidden">
                     <div class="mb-6">
                         <h2 class="text-2xl font-bold text-gray-900">Reports & Analytics</h2>
@@ -513,22 +535,25 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                         </div>
                     </div>
 
+                    <!-- TODO: Statistic Charts, monthlyTrendsChart, riskAnalysisChart, and loanAndPaymentsChart -->
                     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 card-flat">
                         <h3 class="text-lg font-semibold text-gray-900 mb-4">
                             <i class="fas fa-chart-area mr-2 text-indigo-600"></i>Advanced Analytics
                         </h3>
-                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                             <div>
                                 <canvas id="monthlyTrendsChart" height="200"></canvas>
                             </div>
                             <div>
                                 <canvas id="riskAnalysisChart" height="200"></canvas>
                             </div>
-                        </div>
+                            <div>
+                                <canvas id="loanAndPaymentsChart" height="200"></canvas>
+                            </div>
                     </div>
                 </section>
 
-                <!-- Settings Section (TODO: Remove the General Settings and replace with Company Info, Make the Notifications functional with pop-up notifications) -->
+                <!-- Settings Section () -->
                 <section id="settings" class="tab-content hidden">
                     <div class="mb-6">
                         <h2 class="text-2xl font-bold text-gray-900">System Settings</h2>
@@ -536,51 +561,28 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                     </div>
 
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 card-flat">
-                            <h3 class="text-lg font-semibold text-gray-900 mb-4">
-                                <i class="fas fa-cog mr-2 text-primary"></i>General Settings
-                            </h3>
-                            <div class="space-y-4">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Company Name</label>
-                                    <input type="text" value="Bulacan Cooperative Loaning Services" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Default Interest Rate (%)</label>
-                                    <input type="number" value="15" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Currency</label>
-                                    <select class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
-                                        <option value="PHP" selected>PHP (₱)</option>
-                                        <option value="USD">USD ($)</option>
-                                        <option value="EUR">EUR (€)</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
+                        <!-- TODO: Make a Stacking pop up notifications on the bottom right for (New Pending Loan, Overdue Loans, New Payments) -->
                         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 card-flat">
                             <h3 class="text-lg font-semibold text-gray-900 mb-4">
                                 <i class="fas fa-bell mr-2 text-yellow-600"></i>Notifications
                             </h3>
                             <div class="space-y-4">
                                 <div class="flex items-center justify-between">
-                                    <span class="text-sm font-medium text-gray-700">Payment Reminders</span>
+                                    <span class="text-sm font-medium text-gray-700">New Pending Loan</span>
                                     <label class="relative inline-flex items-center cursor-pointer">
                                         <input type="checkbox" checked class="sr-only peer">
                                         <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-light rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                                     </label>
                                 </div>
                                 <div class="flex items-center justify-between">
-                                    <span class="text-sm font-medium text-gray-700">Overdue Alerts</span>
+                                    <span class="text-sm font-medium text-gray-700">Overdue Loan Alerts</span>
                                     <label class="relative inline-flex items-center cursor-pointer">
                                         <input type="checkbox" checked class="sr-only peer">
                                         <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-light rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                                     </label>
                                 </div>
                                 <div class="flex items-center justify-between">
-                                    <span class="text-sm font-medium text-gray-700">New Client Notifications</span>
+                                    <span class="text-sm font-medium text-gray-700">New Payments</span>
                                     <label class="relative inline-flex items-center cursor-pointer">
                                         <input type="checkbox" class="sr-only peer">
                                         <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-light rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
@@ -588,7 +590,7 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                                 </div>
                             </div>
                         </div>
-
+                        <!-- TODO: Change the logged in admin password and download the whole database schema with the backup data into .sql file -->
                         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 card-flat">
                             <h3 class="text-lg font-semibold text-gray-900 mb-4">
                                 <i class="fas fa-shield-alt mr-2 text-emerald-600"></i>Security
@@ -597,36 +599,9 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                                 <button class="w-full bg-primary text-white py-2 px-4 rounded-lg hover:bg-primary-dark transition-colors">
                                     <i class="fas fa-key mr-2"></i>Change Password
                                 </button>
-                                <button class="w-full bg-emerald-600 text-white py-2 px-4 rounded-lg hover:bg-emerald-700 transition-colors">
-                                    <i class="fas fa-mobile-alt mr-2"></i>Enable 2FA
-                                </button>
                                 <button class="w-full bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors">
                                     <i class="fas fa-download mr-2"></i>Backup Data
                                 </button>
-                            </div>
-                        </div>
-
-                        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 card-flat">
-                            <h3 class="text-lg font-semibold text-gray-900 mb-4">
-                                <i class="fas fa-info-circle mr-2 text-indigo-600"></i>System Information
-                            </h3>
-                            <div class="space-y-3 text-sm">
-                                <div class="flex justify-between">
-                                    <span class="text-gray-600">Version:</span>
-                                    <span class="font-medium">v2.1.0</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-gray-600">Last Backup:</span>
-                                    <span class="font-medium">Today, 3:00 AM</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-gray-600">Database Size:</span>
-                                    <span class="font-medium">245 MB</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-gray-600">Active Users:</span>
-                                    <span class="font-medium">3</span>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -636,9 +611,10 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
         </main>
     </div>
 
+    <!-- Add New Client Modal -->
     <div id="addClientModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-60 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
         <div class="relative w-full max-w-lg shadow-2xl rounded-2xl bg-white p-6 sm:p-8 space-y-6 transform transition-all duration-300 ease-out scale-95 modal-content">
-            <h3 class="text-2xl font-bold text-gray-900 border-b pb-3 mb-4">Add New Client / Member</h3>
+            <h3 class="text-2xl font-bold text-gray-900 border-b pb-3 mb-4"><i class="fas fa-user-plus"></i> Add New Client</h3>
             <form id="addClientForm" class="space-y-4">
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
@@ -666,6 +642,9 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                         <option value="hagonoy">Hagonoy</option>
                         <option value="calumpit">Calumpit</option>
                         <option value="balagtas">Balagtas</option>
+                        <option value="marilao">Marilao</option>
+                        <option value="staMaria">Sta. Maria</option>
+                        <option value="plaridel">Plaridel</option>
                     </select>
                 </div>
                 <div id="addClientMessage" class="hidden p-3 text-center rounded-lg text-sm font-medium"></div>
@@ -681,6 +660,7 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
         </div>
     </div>
 
+    <!-- Approve Loan Modal -->
     <div id="approveLoanModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-60 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
         <div class="relative w-full max-w-md shadow-2xl rounded-2xl bg-white p-6 sm:p-8 space-y-6 transform transition-all duration-300 ease-out scale-95 modal-content">
             <h3 class="text-2xl font-bold text-gray-900 border-b pb-3 mb-4">Approve Loan Application</h3>
@@ -705,7 +685,7 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                         Cancel
                     </button>
                     <button type="submit" id="approveLoanSubmitBtn" class="bg-primary text-white py-2.5 px-5 rounded-lg hover:bg-primary-dark transition-colors font-semibold shadow-lg shadow-primary/30">
-                        <i class="fas fa-thumbs-up mr-2"></i> Final Approve
+                        <i class="fas fa-circle-check mr-2"></i> Final Approve
                     </button>
                 </div>
             </form>
@@ -749,6 +729,107 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                 <h3 id="adminModalTitle" class="text-xl font-bold text-gray-900 mb-2"></h3>
                 <p id="adminModalMessage" class="text-gray-600 mb-6"></p>
                 <button id="closeAdminMessageModal" class="w-full bg-primary text-white py-2.5 rounded-lg hover:bg-primary-dark transition-colors font-semibold">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- New Loan Modal -->
+    <div id="newLoanModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-60 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+        <div class="relative p-6 border w-full max-w-md shadow-2xl rounded-2xl bg-white transform scale-100 transition-transform">
+            <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">
+                <i class="fa-solid fa-hand-holding-dollar text-green-600 mr-1"></i>
+                New Loan
+            </h2>
+            <div class="space-y-4 text-gray-800">
+                <div class="flex justify-between border-b pb-2">
+                    <span class="font-semibold text-gray-600 flex items-center gap-2">
+                        <i class="fa-solid fa-id-card"></i> Client ID:
+                    </span>
+                    <span id="newLoanClientId">M001</span>
+                </div>
+
+                <div class="flex justify-between border-b pb-2">
+                    <span class="font-semibold text-gray-600 flex items-center gap-2">
+                        <i class="fa-solid fa-user"></i> Name:
+                    </span>
+                    <span id="newLoanClientName">Juan Dela Cruz</span>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Loan Amount</label>
+                    <input type="number" id="newLoanAmount" name="loan_amount" value="1000.00" step="0.01" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition">
+                </div>
+            </div>
+
+            <div class="mt-8 text-center">
+                <button id="closeNewLoanModal" class="w-full bg-primary text-white py-2.5 rounded-lg hover:bg-primary-dark transition-colors font-semibold flex items-center justify-center gap-2">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Client Details Modal -->
+    <div id="clientDetailsModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-60 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+        <div class="relative p-6 border w-full max-w-md shadow-2xl rounded-2xl bg-white transform scale-100 transition-transform">
+            <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">
+                <i class="fa-solid fa-user-circle text-primary"></i>
+                Client Details
+            </h2>
+            <div class="space-y-4 text-gray-800">
+                <div class="flex justify-between border-b pb-2">
+                    <span class="font-semibold text-gray-600 flex items-center gap-2">
+                        <i class="fa-solid fa-id-card"></i> Member ID:
+                    </span>
+                    <span id="clientMemberID">M001</span>
+                </div>
+
+                <div class="flex justify-between border-b pb-2">
+                    <span class="font-semibold text-gray-600 flex items-center gap-2">
+                        <i class="fa-solid fa-user"></i> Name:
+                    </span>
+                    <span id="clientName">Juan Dela Cruz</span>
+                </div>
+
+                <div class="flex justify-between border-b pb-2">
+                    <span class="font-semibold text-gray-600 flex items-center gap-2">
+                        <i class="fa-solid fa-envelope"></i> Email:
+                    </span>
+                    <span id="clientEmail">email@example.com</span>
+                </div>
+
+                <div class="flex justify-between border-b pb-2">
+                    <span class="font-semibold text-gray-600 flex items-center gap-2">
+                        <i class="fa-solid fa-phone"></i> Phone:
+                    </span>
+                    <span id="clientPhone">+63 912 345 6789</span>
+                </div>
+
+                <div class="flex justify-between border-b pb-2">
+                    <span class="font-semibold text-gray-600 flex items-center gap-2">
+                        <i class="fa-solid fa-location-dot"></i> Address:
+                    </span>
+                    <span id="clientAddress">123 Purok 1 Malolos</span>
+                </div>
+
+                <div class="flex justify-between border-b pb-2">
+                    <span class="font-semibold text-gray-600 flex items-center gap-2">
+                        <i class="fa-solid fa-building"></i> Branch:
+                    </span>
+                    <span id="clientBranch">Bulacan</span>
+                </div>
+
+                <div class="flex justify-between border-b pb-2">
+                    <span class="font-semibold text-gray-600 flex items-center gap-2">
+                        <i class="fa-solid fa-calendar-day"></i> Date Joined:
+                    </span>
+                    <span id="clientDateJoined">October 21, 2025</span>
+                </div>
+            </div>
+
+            <div class="mt-8 text-center">
+                <button id="closeClientDetailsModal" class="w-full bg-primary text-white py-2.5 rounded-lg hover:bg-primary-dark transition-colors font-semibold flex items-center justify-center gap-2">
                     Close
                 </button>
             </div>
@@ -837,7 +918,7 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                 switchTab('loans');
             });
 
-        
+            // Show Message Modal
             function showMessageModal(title, message, type = 'success') {
                 const modal = document.getElementById('adminMessageModal');
                 const modalTitle = document.getElementById('adminModalTitle');
@@ -863,11 +944,48 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                 closeBtn.onclick = () => modal.classList.add('hidden');
                 modal.classList.remove('hidden');
             }
-            
-        
             window.showMessageModal = showMessageModal;
 
-        
+            // Show New Loan Modal
+            function showNewLoanModal(clientId, clientName) {
+                const modal = document.getElementById('newLoanModal');
+                const modalClientId = document.getElementById('newLoanClientId');
+                const modalClientName = document.getElementById('newLoanClientName');
+                const closeBtn = document.getElementById('closeNewLoanModal');
+
+                modalClientId.textContent = clientId;
+                modalClientName.textContent = clientName;
+                closeBtn.onclick = () => modal.classList.add('hidden');
+                modal.classList.remove('hidden');
+            }
+            window.showNewLoanModal = showNewLoanModal;
+            
+            function showClientDetailsModal(clientId, clientName, clientEmail, clientPhone, clientAddress, clientBranch, clientDateJoined) {
+                const modalClientId = document.getElementById('clientMemberID');
+                const modalClientName = document.getElementById('clientName');
+                const modalClientEmail = document.getElementById('clientEmail');
+                const modalClientPhone = document.getElementById('clientPhone');
+                const modalClientAddress = document.getElementById('clientAddress');
+                const modalClientBranch = document.getElementById('clientBranch');
+                const modalClientDateJoined = document.getElementById('clientDateJoined');
+                const closeBtn = document.getElementById('closeClientDetailsModal');
+
+                modalClientId.textContent = clientId;
+                modalClientName.textContent = clientName;
+                modalClientEmail.textContent = clientEmail;
+                modalClientPhone.textContent = clientPhone;
+                modalClientAddress.textContent = clientAddress;
+                modalClientBranch.textContent = clientBranch.charAt(0).toUpperCase() + clientBranch.slice(1);;
+                modalClientDateJoined.textContent = clientDateJoined;
+                
+
+                closeBtn.onclick = () => modal.classList.add('hidden');
+                document.getElementById('clientDetailsModal').classList.remove('hidden');
+                console.log('Showing client details modal for', clientName);
+            }
+
+            window.showClientDetailsModal = showClientDetailsModal;
+
             function toggleModal(modalId, show) {
                 const modal = document.getElementById(modalId);
                 const modalContent = modal.querySelector('.modal-content');
@@ -888,6 +1006,7 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                 }
             }
             window.toggleModal = toggleModal;
+
         });
     </script>
 </body>

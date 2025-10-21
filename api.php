@@ -259,7 +259,7 @@ switch ($action) {
 
     
         if (!function_exists('calculate_monthly_payment')) {
-             json_error('Dependency error: calculate_monthly_payment function not found. Ensure db_config.php is fully loaded.');
+            json_error('Dependency error: calculate_monthly_payment function not found. Ensure db_config.php is fully loaded.');
         }
         $monthly_payment = calculate_monthly_payment($principal, $interest_rate, $term_months);
         $next_payment_date = date('Y-m-d', strtotime('+1 month'));
@@ -391,7 +391,6 @@ switch ($action) {
             json_error("Payment processing failed: " . $e->getMessage());
         }
         break;
-
 
     default:
         json_error('Invalid action.');

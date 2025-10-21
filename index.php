@@ -99,23 +99,42 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
 ?>
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bulacan Coop - Login</title>
-
-    <style>        
-    body {
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Bulacan Coop - Login</title>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+        <script src="https://cdn.tailwindcss.com"></script>
+        <style>        
+        body {
             font-family: 'Inter', sans-serif;
+            background-image: url('./assets/bulacan_capitol.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            position: relative;
+            overflow: hidden;
+        }
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: inherit;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            filter: blur(3px) brightness(1);
+            transform: scale(1.1);
+            z-index: -1;
         }
         @keyframes fadeInMove {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        .animate-fadeInMove {
-            animation: fadeInMove 0.8s ease-out;
-        }
-    
+        .animate-fadeInMove { animation: fadeInMove 0.8s ease-out; }
         .input-focus-ring:focus {
             --tw-ring-color: #3b82f6;
             box-shadow: 0 0 0 2px var(--tw-ring-color);
@@ -123,77 +142,88 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
         }
         .bg-primary { background-color: #0369A1; }
         .hover\:bg-primary-dark:hover { background-color: #075985; }
-    </style>
-</head>
-<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
-
-    <div class="w-full max-w-md">
-        <div class="bg-white shadow-xl rounded-2xl p-8 space-y-6 animate-fadeInMove">
+        </style>
+    </head>
+    <body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+        <div class="w-full max-w-sm bg-white shadow-2xl rounded-xl p-6 md:p-8 space-y-6 transform transition duration-500 hover:shadow-3xl border-t-4 border-primary">
+            
             <div class="text-center">
-                <h1 class="text-3xl font-bold text-gray-900 mb-1">Bulacan Coop</h1>
-                <p class="text-lg text-gray-500">Loaning Management System</p>
+                <h1 class="text-3xl font-extrabold text-gray-900 mb-1 tracking-tight">Bulacan Coop</h1>
+                <p class="text-lg text-gray-500 font-medium">Loaning Management System</p>
             </div>
             
             <?php 
             if(!empty($login_err)){
-                echo '<div id="errorMsg" class="p-3 bg-red-100 text-red-700 rounded-lg text-sm transition-all duration-300">
-                        <i class="fas fa-exclamation-circle mr-2"></i>' . $login_err . '
+                echo '<div id="errorMsg" class="p-3 bg-red-50 text-red-700 border border-red-300 rounded-lg text-sm transition-all duration-300 flex items-center" role="alert">
+                        <i class="fas fa-exclamation-circle mr-2 text-lg"></i>
+                        <span class="font-medium">' . $login_err . '</span>
                     </div>';
             }        
             ?>
 
-            <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post" id="loginForm" class="space-y-5">
+            <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post" id="loginForm" class="space-y-6">
+                
                 <div>
-                    <label for="username" class="block text-sm font-medium text-gray-700 mb-1">Member ID / Phone Number</label>
-                    <input type="text" id="username" name="username" placeholder="Enter ID or Phone" required 
-                        class="w-full px-4 py-3 border border-gray-300 rounded-xl input-focus-ring transition duration-150"
-                        value="<?php echo $username ?? ''; ?>">
+                    <label for="username" class="block text-sm font-semibold text-gray-700 mb-2">Member ID / Phone Number</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-user text-gray-400"></i>
+                        </div>
+                        <input type="text" id="username" name="username" placeholder="Enter ID or Phone" required 
+                            class="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-lg focus:border-primary focus:ring-1 focus:ring-primary transition duration-200 shadow-inner text-gray-800"
+                            value="<?php echo $username ?? ''; ?>">
+                    </div>
                     <span class="text-xs text-red-500 mt-1 block"><?php echo $username_err; ?></span>
                 </div>
 
                 <div>
-                    <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                    <label for="password" class="block text-sm font-semibold text-gray-700 mb-2">Password</label>
                     <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-lock text-gray-400"></i>
+                        </div>
                         <input type="password" id="password" name="password" placeholder="Enter Password" required 
-                            class="w-full px-4 py-3 border border-gray-300 rounded-xl input-focus-ring transition duration-150">
-                        <button type="button" id="togglePassword" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition">
+                            class="w-full pl-10 pr-10 py-3 border-2 border-gray-200 rounded-lg focus:border-primary focus:ring-1 focus:ring-primary transition duration-200 shadow-inner text-gray-800">
+                        <button type="button" id="togglePassword" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-primary transition duration-150" aria-label="Toggle password visibility">
                             <i id="toggleIcon" class="fas fa-eye"></i>
                         </button>
                     </div>
-                    <p class="text-xs text-gray-500 mt-1">Hint: Last name (no spaces) + last 4 digits of phone number.</p>
+                    <p class="text-xs text-gray-500 mt-2">
+                        <i class="fas fa-info-circle mr-1"></i>Hint: Last name (no spaces) + last 4 digits of phone number.
+                    </p>
                     <span class="text-xs text-red-500 mt-1 block"><?php echo $password_err; ?></span>
                 </div>
 
                 <button type="submit" 
-                        class="w-full bg-primary text-white font-semibold py-3 rounded-xl hover:bg-primary-dark transition-colors duration-200 shadow-lg shadow-blue-500/50">
-                    <i class="fas fa-sign-in-alt mr-2"></i> Log In
+                        class="w-full bg-primary text-white font-bold tracking-wider py-3 rounded-lg hover:bg-primary-dark transition-colors duration-300 shadow-xl shadow-primary/40 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transform hover:scale-[1.01]">
+                    <i class="fas fa-sign-in-alt mr-2"></i> LOG IN
                 </button>
             </form>
 
-            <div class="text-center pt-2">
-                <a href="#" class="text-sm text-blue-600 hover:text-blue-800 transition-colors">Forgot Password?</a>
+            <div class="text-center pt-2 border-t border-gray-100 mt-4">
+                <a href="#" class="text-sm text-primary hover:text-primary-dark font-medium transition-colors">
+                    <i class="fas fa-question-circle mr-1"></i> Forgot Password?
+                </a>
             </div>
         </div>
-    </div>
 
-    <script>
+        <script>
+            const passwordInput = document.getElementById("password");
+            const toggleBtn = document.getElementById("togglePassword");
+            const toggleIcon = document.getElementById("toggleIcon");
 
-        const passwordInput = document.getElementById("password");
-        const toggleBtn = document.getElementById("togglePassword");
-        const toggleIcon = document.getElementById("toggleIcon");
+            toggleBtn.addEventListener("click", () => {
+                const type = passwordInput.type === "password" ? "text" : "password";
+                passwordInput.type = type;
 
-        toggleBtn.addEventListener("click", () => {
-            const type = passwordInput.type === "password" ? "text" : "password";
-            passwordInput.type = type;
-
-            if (type === "password") {
-                toggleIcon.classList.remove("fa-eye-slash");
-                toggleIcon.classList.add("fa-eye");
-            } else {
-                toggleIcon.classList.remove("fa-eye");
-                toggleIcon.classList.add("fa-eye-slash");
-            }
-        });
-    </script>
-</body>
+                if (type === "password") {
+                    toggleIcon.classList.remove("fa-eye-slash");
+                    toggleIcon.classList.add("fa-eye");
+                } else {
+                    toggleIcon.classList.remove("fa-eye");
+                    toggleIcon.classList.add("fa-eye-slash");
+                }
+            });
+        </script>
+    </body>
 </html>

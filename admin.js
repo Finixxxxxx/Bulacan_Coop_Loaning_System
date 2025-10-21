@@ -50,13 +50,11 @@ async function fetchAdminData() {
             showMessageModal('Data Error', data.error, 'error');
             return;
         }
-
     
         clientsData = data.clients;
         loansData = data.loans;
         pendingLoans = data.pending_loans;
 
-    
         updateDashboardStats();
         populatePendingLoans();
         populateClientsTable();
@@ -79,8 +77,7 @@ function updateDashboardStats() {
     document.getElementById('totalClientsCount').textContent = totalClients;
     document.getElementById('activeLoansCount').textContent = activeLoans;
     document.getElementById('pendingLoansCount').textContent = pendingCount;
-    document.getElementById('totalOutstandingAmount').textContent = formatCurrency(totalOutstanding);
-
+    document.getElementById('totalOutstandingAmount').textContent = formatCurrency(totalOutstanding); //Change this into active loans only
 }
 
 function updateBranchStatistics() {
@@ -139,6 +136,7 @@ function populateClientsTable(searchTerm = '') {
         return;
     }
 
+    // Use the Client Details Modal
     filteredClients.forEach(client => {
         const row = clientsBody.insertRow();
         const outstanding = loansData
@@ -158,8 +156,16 @@ function populateClientsTable(searchTerm = '') {
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-semibold">${formatCurrency(outstanding)}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm">${statusBadge}</td>
             <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                <button onclick="showMessageModal('Client Details', 'ID: ${client.member_id}\\nPhone: ${client.c_phone}\\nEmail: ${client.c_email || 'N/A'}\\nAddress: ${client.c_address}', 'info')" 
-                        class="text-blue-600 hover:text-blue-900 mx-1"><i class="fas fa-eye"></i></button>
+                <button 
+                onclick="showClientDetailsModal('${client.member_id}', '${client.c_firstname} ${client.c_lastname}', '${client.c_email || 'N/A'}', '${client.c_phone || 'N/A'}', '${client.c_address}', '${client.c_branch || 'N/A'}','${client.date_joined || 'N/A'}')" 
+                class="text-blue-600 hover:text-blue-900 mx-1">
+                    <i class="fas fa-eye"></i>
+                </button>
+                <button 
+                onclick="showNewLoanModal(${client.client_id}, '${client.c_firstname} ${client.c_lastname}')" 
+                class="text-green-600 hover:text-green-900 mx-1">
+                    <i class="fas fa-money-bill"></i>
+                </button>
             </td>
         `;
     });
