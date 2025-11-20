@@ -213,6 +213,7 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
             <div id="notificationContainer" class="notification-container"></div>
 
             <div id="mainContent" class="space-y-10">
+                <!-- Overview Section -->
                 <section id="overview" class="tab-content">
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -268,28 +269,43 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                         </div>
                     </div>
                     
-                    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6"> 
-                        <div class="bg-white p-6 rounded-xl shadow-md lg:col-span-2 card-flat">
+                    <!-- Statistic Charts -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6"> 
+                        <!-- Total Loans per Branch -->
+                        <div class="bg-white p-6 rounded-xl shadow-md card-flat">
                             <h3 class="text-xl font-bold text-gray-800 mb-4 border-b pb-3">Total Loans per Branch</h3>
                             <div style="height: 350px;">
                                 <canvas id="branchChart" style="max-height: 350px;"></canvas>
                             </div>
                         </div>
-                        <div class="bg-white p-6 rounded-xl shadow-md lg:col-span-2 card-flat">
+
+                        <!-- Loan Repayment Progress -->
+                        <div class="bg-white p-6 rounded-xl shadow-md card-flat">
                             <div class="flex justify-between items-center mb-4">
-                                <h3 class="text-xl font-bold text-gray-800 border-b pb-3">Total Outstanding Balance Overtime</h3>
-                                <select id="outstandingBalanceFilter" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
-                                    <option value="today">Today</option>
-                                    <option value="thisWeek">Last 7 Days</option>
-                                    <option value="last30Days">Last 30 Days</option>
-                                    <option value="last3Months">Last 3 Months</option>
-                                    <option value="last6Months">Last 6 Months</option>
-                                    <option value="thisYear">This Year</option>
-                                    <option value="allTime">All Time</option>
-                                </select>
+                                <h3 class="text-xl font-bold text-gray-800 border-b pb-3">Loan Repayment Progress</h3>
+                                <button id="viewAllLoansBtn" class="text-primary hover:text-primary-dark text-sm font-medium">
+                                    View Details <i class="fas fa-arrow-right ml-1"></i>
+                                </button>
                             </div>
-                            <div style="height: 350px; position: relative;">
-                                <canvas id="totalOutstandingBalanceChart" style="max-height: 350px; width: 100%;"></canvas>
+                            <div id="repaymentProgressContainer" class="space-y-4">
+                                <div class="text-center py-8 text-gray-500">
+                                    <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+                                    <p>Loading repayment progress...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Upcoming Payments -->
+                    <div class="bg-white p-6 rounded-xl shadow-md card-flat mt-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-xl font-bold text-gray-800 border-b pb-3">Upcoming Payments</h3>
+                            <span class="text-sm text-gray-500">Next 7 days</span>
+                        </div>
+                        <div id="upcomingPaymentsContainer" class="space-y-3">
+                            <div class="text-center py-8 text-gray-500">
+                                <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+                                <p>Loading upcoming payments...</p>
                             </div>
                         </div>
                     </div>
@@ -978,7 +994,7 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
             sidebarToggle.addEventListener('click', openSidebar);
             closeSidebar.addEventListener('click', closeSidebarFn);
             sidebarOverlay.addEventListener('click', closeSidebarFn);
-        
+
             function switchTab(targetId) {
                 allTabs.forEach(tab => tab.classList.add('hidden'));
                 const targetTab = document.getElementById(targetId);
@@ -1018,7 +1034,11 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                     switchTab(targetId);
                 });
             });
-
+            document.getElementById('viewAllLoansBtn').addEventListener('click', (e) =>{
+                e.preventDefault();
+                window.location.hash = 'loans';
+                switchTab('loans');
+            });
             document.getElementById('totalClientsCard').addEventListener('click', (e) => {
                 e.preventDefault();
                 window.location.hash = 'clients';

@@ -764,237 +764,199 @@ switch ($action) {
         
         break;
         
-        case 'get_outstanding_chart_data':
-    if ($role !== 'admin') json_error('Access denied.');
-    
-    $filter = $_REQUEST['filter'] ?? 'thisWeek';
-    $response = ['labels' => [], 'data' => []];
-    
-    switch ($filter) {
-        case 'today':
-            // For today, we'll show hourly data of current outstanding balance
-            // Since we don't have hourly snapshots, we'll use the current outstanding
+        case 'get_repayment_progress':
+            if ($role !== 'admin') json_error('Access denied.');
+            
+            $response = ['loans' => []];
+            
             $sql = "SELECT 
-                HOUR(NOW()) as current_hour,
-                SUM(current_balance) as total_outstanding
+                l.loan_id,
+                l.loan_amount,
+                l.current_balance,
+                l.monthly_payment,
+                l.next_payment_date,
+                CONCAT(c.c_firstname, ' ', c.c_lastname) as client_name,
+                DATEDIFF(l.next_payment_date, CURDATE()) as days_until_due
+            FROM loans l
+            JOIN clients c ON l.client_id = c.client_id
+            WHERE l.loan_status IN ('Active', 'Overdue')
+            ORDER BY l.next_payment_date ASC
+            LIMIT 4";
+            
+            $result = $mysqli->query($sql);
+            if ($result) {
+                while ($row = $result->fetch_assoc()) {
+                    $response['loans'][] = [
+                        'loan_id' => $row['loan_id'],
+                        'loan_amount' => (float)$row['loan_amount'],
+                        'current_balance' => (float)$row['current_balance'],
+                        'monthly_payment' => (float)$row['monthly_payment'],
+                        'next_payment_date' => $row['next_payment_date'],
+                        'client_name' => $row['client_name'],
+                        'days_until_due' => (int)$row['days_until_due']
+                    ];
+                }
+            }
+            
+            echo json_encode($response);
+            break;
+
+        case 'get_upcoming_payments':
+            if ($role !== 'admin') json_error('Access denied.');
+            
+            $response = ['payments' => []];
+            
+            $sql = "SELECT 
+                l.loan_id,
+                l.monthly_payment,
+                l.next_payment_date,
+                CONCAT(c.c_firstname, ' ', c.c_lastname) as client_name,
+                DATEDIFF(l.next_payment_date, CURDATE()) as days_until_due
+            FROM loans l
+            JOIN clients c ON l.client_id = c.client_id
+            WHERE l.loan_status IN ('Active', 'Overdue')
+            AND l.next_payment_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
+            ORDER BY l.next_payment_date ASC
+            LIMIT 10";
+            
+            $result = $mysqli->query($sql);
+            if ($result) {
+                while ($row = $result->fetch_assoc()) {
+                    $response['payments'][] = [
+                        'loan_id' => $row['loan_id'],
+                        'monthly_payment' => (float)$row['monthly_payment'],
+                        'next_payment_date' => $row['next_payment_date'],
+                        'client_name' => $row['client_name'],
+                        'days_until_due' => (int)$row['days_until_due']
+                    ];
+                }
+            }
+            
+            echo json_encode($response);
+            break;
+
+        case 'get_monthly_trends_data':
+            if ($role !== 'admin') json_error('Access denied.');
+            
+            $response = ['labels' => [], 'loans_issued' => [], 'payments' => []];
+            
+            $sql_loans = "SELECT 
+                DATE_FORMAT(approval_date, '%Y-%m') as month,
+                COUNT(*) as loans_count,
+                SUM(loan_amount) as total_issued
                 FROM loans 
-                WHERE loan_status IN ('Active', 'Overdue')";
-            break;
+                WHERE approval_date IS NOT NULL 
+                AND approval_date >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH)
+                GROUP BY YEAR(approval_date), MONTH(approval_date) 
+                ORDER BY YEAR(approval_date), MONTH(approval_date)";
+                
+            $sql_payments = "SELECT 
+                DATE_FORMAT(payment_date, '%Y-%m') as month,
+                SUM(payment_amount) as total_payments
+                FROM payments 
+                WHERE payment_date >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH)
+                GROUP BY YEAR(payment_date), MONTH(payment_date) 
+                ORDER BY YEAR(payment_date), MONTH(payment_date)";
             
-        case 'thisWeek':
-            $sql = "SELECT 
-                DAYNAME(l.application_date) as day,
-                SUM(l.current_balance) as total_outstanding
-                FROM loans l
-                WHERE l.application_date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
-                AND l.loan_status IN ('Active', 'Overdue')
-                GROUP BY DAYOFWEEK(l.application_date) 
-                ORDER BY DAYOFWEEK(l.application_date)";
-            break;
+            $result_loans = $mysqli->query($sql_loans);
+            $result_payments = $mysqli->query($sql_payments);
             
-        case 'last30Days':
-            $sql = "SELECT 
-                DATE(l.application_date) as date,
-                SUM(l.current_balance) as total_outstanding
-                FROM loans l
-                WHERE l.application_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
-                AND l.loan_status IN ('Active', 'Overdue')
-                GROUP BY DATE(l.application_date) 
-                ORDER BY DATE(l.application_date)";
-            break;
+            $loans_data = [];
+            $payments_data = [];
             
-        case 'last3Months':
-            $sql = "SELECT 
-                DATE_FORMAT(l.application_date, '%Y-%m') as month,
-                SUM(l.current_balance) as total_outstanding
-                FROM loans l
-                WHERE l.application_date >= DATE_SUB(CURDATE(), INTERVAL 3 MONTH)
-                AND l.loan_status IN ('Active', 'Overdue')
-                GROUP BY YEAR(l.application_date), MONTH(l.application_date) 
-                ORDER BY YEAR(l.application_date), MONTH(l.application_date)";
-            break;
-            
-        case 'last6Months':
-            $sql = "SELECT 
-                DATE_FORMAT(l.application_date, '%Y-%m') as month,
-                SUM(l.current_balance) as total_outstanding
-                FROM loans l
-                WHERE l.application_date >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
-                AND l.loan_status IN ('Active', 'Overdue')
-                GROUP BY YEAR(l.application_date), MONTH(l.application_date) 
-                ORDER BY YEAR(l.application_date), MONTH(l.application_date)";
-            break;
-            
-        case 'thisYear':
-            $sql = "SELECT 
-                DATE_FORMAT(l.application_date, '%Y-%m') as month,
-                SUM(l.current_balance) as total_outstanding
-                FROM loans l
-                WHERE YEAR(l.application_date) = YEAR(CURDATE())
-                AND l.loan_status IN ('Active', 'Overdue')
-                GROUP BY YEAR(l.application_date), MONTH(l.application_date) 
-                ORDER BY YEAR(l.application_date), MONTH(l.application_date)";
-            break;
-            
-        default:
-            // All time - monthly breakdown
-            $sql = "SELECT 
-                DATE_FORMAT(l.application_date, '%Y-%m') as month,
-                SUM(l.current_balance) as total_outstanding
-                FROM loans l
-                WHERE l.loan_status IN ('Active', 'Overdue')
-                GROUP BY YEAR(l.application_date), MONTH(l.application_date) 
-                ORDER BY YEAR(l.application_date), MONTH(l.application_date)";
-            break;
-    }
-    
-    $result = $mysqli->query($sql);
-    if ($result) {
-        while ($row = $result->fetch_assoc()) {
-            // Handle different column names based on query
-            $labelKey = array_keys($row)[0];
-            $dataKey = array_keys($row)[1];
-            
-            $response['labels'][] = $row[$labelKey];
-            $response['data'][] = (float)($row[$dataKey] ?? 0);
-        }
-        
-        // If no data found, provide some sample data for demonstration
-        if (empty($response['data'])) {
-            $response['labels'] = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
-            $response['data'] = [500000, 750000, 600000, 900000, 800000, 950000];
-        }
-    } else {
-        // Fallback data if query fails
-        $response['labels'] = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
-        $response['data'] = [500000, 750000, 600000, 900000, 800000, 950000];
-    }
-    
-    echo json_encode($response);
-    break;
-
-    case 'get_monthly_trends_data':
-        if ($role !== 'admin') json_error('Access denied.');
-        
-        $response = ['labels' => [], 'loans_issued' => [], 'payments' => []];
-        
-        $sql_loans = "SELECT 
-            DATE_FORMAT(approval_date, '%Y-%m') as month,
-            COUNT(*) as loans_count,
-            SUM(loan_amount) as total_issued
-            FROM loans 
-            WHERE approval_date IS NOT NULL 
-            AND approval_date >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH)
-            GROUP BY YEAR(approval_date), MONTH(approval_date) 
-            ORDER BY YEAR(approval_date), MONTH(approval_date)";
-            
-        $sql_payments = "SELECT 
-            DATE_FORMAT(payment_date, '%Y-%m') as month,
-            SUM(payment_amount) as total_payments
-            FROM payments 
-            WHERE payment_date >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH)
-            GROUP BY YEAR(payment_date), MONTH(payment_date) 
-            ORDER BY YEAR(payment_date), MONTH(payment_date)";
-        
-        $result_loans = $mysqli->query($sql_loans);
-        $result_payments = $mysqli->query($sql_payments);
-        
-        $loans_data = [];
-        $payments_data = [];
-        
-        if ($result_loans) {
-            while ($row = $result_loans->fetch_assoc()) {
-                $month = $row['month'];
-                $loans_data[$month] = (float)$row['total_issued'];
-                if (!in_array($month, $response['labels'])) {
-                    $response['labels'][] = $month;
+            if ($result_loans) {
+                while ($row = $result_loans->fetch_assoc()) {
+                    $month = $row['month'];
+                    $loans_data[$month] = (float)$row['total_issued'];
+                    if (!in_array($month, $response['labels'])) {
+                        $response['labels'][] = $month;
+                    }
                 }
             }
-        }
-        
-        if ($result_payments) {
-            while ($row = $result_payments->fetch_assoc()) {
-                $month = $row['month'];
-                $payments_data[$month] = (float)$row['total_payments'];
-                if (!in_array($month, $response['labels'])) {
-                    $response['labels'][] = $month;
+            
+            if ($result_payments) {
+                while ($row = $result_payments->fetch_assoc()) {
+                    $month = $row['month'];
+                    $payments_data[$month] = (float)$row['total_payments'];
+                    if (!in_array($month, $response['labels'])) {
+                        $response['labels'][] = $month;
+                    }
                 }
             }
-        }
-        
-        sort($response['labels']);
-        
-        foreach ($response['labels'] as $month) {
-            $response['loans_issued'][] = $loans_data[$month] ?? 0;
-            $response['payments'][] = $payments_data[$month] ?? 0;
-        }
-        
-        echo json_encode($response);
-        break;
-
-    case 'get_risk_analysis_data':
-        if ($role !== 'admin') json_error('Access denied.');
-        
-        $response = ['labels' => ['Low Risk', 'Medium Risk', 'High Risk'], 'data' => [0, 0, 0]];
-        
-        $sql = "SELECT 
-            CASE 
-                WHEN DATEDIFF(CURDATE(), next_payment_date) <= 7 THEN 'Low Risk'
-                WHEN DATEDIFF(CURDATE(), next_payment_date) BETWEEN 8 AND 30 THEN 'Medium Risk'
-                ELSE 'High Risk'
-            END as risk_level,
-            COUNT(*) as loan_count
-            FROM loans 
-            WHERE loan_status = 'Active' 
-            AND next_payment_date IS NOT NULL
-            GROUP BY risk_level";
             
-        $result = $mysqli->query($sql);
-        if ($result) {
-            $risk_data = [];
-            while ($row = $result->fetch_assoc()) {
-                $risk_data[$row['risk_level']] = (int)$row['loan_count'];
+            sort($response['labels']);
+            
+            foreach ($response['labels'] as $month) {
+                $response['loans_issued'][] = $loans_data[$month] ?? 0;
+                $response['payments'][] = $payments_data[$month] ?? 0;
             }
             
-            $response['data'] = [
-                $risk_data['Low Risk'] ?? 0,
-                $risk_data['Medium Risk'] ?? 0,
-                $risk_data['High Risk'] ?? 0
-            ];
-        }
-        
-        echo json_encode($response);
-        break;
+            echo json_encode($response);
+            break;
 
-    case 'get_loans_payments_data':
-        if ($role !== 'admin') json_error('Access denied.');
-        
-        $response = ['labels' => ['Active', 'Paid', 'Overdue', 'Pending'], 'data' => []];
-        
-        $sql = "SELECT 
-            loan_status,
-            COUNT(*) as status_count
-            FROM loans 
-            GROUP BY loan_status";
+        case 'get_risk_analysis_data':
+            if ($role !== 'admin') json_error('Access denied.');
             
-        $result = $mysqli->query($sql);
-        if ($result) {
-            $status_data = [];
-            while ($row = $result->fetch_assoc()) {
-                $status_data[$row['loan_status']] = (int)$row['status_count'];
+            $response = ['labels' => ['Low Risk', 'Medium Risk', 'High Risk'], 'data' => [0, 0, 0]];
+            
+            $sql = "SELECT 
+                CASE 
+                    WHEN DATEDIFF(CURDATE(), next_payment_date) <= 7 THEN 'Low Risk'
+                    WHEN DATEDIFF(CURDATE(), next_payment_date) BETWEEN 8 AND 30 THEN 'Medium Risk'
+                    ELSE 'High Risk'
+                END as risk_level,
+                COUNT(*) as loan_count
+                FROM loans 
+                WHERE loan_status = 'Active' 
+                AND next_payment_date IS NOT NULL
+                GROUP BY risk_level";
+                
+            $result = $mysqli->query($sql);
+            if ($result) {
+                $risk_data = [];
+                while ($row = $result->fetch_assoc()) {
+                    $risk_data[$row['risk_level']] = (int)$row['loan_count'];
+                }
+                
+                $response['data'] = [
+                    $risk_data['Low Risk'] ?? 0,
+                    $risk_data['Medium Risk'] ?? 0,
+                    $risk_data['High Risk'] ?? 0
+                ];
             }
             
-            $response['data'] = [
-                $status_data['Active'] ?? 0,
-                $status_data['Paid'] ?? 0,
-                $status_data['Overdue'] ?? 0,
-                $status_data['Pending'] ?? 0
-            ];
-        }
-        
-        echo json_encode($response);
-        $mysqli->close();
-        exit;
+            echo json_encode($response);
+            break;
+
+        case 'get_loans_payments_data':
+            if ($role !== 'admin') json_error('Access denied.');
+            
+            $response = ['labels' => ['Active', 'Paid', 'Overdue', 'Pending'], 'data' => []];
+            
+            $sql = "SELECT 
+                loan_status,
+                COUNT(*) as status_count
+                FROM loans 
+                GROUP BY loan_status";
+                
+            $result = $mysqli->query($sql);
+            if ($result) {
+                $status_data = [];
+                while ($row = $result->fetch_assoc()) {
+                    $status_data[$row['loan_status']] = (int)$row['status_count'];
+                }
+                
+                $response['data'] = [
+                    $status_data['Active'] ?? 0,
+                    $status_data['Paid'] ?? 0,
+                    $status_data['Overdue'] ?? 0,
+                    $status_data['Pending'] ?? 0
+                ];
+            }
+            
+            echo json_encode($response);
+            $mysqli->close();
+            exit;
         break;
 
     default:
