@@ -587,11 +587,12 @@ function populateClientsTable(searchTerm = '') {
     const filteredClients = clientsData.filter(c => 
         (c.c_firstname || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
         (c.c_lastname || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (c.member_id || '').toLowerCase().includes(searchTerm.toLowerCase())
+        (c.member_id || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (c.c_email || '').toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     if (filteredClients.length === 0) {
-        clientsBody.html('<tr><td colspan="5" class="text-center py-4 text-gray-500">No clients found.</td></tr>');
+        clientsBody.html('<tr><td colspan="6" class="text-center py-4 text-gray-500">No clients found.</td></tr>');
         return;
     }
 
@@ -601,7 +602,9 @@ function populateClientsTable(searchTerm = '') {
             .reduce((sum, l) => sum + parseFloat(l.current_balance || 0), 0);
         
         let statusBadge = '';
-        if (outstanding > 0) {
+        if (client.c_status === 'Deactivated' || client.member_id.endsWith('-D')) {
+            statusBadge = `<span class="status-badge bg-red-100 text-red-800">Deactivated</span>`;
+        } else if (outstanding > 0) {
             statusBadge = `<span class="status-badge bg-blue-100 text-blue-800">Active Loan</span>`;
         } else {
             statusBadge = `<span class="status-badge bg-green-100 text-green-800">No Loan</span>`;
@@ -611,6 +614,7 @@ function populateClientsTable(searchTerm = '') {
             <tr>
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${client.member_id}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${client.c_firstname} ${client.c_lastname}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${client.c_email}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-semibold">${formatCurrency(outstanding)}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm">${client.c_branch || 'N/A'}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
@@ -618,10 +622,21 @@ function populateClientsTable(searchTerm = '') {
                             class="text-blue-600 hover:text-blue-900 mx-1">
                         <i class="fas fa-eye"></i>
                     </button>
+                    ${(client.c_status !== 'Deactivated' && !client.member_id.endsWith('-D')) ? `
                     <button onclick="showNewLoanModal(${client.client_id}, '${client.c_firstname} ${client.c_lastname}')" 
                             class="text-green-600 hover:text-green-900 mx-1">
                         <i class="fas fa-money-bill"></i>
                     </button>
+                    <button onclick="deactivateClientAccount(${client.client_id})" 
+                            class="text-red-600 hover:text-red-900 mx-1">
+                        <i class="fas fa-user-slash"></i>
+                    </button>
+                    ` : `
+                    <button onclick="reactivateClientAccount(${client.client_id})" 
+                            class="text-green-600 hover:text-green-900 mx-1">
+                        <i class="fas fa-user-check"></i>
+                    </button>
+                    `}
                 </td>
             </tr>
         `;
@@ -629,6 +644,7 @@ function populateClientsTable(searchTerm = '') {
         clientsBody.append(row);
     });
 }
+
 
 function populateLoansTable(searchTerm = '') {
     const loansBody = $('#loansTableBody');
@@ -744,7 +760,79 @@ async function fetchPaymentHistory(branch = 'all', limit = 20) {
     }
 }
 
-// Form Handlers
+// Used to deactivate/reactivate client accounts in the list
+async function deactivateClientAccount(clientId) {
+    const client = clientsData.find(c => c.client_id == clientId);
+    if (!client) {
+        showMessageModal('Error', 'Client not found.', 'error');
+        return;
+    }
+    
+    showMessageModal('Confirm Deactivation', `Are you sure you want to deactivate ${client.c_firstname} ${client.c_lastname} (${client.member_id})? This action cannot be undone if the client has active loans.`, 'info');
+    
+    $('#closeAdminMessageModal').off('click').on('click', async function() {
+        $('#adminMessageModal').addClass('hidden');
+        
+        try {
+            const formData = new FormData();
+            formData.append('action', 'deactivate_client');
+            formData.append('client_id', clientId);
+
+            const response = await fetch(API_URL, { method: 'POST', body: formData });
+            const result = await response.json();
+
+            if (result.success) {
+                showMessageModal('Account Deactivated!', result.message, 'success');
+                fetchAdminData();
+            } else {
+                showMessageModal('Deactivation Failed', result.message || 'An unexpected error occurred.', 'error');
+            }
+        } catch (error) {
+            showMessageModal('Network Error', 'Could not connect to the server.', 'error');
+        } finally {
+            $('#closeAdminMessageModal').off('click').on('click', function() {
+                $('#adminMessageModal').addClass('hidden');
+            });
+        }
+    });
+}
+
+async function reactivateClientAccount(clientId) {
+    const client = clientsData.find(c => c.client_id == clientId);
+    if (!client) {
+        showMessageModal('Error', 'Client not found.', 'error');
+        return;
+    }
+    
+    showMessageModal('Confirm Reactivation', `Are you sure you want to reactivate ${client.c_firstname} ${client.c_lastname}?`, 'info');
+    
+    $('#closeAdminMessageModal').off('click').on('click', async function() {
+        $('#adminMessageModal').addClass('hidden');
+        
+        try {
+            const formData = new FormData();
+            formData.append('action', 'reactivate_client');
+            formData.append('client_id', clientId);
+
+            const response = await fetch(API_URL, { method: 'POST', body: formData });
+            const result = await response.json();
+
+            if (result.success) {
+                showMessageModal('Account Reactivated!', result.message, 'success');
+                fetchAdminData();
+            } else {
+                showMessageModal('Reactivation Failed', result.message || 'An unexpected error occurred.', 'error');
+            }
+        } catch (error) {
+            showMessageModal('Network Error', 'Could not connect to the server.', 'error');
+        } finally {
+            $('#closeAdminMessageModal').off('click').on('click', function() {
+                $('#adminMessageModal').addClass('hidden');
+            });
+        }
+    });
+}
+
 async function handleAddClient(e) {
     e.preventDefault();
     const submitBtn = $('#addClientSubmitBtn');
@@ -752,6 +840,7 @@ async function handleAddClient(e) {
     submitBtn.html('<i class="fas fa-spinner fa-spin mr-2"></i> Saving...').prop('disabled', true);
 
     const formData = new FormData(this);
+    formData.append('action', 'add_client');
 
     try {
         const response = await fetch(API_URL, { method: 'POST', body: formData });

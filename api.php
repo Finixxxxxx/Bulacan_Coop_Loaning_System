@@ -31,6 +31,9 @@ $role = $_SESSION['role'] ?? '';
 $user_id = $role === 'client' ? ($_SESSION['client_id'] ?? null) : ($_SESSION['admin_id'] ?? null);
 
 switch ($action) {
+    // ==================
+    // Get Client Data - Client Portal
+    // ==================
     case 'get_client_data':
         if ($role !== 'client') json_error('Access denied for this action.');
     
@@ -66,6 +69,9 @@ switch ($action) {
         echo json_encode($response);
         break;
 
+    // ==================
+    // Submit Loan - Client Portal 
+    // ==================
     case 'submit_loan':
         if ($role !== 'client') json_error('Access denied for this action.');
         
@@ -104,6 +110,9 @@ switch ($action) {
         }
         break;
 
+    // ==================
+    // Get Admin Data - Admin Dashboard
+    // ==================
     case 'get_admin_data':
         if ($role !== 'admin') json_error('Access denied.');
         
@@ -253,7 +262,93 @@ switch ($action) {
         
         echo json_encode($response);
         break;
+    
+    // ==================
+    // Add Client - Admin Dashboard | Client Management
+    // ==================
+    case 'add_client':
+        if ($role !== 'admin' || $_SERVER['REQUEST_METHOD'] !== 'POST') json_error('Access denied.');
+        
+        $firstname = $_POST['c_firstname'] ?? '';
+        $lastname = $_POST['c_lastname'] ?? '';
+        $email = $_POST['c_email'] ?? '';
+        $phone = $_POST['c_phone'] ?? '';
+        $address = $_POST['c_address'] ?? '';
+        $branch = $_POST['c_branch'] ?? '';
 
+        if (empty($firstname) || empty($lastname) || empty($email) || empty($phone) || empty($branch)) {
+            json_error('All required fields must be filled.');
+        }
+
+        // Check if email already exists
+        $sql_check = "SELECT client_id FROM clients WHERE c_email = ?";
+        if ($stmt = $mysqli->prepare($sql_check)) {
+            $stmt->bind_param("s", $email);
+            $stmt->execute();
+            $stmt->store_result();
+            if ($stmt->num_rows > 0) {
+                $stmt->close();
+                json_error('Email address already exists.');
+            }
+            $stmt->close();
+        }
+
+        $member_id = generate_member_id($branch, $mysqli);
+        
+        $plain_password = generate_client_password($lastname, $member_id, $phone);
+        $password_hash = password_hash($plain_password, PASSWORD_DEFAULT);
+
+        $sql_insert = "INSERT INTO clients (member_id, c_firstname, c_lastname, c_email, c_phone, c_address, c_branch, c_password_hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        if ($stmt = $mysqli->prepare($sql_insert)) {
+            $stmt->bind_param("ssssssss", $member_id, $firstname, $lastname, $email, $phone, $address, $branch, $password_hash);
+            if ($stmt->execute()) {
+                echo json_encode([
+                    'success' => true, 
+                    'message' => "Client added successfully! Member ID: $member_id, Temporary Password: $plain_password"
+                ]);
+            } else {
+                json_error('Failed to add client: ' . $stmt->error);
+            }
+            $stmt->close();
+        } else {
+            json_error('Database prepare error: ' . $mysqli->error);
+        }
+        break;
+    // ==================
+    // Deactivate Client - Admin Dashboard | Client Management
+    // ==================
+    case 'deactivate_client':
+        if ($role !== 'admin' || $_SERVER['REQUEST_METHOD'] !== 'POST') json_error('Access denied.');
+        
+        $client_id = $_POST['client_id'] ?? 0;
+        if (!is_numeric($client_id) || $client_id <= 0) json_error('Invalid client ID.');
+
+        if (deactivate_client_account($client_id, $mysqli)) {
+            echo json_encode(['success' => true, 'message' => 'Client account deactivated successfully.']);
+        } else {
+            json_error('Cannot deactivate client. They may have active or pending loans.');
+        }
+        break;
+    // ==================
+    // Re-Activate Client - Admin Dashboard | Client Management
+    // ==================
+    case 'reactivate_client':
+        if ($role !== 'admin' || $_SERVER['REQUEST_METHOD'] !== 'POST') json_error('Access denied.');
+        
+        $client_id = $_POST['client_id'] ?? 0;
+        if (!is_numeric($client_id) || $client_id <= 0) json_error('Invalid client ID.');
+
+        $new_member_id = reactivate_client_member_id($client_id, $mysqli);
+        if ($new_member_id) {
+            echo json_encode(['success' => true, 'message' => "Client reactivated successfully! New Member ID: $new_member_id"]);
+        } else {
+            json_error('Failed to reactivate client.');
+        }
+        break;
+
+    // ==================
+    // Delete Client Data - Admin Dashboard | Client Management
+    // ==================
     case 'delete_client':
         if ($role !== 'admin' || $_SERVER['REQUEST_METHOD'] !== 'POST') json_error('Access denied.');
         
@@ -307,7 +402,10 @@ switch ($action) {
             json_error("Deletion failed: " . $e->getMessage());
         }
         break;
-        
+            
+    // ==================
+    // Approve Loan - Admin Dashboard | Loans & Payments
+    // ==================
     case 'approve_loan':
         if ($role !== 'admin') json_error('Access denied for this action.');
 
@@ -318,6 +416,7 @@ switch ($action) {
         if (empty($loan_id) || empty($rate) || empty($monthly_payment) || !is_numeric($rate) || !is_numeric($monthly_payment)) {
             json_error('Invalid approval details.');
         }
+
         $sql_fetch = "SELECT client_id, loan_amount, term_months FROM loans WHERE loan_id = ? AND loan_status = 'Pending'";
         if ($stmt = $mysqli->prepare($sql_fetch)) {
             $stmt->bind_param("i", $loan_id);
@@ -327,6 +426,19 @@ switch ($action) {
                 $client_id = $loan['client_id'];
                 $current_balance = $loan['loan_amount'];
                 
+                $sql_check_client = "SELECT c_status FROM clients WHERE client_id = ?";
+                if ($stmt_client = $mysqli->prepare($sql_check_client)) {
+                    $stmt_client->bind_param("i", $client_id);
+                    $stmt_client->execute();
+                    $result_client = $stmt_client->get_result();
+                    if ($client = $result_client->fetch_assoc()) {
+                        if ($client['c_status'] === 'Deactivated') {
+                            reactivate_client_member_id($client_id, $mysqli);
+                        }
+                    }
+                    $stmt_client->close();
+                }
+
                 $next_payment_date = date('Y-m-d', strtotime('+30 days'));
 
                 $sql_update = "UPDATE loans SET interest_rate = ?, monthly_payment = ?, loan_status = 'Active', approval_date = NOW(), next_payment_date = ?, current_balance = ? WHERE loan_id = ?";
@@ -353,7 +465,10 @@ switch ($action) {
             json_error("Database prepare error: " . $mysqli->error);
         }
         break;
-        
+    
+    // ==================
+    // Decline Loan - Admin Dashboard | Loans & Payments
+    // ==================
     case 'decline_loan':
         if ($role !== 'admin') json_error('Access denied for this action.');
         
@@ -374,7 +489,10 @@ switch ($action) {
             json_error("Database prepare error: " . $mysqli->error);
         }
         break;
-
+    
+    // ==================
+    // Record Payment - Admin Dashboard | Loans & Payments
+    // ==================
     case 'record_payment':
         if ($role !== 'admin' || $_SERVER['REQUEST_METHOD'] !== 'POST') json_error('Access denied.');
         
@@ -453,7 +571,10 @@ switch ($action) {
             json_error("Payment processing failed: " . $e->getMessage());
         }
         break;
-
+    
+    // ==================
+    // Export Clients as CSV - Admin Dashboard | Client Management
+    // ==================
     case 'export_clients_csv':
         if ($role !== 'admin') json_error('Access denied.');
         
@@ -481,7 +602,10 @@ switch ($action) {
             json_error('No client data to export.');
         }
         break;
-
+    
+    // ==================
+    // Get Payment History - Admin Dashboard | Loans & Payments
+    // ==================
     case 'get_payment_history':
         if ($role !== 'admin') json_error('Access denied.');
 
@@ -536,7 +660,10 @@ switch ($action) {
 
         echo json_encode($response);
         break;
-
+    
+    // ==================
+    // Download Reports - Admin Dashboard | Reports
+    // ==================
     case 'download_report':
         if ($role !== 'admin') json_error('Access denied.');
         
@@ -662,6 +789,10 @@ switch ($action) {
         exit;
         break;
 
+    
+    // ==================
+    // Change the Admin Password - Admin Dashboard | Settings
+    // ==================
     case 'change_admin_password':
         if ($role !== 'admin') json_error('Access denied.');
         
@@ -718,6 +849,10 @@ switch ($action) {
         }
         break;
 
+            
+    // ==================
+    // Backup Database - Admin Dashboard | Settings
+    // ==================
     case 'backup_database':
         if ($role !== 'admin') json_error('Access denied.');
         
@@ -763,200 +898,215 @@ switch ($action) {
         }
         
         break;
+
+    // ==================
+    // Repayment Progress - Admin Dashboard | Overview
+    // ==================
+    case 'get_repayment_progress':
+        if ($role !== 'admin') json_error('Access denied.');
         
-        case 'get_repayment_progress':
-            if ($role !== 'admin') json_error('Access denied.');
-            
-            $response = ['loans' => []];
-            
-            $sql = "SELECT 
-                l.loan_id,
-                l.loan_amount,
-                l.current_balance,
-                l.monthly_payment,
-                l.next_payment_date,
-                CONCAT(c.c_firstname, ' ', c.c_lastname) as client_name,
-                DATEDIFF(l.next_payment_date, CURDATE()) as days_until_due
-            FROM loans l
-            JOIN clients c ON l.client_id = c.client_id
-            WHERE l.loan_status IN ('Active', 'Overdue')
-            ORDER BY l.next_payment_date ASC
-            LIMIT 4";
-            
-            $result = $mysqli->query($sql);
-            if ($result) {
-                while ($row = $result->fetch_assoc()) {
-                    $response['loans'][] = [
-                        'loan_id' => $row['loan_id'],
-                        'loan_amount' => (float)$row['loan_amount'],
-                        'current_balance' => (float)$row['current_balance'],
-                        'monthly_payment' => (float)$row['monthly_payment'],
-                        'next_payment_date' => $row['next_payment_date'],
-                        'client_name' => $row['client_name'],
-                        'days_until_due' => (int)$row['days_until_due']
-                    ];
-                }
-            }
-            
-            echo json_encode($response);
-            break;
-
-        case 'get_upcoming_payments':
-            if ($role !== 'admin') json_error('Access denied.');
-            
-            $response = ['payments' => []];
-            
-            $sql = "SELECT 
-                l.loan_id,
-                l.monthly_payment,
-                l.next_payment_date,
-                CONCAT(c.c_firstname, ' ', c.c_lastname) as client_name,
-                DATEDIFF(l.next_payment_date, CURDATE()) as days_until_due
-            FROM loans l
-            JOIN clients c ON l.client_id = c.client_id
-            WHERE l.loan_status IN ('Active', 'Overdue')
-            AND l.next_payment_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
-            ORDER BY l.next_payment_date ASC
-            LIMIT 10";
-            
-            $result = $mysqli->query($sql);
-            if ($result) {
-                while ($row = $result->fetch_assoc()) {
-                    $response['payments'][] = [
-                        'loan_id' => $row['loan_id'],
-                        'monthly_payment' => (float)$row['monthly_payment'],
-                        'next_payment_date' => $row['next_payment_date'],
-                        'client_name' => $row['client_name'],
-                        'days_until_due' => (int)$row['days_until_due']
-                    ];
-                }
-            }
-            
-            echo json_encode($response);
-            break;
-
-        case 'get_monthly_trends_data':
-            if ($role !== 'admin') json_error('Access denied.');
-            
-            $response = ['labels' => [], 'loans_issued' => [], 'payments' => []];
-            
-            $sql_loans = "SELECT 
-                DATE_FORMAT(approval_date, '%Y-%m') as month,
-                COUNT(*) as loans_count,
-                SUM(loan_amount) as total_issued
-                FROM loans 
-                WHERE approval_date IS NOT NULL 
-                AND approval_date >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH)
-                GROUP BY YEAR(approval_date), MONTH(approval_date) 
-                ORDER BY YEAR(approval_date), MONTH(approval_date)";
-                
-            $sql_payments = "SELECT 
-                DATE_FORMAT(payment_date, '%Y-%m') as month,
-                SUM(payment_amount) as total_payments
-                FROM payments 
-                WHERE payment_date >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH)
-                GROUP BY YEAR(payment_date), MONTH(payment_date) 
-                ORDER BY YEAR(payment_date), MONTH(payment_date)";
-            
-            $result_loans = $mysqli->query($sql_loans);
-            $result_payments = $mysqli->query($sql_payments);
-            
-            $loans_data = [];
-            $payments_data = [];
-            
-            if ($result_loans) {
-                while ($row = $result_loans->fetch_assoc()) {
-                    $month = $row['month'];
-                    $loans_data[$month] = (float)$row['total_issued'];
-                    if (!in_array($month, $response['labels'])) {
-                        $response['labels'][] = $month;
-                    }
-                }
-            }
-            
-            if ($result_payments) {
-                while ($row = $result_payments->fetch_assoc()) {
-                    $month = $row['month'];
-                    $payments_data[$month] = (float)$row['total_payments'];
-                    if (!in_array($month, $response['labels'])) {
-                        $response['labels'][] = $month;
-                    }
-                }
-            }
-            
-            sort($response['labels']);
-            
-            foreach ($response['labels'] as $month) {
-                $response['loans_issued'][] = $loans_data[$month] ?? 0;
-                $response['payments'][] = $payments_data[$month] ?? 0;
-            }
-            
-            echo json_encode($response);
-            break;
-
-        case 'get_risk_analysis_data':
-            if ($role !== 'admin') json_error('Access denied.');
-            
-            $response = ['labels' => ['Low Risk', 'Medium Risk', 'High Risk'], 'data' => [0, 0, 0]];
-            
-            $sql = "SELECT 
-                CASE 
-                    WHEN DATEDIFF(CURDATE(), next_payment_date) <= 7 THEN 'Low Risk'
-                    WHEN DATEDIFF(CURDATE(), next_payment_date) BETWEEN 8 AND 30 THEN 'Medium Risk'
-                    ELSE 'High Risk'
-                END as risk_level,
-                COUNT(*) as loan_count
-                FROM loans 
-                WHERE loan_status = 'Active' 
-                AND next_payment_date IS NOT NULL
-                GROUP BY risk_level";
-                
-            $result = $mysqli->query($sql);
-            if ($result) {
-                $risk_data = [];
-                while ($row = $result->fetch_assoc()) {
-                    $risk_data[$row['risk_level']] = (int)$row['loan_count'];
-                }
-                
-                $response['data'] = [
-                    $risk_data['Low Risk'] ?? 0,
-                    $risk_data['Medium Risk'] ?? 0,
-                    $risk_data['High Risk'] ?? 0
+        $response = ['loans' => []];
+        
+        $sql = "SELECT 
+            l.loan_id,
+            l.loan_amount,
+            l.current_balance,
+            l.monthly_payment,
+            l.next_payment_date,
+            CONCAT(c.c_firstname, ' ', c.c_lastname) as client_name,
+            DATEDIFF(l.next_payment_date, CURDATE()) as days_until_due
+        FROM loans l
+        JOIN clients c ON l.client_id = c.client_id
+        WHERE l.loan_status IN ('Active', 'Overdue')
+        ORDER BY l.next_payment_date ASC
+        LIMIT 4";
+        
+        $result = $mysqli->query($sql);
+        if ($result) {
+            while ($row = $result->fetch_assoc()) {
+                $response['loans'][] = [
+                    'loan_id' => $row['loan_id'],
+                    'loan_amount' => (float)$row['loan_amount'],
+                    'current_balance' => (float)$row['current_balance'],
+                    'monthly_payment' => (float)$row['monthly_payment'],
+                    'next_payment_date' => $row['next_payment_date'],
+                    'client_name' => $row['client_name'],
+                    'days_until_due' => (int)$row['days_until_due']
                 ];
             }
-            
-            echo json_encode($response);
-            break;
-
-        case 'get_loans_payments_data':
-            if ($role !== 'admin') json_error('Access denied.');
-            
-            $response = ['labels' => ['Active', 'Paid', 'Overdue', 'Pending'], 'data' => []];
-            
-            $sql = "SELECT 
-                loan_status,
-                COUNT(*) as status_count
-                FROM loans 
-                GROUP BY loan_status";
-                
-            $result = $mysqli->query($sql);
-            if ($result) {
-                $status_data = [];
-                while ($row = $result->fetch_assoc()) {
-                    $status_data[$row['loan_status']] = (int)$row['status_count'];
-                }
-                
-                $response['data'] = [
-                    $status_data['Active'] ?? 0,
-                    $status_data['Paid'] ?? 0,
-                    $status_data['Overdue'] ?? 0,
-                    $status_data['Pending'] ?? 0
+        }
+        
+        echo json_encode($response);
+        break;
+    
+    // ==================
+    // Upcoming Payments - Admin Dashboard | Overview
+    // ==================
+    case 'get_upcoming_payments':
+        if ($role !== 'admin') json_error('Access denied.');
+        
+        $response = ['payments' => []];
+        
+        $sql = "SELECT 
+            l.loan_id,
+            l.monthly_payment,
+            l.next_payment_date,
+            CONCAT(c.c_firstname, ' ', c.c_lastname) as client_name,
+            DATEDIFF(l.next_payment_date, CURDATE()) as days_until_due
+        FROM loans l
+        JOIN clients c ON l.client_id = c.client_id
+        WHERE l.loan_status IN ('Active', 'Overdue')
+        AND l.next_payment_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
+        ORDER BY l.next_payment_date ASC
+        LIMIT 10";
+        
+        $result = $mysqli->query($sql);
+        if ($result) {
+            while ($row = $result->fetch_assoc()) {
+                $response['payments'][] = [
+                    'loan_id' => $row['loan_id'],
+                    'monthly_payment' => (float)$row['monthly_payment'],
+                    'next_payment_date' => $row['next_payment_date'],
+                    'client_name' => $row['client_name'],
+                    'days_until_due' => (int)$row['days_until_due']
                 ];
             }
+        }
+        
+        echo json_encode($response);
+        break;
+    
+    // ==================
+    // Monthly Trends Data - Admin Dashboard | Reports
+    // ==================
+    case 'get_monthly_trends_data':
+        if ($role !== 'admin') json_error('Access denied.');
+        
+        $response = ['labels' => [], 'loans_issued' => [], 'payments' => []];
+        
+        $sql_loans = "SELECT 
+            DATE_FORMAT(approval_date, '%Y-%m') as month,
+            COUNT(*) as loans_count,
+            SUM(loan_amount) as total_issued
+            FROM loans 
+            WHERE approval_date IS NOT NULL 
+            AND approval_date >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH)
+            GROUP BY YEAR(approval_date), MONTH(approval_date) 
+            ORDER BY YEAR(approval_date), MONTH(approval_date)";
             
-            echo json_encode($response);
-            $mysqli->close();
-            exit;
+        $sql_payments = "SELECT 
+            DATE_FORMAT(payment_date, '%Y-%m') as month,
+            SUM(payment_amount) as total_payments
+            FROM payments 
+            WHERE payment_date >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH)
+            GROUP BY YEAR(payment_date), MONTH(payment_date) 
+            ORDER BY YEAR(payment_date), MONTH(payment_date)";
+        
+        $result_loans = $mysqli->query($sql_loans);
+        $result_payments = $mysqli->query($sql_payments);
+        
+        $loans_data = [];
+        $payments_data = [];
+        
+        if ($result_loans) {
+            while ($row = $result_loans->fetch_assoc()) {
+                $month = $row['month'];
+                $loans_data[$month] = (float)$row['total_issued'];
+                if (!in_array($month, $response['labels'])) {
+                    $response['labels'][] = $month;
+                }
+            }
+        }
+        
+        if ($result_payments) {
+            while ($row = $result_payments->fetch_assoc()) {
+                $month = $row['month'];
+                $payments_data[$month] = (float)$row['total_payments'];
+                if (!in_array($month, $response['labels'])) {
+                    $response['labels'][] = $month;
+                }
+            }
+        }
+        
+        sort($response['labels']);
+        
+        foreach ($response['labels'] as $month) {
+            $response['loans_issued'][] = $loans_data[$month] ?? 0;
+            $response['payments'][] = $payments_data[$month] ?? 0;
+        }
+        
+        echo json_encode($response);
+        break;
+    
+    // ==================
+    // Risk Analysis Data - Admin Dashboard | Reports
+    // ==================
+    case 'get_risk_analysis_data':
+        if ($role !== 'admin') json_error('Access denied.');
+        
+        $response = ['labels' => ['Low Risk', 'Medium Risk', 'High Risk'], 'data' => [0, 0, 0]];
+        
+        $sql = "SELECT 
+            CASE 
+                WHEN DATEDIFF(CURDATE(), next_payment_date) <= 7 THEN 'Low Risk'
+                WHEN DATEDIFF(CURDATE(), next_payment_date) BETWEEN 8 AND 30 THEN 'Medium Risk'
+                ELSE 'High Risk'
+            END as risk_level,
+            COUNT(*) as loan_count
+            FROM loans 
+            WHERE loan_status = 'Active' 
+            AND next_payment_date IS NOT NULL
+            GROUP BY risk_level";
+            
+        $result = $mysqli->query($sql);
+        if ($result) {
+            $risk_data = [];
+            while ($row = $result->fetch_assoc()) {
+                $risk_data[$row['risk_level']] = (int)$row['loan_count'];
+            }
+            
+            $response['data'] = [
+                $risk_data['Low Risk'] ?? 0,
+                $risk_data['Medium Risk'] ?? 0,
+                $risk_data['High Risk'] ?? 0
+            ];
+        }
+        
+        echo json_encode($response);
+        break;
+    
+    // ==================
+    // Loans Payments Data - Admin Dashboard | Loans & Payments
+    // ==================
+    case 'get_loans_payments_data':
+        if ($role !== 'admin') json_error('Access denied.');
+        
+        $response = ['labels' => ['Active', 'Paid', 'Overdue', 'Pending'], 'data' => []];
+        
+        $sql = "SELECT 
+            loan_status,
+            COUNT(*) as status_count
+            FROM loans 
+            GROUP BY loan_status";
+            
+        $result = $mysqli->query($sql);
+        if ($result) {
+            $status_data = [];
+            while ($row = $result->fetch_assoc()) {
+                $status_data[$row['loan_status']] = (int)$row['status_count'];
+            }
+            
+            $response['data'] = [
+                $status_data['Active'] ?? 0,
+                $status_data['Paid'] ?? 0,
+                $status_data['Overdue'] ?? 0,
+                $status_data['Pending'] ?? 0
+            ];
+        }
+        
+        echo json_encode($response);
+        $mysqli->close();
+        exit;
         break;
 
     default:

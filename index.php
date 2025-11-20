@@ -14,7 +14,7 @@ $username_err = $password_err = $login_err = "";
 if($_SERVER["REQUEST_METHOD"] == "POST"){
 
     if(empty(trim($_POST["username"]))){
-        $username_err = "Please enter your Member ID or Phone Number.";
+        $username_err = "Please enter your Email Address.";
     } else{
         $username = trim($_POST["username"]);
     }
@@ -27,10 +27,11 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
 
     if(empty($username_err) && empty($password_err)){
         
-        $sql = "SELECT client_id, member_id, c_firstname, c_lastname, c_phone, c_password_hash FROM clients WHERE member_id = ? OR c_phone = ?";
+        // Check clients first (using email)
+        $sql = "SELECT client_id, member_id, c_firstname, c_lastname, c_email, c_phone, c_password_hash, c_status FROM clients WHERE c_email = ?";
         
         if($stmt = $mysqli->prepare($sql)){
-            $stmt->bind_param("ss", $param_username, $param_username);
+            $stmt->bind_param("s", $param_username);
             
             $param_username = $username;
             
@@ -38,11 +39,12 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                 $stmt->store_result();
                 
                 if($stmt->num_rows == 1){
-                    $stmt->bind_result($client_id, $member_id, $firstname, $lastname, $phone, $hashed_password);
+                    $stmt->bind_result($client_id, $member_id, $firstname, $lastname, $email, $phone, $hashed_password, $status);
                     if($stmt->fetch()){
-                        
-                        $expected_password_string = generate_client_password($lastname, $phone);
-                        if(password_verify($password, $hashed_password)){
+                        // Check if account is deactivated
+                        if (str_ends_with($member_id, '-D') || $status === 'Deactivated') {
+                            $login_err = "Account is deactivated. Please contact administrator.";
+                        } else if(password_verify($password, $hashed_password)){
                             session_regenerate_id();
                             $_SESSION["loggedin"] = true;
                             $_SESSION["client_id"] = $client_id;
@@ -51,11 +53,11 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                             $_SESSION["role"] = "client";
                             header("location: client_portal.php");
                         } else{
-                            echo "<script>console.log(\"Input: $password\", \"Database Stored: $hashed_password\")</script>";
-                            $login_err = "Invalid client username or password.";
+                            $login_err = "Invalid email or password.";
                         }
                     }
                 } else{
+                    // Check admins
                     $sql_admin = "SELECT admin_id, a_username, a_fullname, a_password_hash FROM admins WHERE a_username = ?";
                     if($stmt_admin = $mysqli->prepare($sql_admin)){
                         $stmt_admin->bind_param("s", $param_admin_username);
@@ -74,18 +76,14 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                                         header("location: admin_dashboard.php");
                                         exit;
                                     } else {
-                                        echo "<script>alert(\"Input: $password\", \"Database Stored: $hashed_password\")</script>";
-                                        $login_err = "Invalid admin username or password.";
+                                        $login_err = "Invalid username or password.";
                                     }
                                 }
                             } else {
-                                $login_err = "Invalid admin username or password.";
+                                $login_err = "Invalid email or password.";
                             }
                         }
                         $stmt_admin->close();
-                    }
-                    if(!isset($_SESSION["loggedin"])){
-                        $login_err = "Invalid client or admin username or password.";
                     }
                 }
             } else{
@@ -164,12 +162,12 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
             <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post" id="loginForm" class="space-y-6">
                 
                 <div>
-                    <label for="username" class="block text-sm font-semibold text-gray-700 mb-2">Member ID / Phone Number</label>
+                    <label for="username" class="block text-sm font-semibold text-gray-700 mb-2">Email Address</label>
                     <div class="relative">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <i class="fas fa-user text-gray-400"></i>
+                            <i class="fas fa-envelope text-gray-400"></i>
                         </div>
-                        <input type="text" id="username" name="username" placeholder="Enter ID or Phone" required 
+                        <input type="email" id="username" name="username" placeholder="Enter your email" required 
                             class="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-lg focus:border-primary focus:ring-1 focus:ring-primary transition duration-200 shadow-inner text-gray-800"
                             value="<?php echo $username ?? ''; ?>">
                     </div>
@@ -189,7 +187,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                         </button>
                     </div>
                     <p class="text-xs text-gray-500 mt-2">
-                        <i class="fas fa-info-circle mr-1"></i>Hint: Last name (no spaces) + last 4 digits of phone number.
+                        <i class="fas fa-info-circle mr-1"></i>Hint: Last name (no spaces) + 3 numbers from Member ID + last 4 digits of phone number.
                     </p>
                     <span class="text-xs text-red-500 mt-1 block"><?php echo $password_err; ?></span>
                 </div>

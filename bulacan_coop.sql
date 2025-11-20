@@ -56,15 +56,13 @@ CREATE TABLE `clients` (
   `c_email` varchar(100) DEFAULT NULL,
   `c_phone` varchar(20) NOT NULL,
   `c_address` text DEFAULT NULL,
-  `c_branch` enum('malolos','hagonoy','calumpit','balagtas') NOT NULL,
+  `c_branch` enum('malolos','hagonoy','calumpit','balagtas','marilao','staMaria','plaridel') NOT NULL,
   `c_password_hash` varchar(255) NOT NULL,
-  `c_status` enum('Active','Suspended','Deceased') DEFAULT 'Active',
+  `c_status` enum('Active','Suspended','Deactivated') DEFAULT 'Active',
+  `loan_count` int(11) NOT NULL DEFAULT 0,
   `date_joined` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---
--- Dumping data for table `clients`
---
 -- --------------------------------------------------------
 
 --
@@ -83,12 +81,9 @@ CREATE TABLE `loans` (
   `application_date` timestamp NOT NULL DEFAULT current_timestamp(),
   `approval_date` datetime DEFAULT NULL,
   `next_payment_date` date DEFAULT NULL,
-  `loan_status` enum('Pending','Approved','Active','Paid','Declined') DEFAULT 'Pending'
+  `loan_status` enum('Pending','Active','Paid','Declined','Overdue') DEFAULT 'Pending'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---
--- Dumping data for table `loans`
---
 -- --------------------------------------------------------
 
 --
@@ -105,9 +100,6 @@ CREATE TABLE `payments` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `payments`
---
---
 -- Indexes for dumped tables
 --
 
@@ -123,7 +115,8 @@ ALTER TABLE `admins`
 --
 ALTER TABLE `clients`
   ADD PRIMARY KEY (`client_id`),
-  ADD UNIQUE KEY `member_id` (`member_id`);
+  ADD UNIQUE KEY `member_id` (`member_id`),
+  ADD UNIQUE KEY `c_email` (`c_email`);
 
 --
 -- Indexes for table `loans`
@@ -154,19 +147,19 @@ ALTER TABLE `admins`
 -- AUTO_INCREMENT for table `clients`
 --
 ALTER TABLE `clients`
-  MODIFY `client_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `client_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `loans`
 --
 ALTER TABLE `loans`
-  MODIFY `loan_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `loan_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `payments`
 --
 ALTER TABLE `payments`
-  MODIFY `payment_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `payment_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- Constraints for dumped tables
