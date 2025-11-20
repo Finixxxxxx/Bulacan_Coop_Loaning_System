@@ -22,7 +22,6 @@ function formatCurrency($amount) {
     return '₱' . number_format((float)$amount, 2, '.', ',');
 }
 
-
 $action = $_REQUEST['action'] ?? '';
 if (empty($action)) {
     json_error('No action specified.');
@@ -30,7 +29,6 @@ if (empty($action)) {
 
 $role = $_SESSION['role'] ?? '';
 $user_id = $role === 'client' ? ($_SESSION['client_id'] ?? null) : ($_SESSION['admin_id'] ?? null);
-
 
 switch ($action) {
     case 'get_client_data':
@@ -118,14 +116,12 @@ switch ($action) {
             'pending_loans' => [],
             'payments_today' => 0.00, 
             'payments_yesterday' => 0.00, 
-            'payments_rate_from_yesterday' => 0.00, // TODO: Added
-            'total_outstanding' => 0.00,           // TODO: Added
-            'active_loans_count' => 0,             // TODO: Added
+            'payments_rate_from_yesterday' => 0.00,
+            'total_outstanding' => 0.00,
+            'active_loans_count' => 0,
             'monthly_stats' => [] 
         ];
 
-        // --- 1. OVERVIEW STATS (Total Outstanding & Active Loans) ---
-        // TODO: Changed to active loans only (Active, Overdue)
         $sql_outstanding = "SELECT SUM(current_balance) AS total_outstanding, COUNT(*) AS active_loans_count FROM loans WHERE loan_status IN ('Active', 'Overdue')";
         if ($result = $mysqli->query($sql_outstanding)) {
             $data = $result->fetch_assoc();
@@ -133,7 +129,6 @@ switch ($action) {
             $response['active_loans_count'] = (int) ($data['active_loans_count'] ?? 0);
         }
 
-        // --- 2. PAYMENT STATS (Today, Yesterday, and Rate) ---
         $today = date('Y-m-d');
         $yesterday = date('Y-m-d', strtotime('-1 day'));
 
@@ -147,7 +142,6 @@ switch ($action) {
             $response['payments_yesterday'] = (float) ($result->fetch_assoc()['total_yesterday'] ?? 0);
         }
         
-        // TODO: Calculate rate comparing today with yesterday
         $payments_today = $response['payments_today'];
         $payments_yesterday = $response['payments_yesterday'];
         $rate = 0;
@@ -158,7 +152,6 @@ switch ($action) {
         }
         $response['payments_rate_from_yesterday'] = round($rate, 2);
 
-        // --- 3. MONTHLY STATS ---
         $sql_loan_issued_monthly = "SELECT DATE_FORMAT(approval_date, '%Y-%m') AS month, SUM(loan_amount) AS total_issued FROM loans WHERE approval_date IS NOT NULL AND approval_date >= DATE_SUB(NOW(), INTERVAL 12 MONTH) GROUP BY month ORDER BY month ASC";
         if ($result = $mysqli->query($sql_loan_issued_monthly)) {
             while ($row = $result->fetch_assoc()) {
@@ -173,7 +166,6 @@ switch ($action) {
             }
         }
 
-        // --- 4. CLIENTS LIST (with Branch Filter) ---
         $sql_clients = "SELECT client_id, member_id, c_firstname, c_lastname, c_email, c_phone, c_address, c_branch, c_status FROM clients WHERE 1=1";
         $params = [];
         $types = "";
@@ -198,7 +190,6 @@ switch ($action) {
             error_log("Client statement prep failed: " . $mysqli->error);
         }
 
-        // --- 5. LOANS LIST (with Branch and Status Filter) ---
         $sql_loans = "SELECT l.*, c.c_firstname, c.c_lastname, c.c_branch FROM loans l JOIN clients c ON l.client_id = c.client_id WHERE 1=1";
         $params = [];
         $types = "";
@@ -209,7 +200,6 @@ switch ($action) {
             $params[] = $branch_filter;
         }
 
-        // TODO: Implemented Loan Status Filter for Active & Paid Loan History
         if ($loan_status_filter !== 'all') {
             $sql_loans .= " AND l.loan_status = ?";
             $types .= "s";
@@ -232,7 +222,6 @@ switch ($action) {
             error_log("Loan statement prep failed: " . $mysqli->error);
         }
 
-        // --- 6. PENDING LOANS LIST (with Branch Filter) ---
         $sql_pending = "SELECT l.*, c.c_firstname, c.c_lastname, c.c_branch FROM loans l JOIN clients c ON l.client_id = c.client_id WHERE l.loan_status = 'Pending'";
         $params = [];
         $types = "";
@@ -266,7 +255,6 @@ switch ($action) {
         break;
 
     case 'delete_client':
-        // ... (Existing logic, no change)
         if ($role !== 'admin' || $_SERVER['REQUEST_METHOD'] !== 'POST') json_error('Access denied.');
         
         $client_id = $_POST['client_id'] ?? 0;
@@ -286,15 +274,6 @@ switch ($action) {
         
         $mysqli->begin_transaction();
         try {
-            // Note: Assuming foreign keys in payments and loans reference client_id. 
-            // The payments table in the provided SQL schema uses loan_id as the foreign key, 
-            // so deleting by client_id in payments is incorrect. We must delete payments by loan_id, 
-            // but the original logic deletes by client_id which would only work if a client_id 
-            // column existed in the payments table, which is shown in the previous code but not explicitly 
-            // in the provided schema snippets. I will keep the original logic for payments deletion 
-            // but note the potential schema discrepancy if client_id is not in payments.
-
-            // The original logic is kept for payments and loans deletion for simplicity and to honor the previous structure.
             $sql_payments = "DELETE FROM payments WHERE client_id = ?";
             if ($stmt = $mysqli->prepare($sql_payments)) {
                 $stmt->bind_param("i", $client_id);
@@ -330,75 +309,65 @@ switch ($action) {
         break;
         
     case 'approve_loan':
-        // ... (Existing logic, no change)
-        if ($role !== 'admin' || $_SERVER['REQUEST_METHOD'] !== 'POST') json_error('Access denied.');
-        
-        $loan_id = $_POST['loan_id'] ?? 0;
-        $interest_rate = $_POST['interest_rate'] ?? 0.0;
-        $term_months = $_POST['term_months'] ?? 0;
+        if ($role !== 'admin') json_error('Access denied for this action.');
 
-        if (!is_numeric($loan_id) || $loan_id <= 0 || !is_numeric($interest_rate) || $interest_rate <= 0 || !is_numeric($term_months) || $term_months <= 0) {
-            json_error('Invalid loan details provided for approval.');
+        $loan_id = $_POST['loan_id'] ?? '';
+        $rate = $_POST['interest_rate'] ?? '';
+        $monthly_payment = $_POST['monthly_payment'] ?? '';
+
+        if (empty($loan_id) || empty($rate) || empty($monthly_payment) || !is_numeric($rate) || !is_numeric($monthly_payment)) {
+            json_error('Invalid approval details.');
         }
+        $sql_fetch = "SELECT client_id, loan_amount, term_months FROM loans WHERE loan_id = ? AND loan_status = 'Pending'";
+        if ($stmt = $mysqli->prepare($sql_fetch)) {
+            $stmt->bind_param("i", $loan_id);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            if ($loan = $result->fetch_assoc()) {
+                $client_id = $loan['client_id'];
+                $current_balance = $loan['loan_amount'];
+                
+                $next_payment_date = date('Y-m-d', strtotime('+30 days'));
 
-        $sql_fetch = "SELECT loan_amount, client_id FROM loans WHERE loan_id = ? AND loan_status = 'Pending'";
-        if ($stmt_fetch = $mysqli->prepare($sql_fetch)) {
-            $stmt_fetch->bind_param("i", $loan_id);
-            $stmt_fetch->execute();
-            $result = $stmt_fetch->get_result();
-            if (!$loan = $result->fetch_assoc()) {
+                $sql_update = "UPDATE loans SET interest_rate = ?, monthly_payment = ?, loan_status = 'Active', approval_date = NOW(), next_payment_date = ?, current_balance = ? WHERE loan_id = ?";
+                if ($stmt_update = $mysqli->prepare($sql_update)) {
+                    $stmt_update->bind_param("dssdi", $rate, $monthly_payment, $next_payment_date, $current_balance, $loan_id);
+                    if ($stmt_update->execute()) {
+                        echo json_encode([
+                            'success' => true, 
+                            'message' => 'Loan approved successfully. Monthly payment: ' . $monthly_payment
+                        ]);
+                    } else {
+                        json_error("Database update error: " . $mysqli->error);
+                    }
+                    $stmt_update->close();
+                } else {
+                    json_error("Database prepare error: " . $mysqli->error);
+                }
+
+            } else {
                 json_error('Pending loan not found or already processed.');
             }
-            $stmt_fetch->close();
-        } else {
-            json_error("Database prepare error: " . $mysqli->error);
-        }
-
-        $principal = $loan['loan_amount'];
-
-        if (!function_exists('calculate_monthly_payment')) {
-            json_error('Dependency error: calculate_monthly_payment function not found. Ensure db_config.php is fully loaded.');
-        }
-        $monthly_payment = calculate_monthly_payment($principal, $interest_rate, $term_months);
-        $next_payment_date = date('Y-m-d', strtotime('+1 month'));
-
-        $sql_update = "UPDATE loans SET 
-                            interest_rate = ?, 
-                            term_months = ?, 
-                            monthly_payment = ?, 
-                            current_balance = loan_amount,
-                            approval_date = NOW(),
-                            next_payment_date = ?,
-                            loan_status = 'Active' 
-                            WHERE loan_id = ?";
-        
-        if ($stmt_update = $mysqli->prepare($sql_update)) {
-            $stmt_update->bind_param("didssi", $interest_rate, $term_months, $monthly_payment, $next_payment_date, $loan_id);
-            if ($stmt_update->execute()) {
-                echo json_encode(['success' => true, 'message' => 'Loan approved and set to Active. Monthly Payment: ' . formatCurrency($monthly_payment)]);
-            } else {
-                json_error('Failed to update loan status: ' . $stmt_update->error);
-            }
-            $stmt_update->close();
+            $stmt->close();
         } else {
             json_error("Database prepare error: " . $mysqli->error);
         }
         break;
         
     case 'decline_loan':
-        // ... (Existing logic, no change)
-        if ($role !== 'admin' || $_SERVER['REQUEST_METHOD'] !== 'POST') json_error('Access denied.');
-        $loan_id = $_POST['loan_id'] ?? 0;
-        if (!is_numeric($loan_id) || $loan_id <= 0) json_error('Invalid loan ID.');
+        if ($role !== 'admin') json_error('Access denied for this action.');
+        
+        $loan_id = $_POST['loan_id'] ?? '';
+        
+        if (empty($loan_id)) json_error('Loan ID is required.');
 
-        $sql_update = "UPDATE loans SET loan_status = 'Declined' WHERE loan_id = ? AND loan_status = 'Pending'";
+        $sql_update = "UPDATE loans SET loan_status = 'Declined', approval_date = NOW() WHERE loan_id = ? AND loan_status = 'Pending'";
         if ($stmt = $mysqli->prepare($sql_update)) {
             $stmt->bind_param("i", $loan_id);
-            $stmt->execute();
-            if ($stmt->affected_rows > 0) {
-                echo json_encode(['success' => true, 'message' => 'Loan application declined.']);
+            if ($stmt->execute()) {
+                echo json_encode(['success' => true, 'message' => 'Loan application has been declined.']);
             } else {
-                json_error('Loan not found, already declined, or not pending.');
+                json_error("Database update error: " . $mysqli->error);
             }
             $stmt->close();
         } else {
@@ -407,7 +376,6 @@ switch ($action) {
         break;
 
     case 'record_payment':
-        // ... (Existing logic, no change)
         if ($role !== 'admin' || $_SERVER['REQUEST_METHOD'] !== 'POST') json_error('Access denied.');
         
         $loan_id = $_POST['loan_id'] ?? 0;
@@ -441,16 +409,8 @@ switch ($action) {
                     $new_status = ($final_balance <= 0.01) ? 'Paid' : 'Active';
                     $final_balance = max(0.00, $final_balance);
 
-                    // Determine new next payment date
                     $new_next_payment_date = $new_status == 'Active' ? date('Y-m-d', strtotime($next_payment_date . ' +1 month')) : null;
-                    // Also check for Overdue status transition
-                    if ($new_status == 'Active' && strtotime($new_next_payment_date) < time()) {
-                        // This logic needs to be refined in a scheduled task, but for instant change, we can revert to Active.
-                        // A proper system would have a daily cron job to check and set Overdue status.
-                        // For a simple update upon payment, we'll rely on the existing payment date logic.
-                    }
 
-                    
                     $sql_update = "UPDATE loans SET current_balance = ?, loan_status = ?, next_payment_date = ? WHERE loan_id = ?";
                     if ($stmt_update = $mysqli->prepare($sql_update)) {
                         $stmt_update->bind_param("dssi", $final_balance, $new_status, $new_next_payment_date, $loan_id);
@@ -494,7 +454,7 @@ switch ($action) {
         }
         break;
 
-    case 'export_clients_csv': // TODO: New Action for Export
+    case 'export_clients_csv':
         if ($role !== 'admin') json_error('Access denied.');
         
         $sql = "SELECT member_id, c_firstname, c_lastname, c_email, c_phone, c_address, c_branch, c_status FROM clients ORDER BY client_id ASC";
@@ -508,10 +468,8 @@ switch ($action) {
             
             $output = fopen('php://output', 'w');
             
-            // CSV Header
             fputcsv($output, ['Member ID', 'First Name', 'Last Name', 'Email', 'Phone', 'Address', 'Branch', 'Status']);
             
-            // CSV Data
             while ($row = $result->fetch_assoc()) {
                 fputcsv($output, $row);
             }
@@ -524,7 +482,7 @@ switch ($action) {
         }
         break;
 
-    case 'get_payment_history': // TODO: New Action for Payment History
+    case 'get_payment_history':
         if ($role !== 'admin') json_error('Access denied.');
 
         $branch_filter = $_REQUEST['branch'] ?? 'all';
@@ -547,7 +505,6 @@ switch ($action) {
         $params = [];
         $types = "";
 
-        // Filter the data in the Payments Tab
         if ($branch_filter !== 'all') {
             $sql_payments .= " AND c.c_branch = ?";
             $types .= "s";
@@ -579,7 +536,446 @@ switch ($action) {
 
         echo json_encode($response);
         break;
+
+    case 'download_report':
+        if ($role !== 'admin') json_error('Access denied.');
         
+        $type = $_REQUEST['type'] ?? '';
+        $format = $_REQUEST['format'] ?? 'pdf';
+        $branch = $_REQUEST['branch'] ?? 'all';
+        
+        if (!in_array($type, ['performance', 'client', 'financial'])) {
+            json_error('Invalid report type.');
+        }
+        
+        if (!in_array($format, ['pdf', 'excel', 'csv'])) {
+            json_error('Invalid format.');
+        }
+        
+        $filename = "{$type}_report_" . date('Ymd_His') . ".{$format}";
+        
+        switch ($format) {
+            case 'pdf':
+                header('Content-Type: application/pdf');
+                break;
+            case 'excel':
+                header('Content-Type: application/vnd.ms-excel');
+                break;
+            case 'csv':
+                header('Content-Type: text/csv');
+                break;
+        }
+        
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        
+        switch ($type) {
+            case 'performance':
+                $sql = "SELECT 
+                    DATE_FORMAT(l.approval_date, '%Y-%m') as month,
+                    COUNT(*) as loans_issued,
+                    SUM(l.loan_amount) as total_issued,
+                    SUM(p.payment_amount) as total_collected,
+                    AVG(p.payment_amount) as avg_collection
+                FROM loans l
+                LEFT JOIN payments p ON l.loan_id = p.loan_id
+                WHERE l.approval_date IS NOT NULL";
+                
+                if ($branch !== 'all') {
+                    $sql .= " AND l.client_id IN (SELECT client_id FROM clients WHERE c_branch = '$branch')";
+                }
+                
+                $sql .= " GROUP BY month ORDER BY month DESC";
+                break;
+                
+            case 'client':
+                $sql = "SELECT 
+                    c.member_id,
+                    c.c_firstname,
+                    c.c_lastname,
+                    c.c_phone,
+                    c.c_branch,
+                    COUNT(l.loan_id) as total_loans,
+                    SUM(l.loan_amount) as total_borrowed,
+                    MAX(l.application_date) as last_loan_date
+                FROM clients c
+                LEFT JOIN loans l ON c.client_id = l.client_id";
+                
+                if ($branch !== 'all') {
+                    $sql .= " WHERE c.c_branch = '$branch'";
+                }
+                
+                $sql .= " GROUP BY c.client_id ORDER BY c.c_lastname, c.c_firstname";
+                break;
+                
+            case 'financial':
+                $sql = "SELECT 
+                    'Revenue' as category,
+                    SUM(p.payment_amount) as amount
+                FROM payments p";
+                
+                if ($branch !== 'all') {
+                    $sql .= " WHERE p.client_id IN (SELECT client_id FROM clients WHERE c_branch = '$branch')";
+                }
+                
+                $sql .= " UNION ALL
+                    SELECT 
+                    'Outstanding Loans' as category,
+                    SUM(l.current_balance) as amount
+                    FROM loans l
+                    WHERE l.loan_status IN ('Active', 'Overdue')";
+                    
+                if ($branch !== 'all') {
+                    $sql .= " AND l.client_id IN (SELECT client_id FROM clients WHERE c_branch = '$branch')";
+                }
+                break;
+        }
+        
+        $result = $mysqli->query($sql);
+        
+        if ($format === 'csv') {
+            $output = fopen('php://output', 'w');
+            
+            if ($result && $result->num_rows > 0) {
+                $first = true;
+                while ($row = $result->fetch_assoc()) {
+                    if ($first) {
+                        fputcsv($output, array_keys($row));
+                        $first = false;
+                    }
+                    fputcsv($output, $row);
+                }
+            }
+            fclose($output);
+        } else {
+            echo "Report data for {$type} report in {$format} format\n\n";
+            if ($result && $result->num_rows > 0) {
+                while ($row = $result->fetch_assoc()) {
+                    foreach ($row as $key => $value) {
+                        echo "{$key}: {$value}\n";
+                    }
+                    echo "---\n";
+                }
+            }
+        }
+        
+        $mysqli->close();
+        exit;
+        break;
+
+    case 'change_admin_password':
+        if ($role !== 'admin') json_error('Access denied.');
+        
+        $current_password = $_POST['current_password'] ?? '';
+        $new_password = $_POST['new_password'] ?? '';
+        $confirm_password = $_POST['confirm_password'] ?? '';
+        
+        if (empty($current_password) || empty($new_password) || empty($confirm_password)) {
+            json_error('All password fields are required.');
+        }
+        
+        if ($new_password !== $confirm_password) {
+            json_error('New passwords do not match.');
+        }
+        
+        if (strlen($new_password) < 6) {
+            json_error('New password must be at least 6 characters long.');
+        }
+        
+        $admin_id = $_SESSION['admin_id'];
+        $sql = "SELECT a_password_hash FROM admins WHERE admin_id = ?";
+        if ($stmt = $mysqli->prepare($sql)) {
+            $stmt->bind_param("i", $admin_id);
+            $stmt->execute();
+            $stmt->store_result();
+            if ($stmt->num_rows == 1) {
+                $stmt->bind_result($hashed_password);
+                $stmt->fetch();
+                
+                if (password_verify($current_password, $hashed_password)) {
+                    $new_hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
+                    
+                    $update_sql = "UPDATE admins SET a_password_hash = ? WHERE admin_id = ?";
+                    if ($update_stmt = $mysqli->prepare($update_sql)) {
+                        $update_stmt->bind_param("si", $new_hashed_password, $admin_id);
+                        if ($update_stmt->execute()) {
+                            echo json_encode(['success' => true, 'message' => 'Password changed successfully.']);
+                        } else {
+                            json_error('Failed to update password.');
+                        }
+                        $update_stmt->close();
+                    } else {
+                        json_error('Database error.');
+                    }
+                } else {
+                    json_error('Current password is incorrect.');
+                }
+            } else {
+                json_error('Admin not found.');
+            }
+            $stmt->close();
+        } else {
+            json_error('Database error.');
+        }
+        break;
+
+    case 'backup_database':
+        if ($role !== 'admin') json_error('Access denied.');
+        
+        $backup_file = 'bulacan_coop_backup_' . date('Ymd_His') . '.sql';
+        
+        header('Content-Type: application/octet-stream');
+        header('Content-Disposition: attachment; filename="' . $backup_file . '"');
+        
+        $tables = ['admins', 'clients', 'loans', 'payments'];
+        
+        foreach ($tables as $table) {
+            echo "--\n";
+            echo "-- Table structure for table `$table`\n";
+            echo "--\n\n";
+            
+            $result = $mysqli->query("SHOW CREATE TABLE $table");
+            if ($result) {
+                $row = $result->fetch_assoc();
+                echo $row['Create Table'] . ";\n\n";
+            }
+            
+            echo "--\n";
+            echo "-- Dumping data for table `$table`\n";
+            echo "--\n\n";
+            
+            $result = $mysqli->query("SELECT * FROM $table");
+            if ($result && $result->num_rows > 0) {
+                echo "INSERT INTO `$table` VALUES ";
+                $first = true;
+                while ($row = $result->fetch_assoc()) {
+                    if (!$first) {
+                        echo ",\n";
+                    }
+                    $values = array_map(function($value) use ($mysqli) {
+                        if ($value === null) return 'NULL';
+                        return "'" . $mysqli->real_escape_string($value) . "'";
+                    }, array_values($row));
+                    echo "(" . implode(', ', $values) . ")";
+                    $first = false;
+                }
+                echo ";\n\n";
+            }
+        }
+        
+        break;
+        
+        case 'get_outstanding_chart_data':
+        if ($role !== 'admin') json_error('Access denied.');
+        
+        $filter = $_REQUEST['filter'] ?? 'thisWeek';
+        $response = ['labels' => [], 'data' => []];
+        
+        switch ($filter) {
+            case 'today':
+                $sql = "SELECT 
+                    DATE_FORMAT(payment_date, '%H:00') as hour,
+                    SUM(payment_amount) as total_payments
+                    FROM payments 
+                    WHERE DATE(payment_date) = CURDATE() 
+                    GROUP BY HOUR(payment_date) 
+                    ORDER BY HOUR(payment_date)";
+                break;
+                
+            case 'thisWeek':
+                $sql = "SELECT 
+                    DAYNAME(payment_date) as day,
+                    SUM(payment_amount) as total_payments
+                    FROM payments 
+                    WHERE YEARWEEK(payment_date) = YEARWEEK(CURDATE()) 
+                    GROUP BY DAYOFWEEK(payment_date) 
+                    ORDER BY DAYOFWEEK(payment_date)";
+                break;
+                
+            case 'last30Days':
+                $sql = "SELECT 
+                    DATE(payment_date) as date,
+                    SUM(payment_amount) as total_payments
+                    FROM payments 
+                    WHERE payment_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+                    GROUP BY DATE(payment_date) 
+                    ORDER BY DATE(payment_date)";
+                break;
+                
+            case 'last3Months':
+                $sql = "SELECT 
+                    DATE_FORMAT(payment_date, '%Y-%m') as month,
+                    SUM(payment_amount) as total_payments
+                    FROM payments 
+                    WHERE payment_date >= DATE_SUB(CURDATE(), INTERVAL 3 MONTH)
+                    GROUP BY YEAR(payment_date), MONTH(payment_date) 
+                    ORDER BY YEAR(payment_date), MONTH(payment_date)";
+                break;
+                
+            case 'last6Months':
+                $sql = "SELECT 
+                    DATE_FORMAT(payment_date, '%Y-%m') as month,
+                    SUM(payment_amount) as total_payments
+                    FROM payments 
+                    WHERE payment_date >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
+                    GROUP BY YEAR(payment_date), MONTH(payment_date) 
+                    ORDER BY YEAR(payment_date), MONTH(payment_date)";
+                break;
+                
+            case 'thisYear':
+                $sql = "SELECT 
+                    DATE_FORMAT(payment_date, '%Y-%m') as month,
+                    SUM(payment_amount) as total_payments
+                    FROM payments 
+                    WHERE YEAR(payment_date) = YEAR(CURDATE())
+                    GROUP BY YEAR(payment_date), MONTH(payment_date) 
+                    ORDER BY YEAR(payment_date), MONTH(payment_date)";
+                break;
+                
+            default:
+                $sql = "SELECT 
+                    YEAR(payment_date) as year,
+                    SUM(payment_amount) as total_payments
+                    FROM payments 
+                    GROUP BY YEAR(payment_date) 
+                    ORDER BY YEAR(payment_date)";
+                break;
+        }
+        
+        $result = $mysqli->query($sql);
+        if ($result) {
+            while ($row = $result->fetch_assoc()) {
+                $response['labels'][] = $row[array_keys($row)[0]];
+                $response['data'][] = (float)($row['total_payments'] ?? 0);
+            }
+        }
+        
+        echo json_encode($response);
+        break;
+
+    case 'get_monthly_trends_data':
+        if ($role !== 'admin') json_error('Access denied.');
+        
+        $response = ['labels' => [], 'loans_issued' => [], 'payments' => []];
+        
+        $sql_loans = "SELECT 
+            DATE_FORMAT(approval_date, '%Y-%m') as month,
+            COUNT(*) as loans_count,
+            SUM(loan_amount) as total_issued
+            FROM loans 
+            WHERE approval_date IS NOT NULL 
+            AND approval_date >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH)
+            GROUP BY YEAR(approval_date), MONTH(approval_date) 
+            ORDER BY YEAR(approval_date), MONTH(approval_date)";
+            
+        $sql_payments = "SELECT 
+            DATE_FORMAT(payment_date, '%Y-%m') as month,
+            SUM(payment_amount) as total_payments
+            FROM payments 
+            WHERE payment_date >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH)
+            GROUP BY YEAR(payment_date), MONTH(payment_date) 
+            ORDER BY YEAR(payment_date), MONTH(payment_date)";
+        
+        $result_loans = $mysqli->query($sql_loans);
+        $result_payments = $mysqli->query($sql_payments);
+        
+        $loans_data = [];
+        $payments_data = [];
+        
+        if ($result_loans) {
+            while ($row = $result_loans->fetch_assoc()) {
+                $month = $row['month'];
+                $loans_data[$month] = (float)$row['total_issued'];
+                if (!in_array($month, $response['labels'])) {
+                    $response['labels'][] = $month;
+                }
+            }
+        }
+        
+        if ($result_payments) {
+            while ($row = $result_payments->fetch_assoc()) {
+                $month = $row['month'];
+                $payments_data[$month] = (float)$row['total_payments'];
+                if (!in_array($month, $response['labels'])) {
+                    $response['labels'][] = $month;
+                }
+            }
+        }
+        
+        sort($response['labels']);
+        
+        foreach ($response['labels'] as $month) {
+            $response['loans_issued'][] = $loans_data[$month] ?? 0;
+            $response['payments'][] = $payments_data[$month] ?? 0;
+        }
+        
+        echo json_encode($response);
+        break;
+
+    case 'get_risk_analysis_data':
+        if ($role !== 'admin') json_error('Access denied.');
+        
+        $response = ['labels' => ['Low Risk', 'Medium Risk', 'High Risk'], 'data' => [0, 0, 0]];
+        
+        $sql = "SELECT 
+            CASE 
+                WHEN DATEDIFF(CURDATE(), next_payment_date) <= 7 THEN 'Low Risk'
+                WHEN DATEDIFF(CURDATE(), next_payment_date) BETWEEN 8 AND 30 THEN 'Medium Risk'
+                ELSE 'High Risk'
+            END as risk_level,
+            COUNT(*) as loan_count
+            FROM loans 
+            WHERE loan_status = 'Active' 
+            AND next_payment_date IS NOT NULL
+            GROUP BY risk_level";
+            
+        $result = $mysqli->query($sql);
+        if ($result) {
+            $risk_data = [];
+            while ($row = $result->fetch_assoc()) {
+                $risk_data[$row['risk_level']] = (int)$row['loan_count'];
+            }
+            
+            $response['data'] = [
+                $risk_data['Low Risk'] ?? 0,
+                $risk_data['Medium Risk'] ?? 0,
+                $risk_data['High Risk'] ?? 0
+            ];
+        }
+        
+        echo json_encode($response);
+        break;
+
+    case 'get_loans_payments_data':
+        if ($role !== 'admin') json_error('Access denied.');
+        
+        $response = ['labels' => ['Active', 'Paid', 'Overdue', 'Pending'], 'data' => []];
+        
+        $sql = "SELECT 
+            loan_status,
+            COUNT(*) as status_count
+            FROM loans 
+            GROUP BY loan_status";
+            
+        $result = $mysqli->query($sql);
+        if ($result) {
+            $status_data = [];
+            while ($row = $result->fetch_assoc()) {
+                $status_data[$row['loan_status']] = (int)$row['status_count'];
+            }
+            
+            $response['data'] = [
+                $status_data['Active'] ?? 0,
+                $status_data['Paid'] ?? 0,
+                $status_data['Overdue'] ?? 0,
+                $status_data['Pending'] ?? 0
+            ];
+        }
+        
+        echo json_encode($response);
+        $mysqli->close();
+        exit;
+        break;
+
     default:
         json_error('Invalid action.');
         break;

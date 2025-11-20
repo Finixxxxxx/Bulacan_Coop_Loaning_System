@@ -74,7 +74,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                                         header("location: admin_dashboard.php");
                                         exit;
                                     } else {
-                                        echo "<script>console.log(\"Input: $password\", \"Database Stored: $hashed_password\")</script>";
+                                        echo "<script>alert(\"Input: $password\", \"Database Stored: $hashed_password\")</script>";
                                         $login_err = "Invalid admin username or password.";
                                     }
                                 }

@@ -73,6 +73,26 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
             text-transform: uppercase;
             letter-spacing: 0.05em;
         }
+        .notification-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            max-width: 400px;
+        }
+        .notification {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            border-left: 4px solid;
+            animation: slideInRight 0.3s ease-out;
+        }
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
     </style>
     <script>
         tailwind.config = {
@@ -190,13 +210,12 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                 </div>
             </header>
 
+            <div id="notificationContainer" class="notification-container"></div>
 
             <div id="mainContent" class="space-y-10">
-                <!-- Overview Section -->
                 <section id="overview" class="tab-content">
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                        <!-- Total Clients -->
                         <div id="totalClientsCard" class="stat-card bg-gradient-to-r from-sky-500 to-sky-600 p-6 rounded-xl shadow-lg text-white cursor-pointer" data-tab="clients">
                             <div class="flex items-center justify-between">
                                 <div>
@@ -209,7 +228,6 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                                 </div>
                             </div>
                         </div>
-                        <!-- Total Issued Loan (TODO: Change to active loans only)-->
                         <div class="stat-card bg-gradient-to-r from-rose-500 to-rose-600 p-6 rounded-xl shadow-lg text-white">
                             <div class="flex items-center justify-between">
                                 <div>
@@ -222,7 +240,6 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                                 </div>
                             </div>
                         </div>
-                        <!-- Total Payments Today (TODO: Add a rate comparing today with yesterday rate in percentage) -->
                         <div class="stat-card bg-gradient-to-r from-emerald-500 to-emerald-600 p-6 rounded-xl shadow-lg text-white">
                             <div class="flex items-center justify-between">
                                 <div>
@@ -237,7 +254,6 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                                 </div>
                             </div>
                         </div>
-                        <!-- Pending Loan Applications -->
                         <div id="pendingLoanCard" class="stat-card bg-gradient-to-r from-yellow-500 to-yellow-600 p-6 rounded-xl shadow-lg text-white cursor-pointer" data-tab="loans">
                             <div class="flex items-center justify-between">
                                 <div>
@@ -252,29 +268,25 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                         </div>
                     </div>
                     
-                    <!-- Statistic Charts -->
                     <div class="grid grid-cols-1 lg:grid-cols-4 gap-6"> 
-                        <!-- Total Loans per Branch -->
                         <div class="bg-white p-6 rounded-xl shadow-md lg:col-span-2 card-flat">
                             <h3 class="text-xl font-bold text-gray-800 mb-4 border-b pb-3">Total Loans per Branch</h3>
                             <div style="height: 350px;">
                                 <canvas id="branchChart" style="max-height: 350px;"></canvas>
                             </div>
                         </div>
-                        <!-- TODO: Total Outstanding Balance Line Chart -->
                         <div class="bg-white p-6 rounded-xl shadow-md lg:col-span-2 card-flat">
                             <div class="flex justify-between items-center mb-4">
                                 <h3 class="text-xl font-bold text-gray-800 border-b pb-3">Total Outstanding Balance Overtime</h3>
-                                <select id="outstandingBalanceFilte" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                                <select id="outstandingBalanceFilter" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
                                     <option value="today">Today</option>
-                                    <option value="thisWeek">This Week</option>
-                                    <option value="thisMonth">This Month</option>
+                                    <option value="thisWeek">Last 7 Days</option>
                                     <option value="last30Days">Last 30 Days</option>
                                     <option value="last3Months">Last 3 Months</option>
                                     <option value="last6Months">Last 6 Months</option>
-                                    <option value="thisYear">This Year</option>select>
+                                    <option value="thisYear">This Year</option>
                                     <option value="allTime">All Time</option>
-                                    </select>
+                                </select>
                             </div>
                             <div style="height: 350px;">
                                 <canvas id="totalOutstandingBalanceChart" style="max-height: 350px;"></canvas>
@@ -283,7 +295,6 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                     </div>
                 </section>
 
-                <!-- Client Section -->
                 <section id="clients" class="tab-content hidden">
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                         <div>
@@ -343,7 +354,6 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                     </div>
                 </section>
 
-                <!-- Loans Section -->
                 <section id="loans" class="tab-content hidden">
                     
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
@@ -406,7 +416,6 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                     </div>
                 </section>
 
-                <!-- Payments Section -->
                 <section id="payments" class="tab-content hidden">
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                         <div>
@@ -489,7 +498,6 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                     </div>
                 </section>
                 
-                <!-- Reports Section (TODO: Generate choose from PDF, Excel, or CSV files for reports) -->
                 <section id="reports" class="tab-content hidden">
                     <div class="mb-6">
                         <h2 class="text-2xl font-bold text-gray-900">Reports & Analytics</h2>
@@ -502,24 +510,38 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                                 <div class="p-3 bg-sky-100 rounded-lg">
                                     <i class="fas fa-chart-line text-primary text-2xl"></i>
                                 </div>
-                                <!-- TODO: Download Monthly loan performance and collection rates -->
-                                <button id="downloadPerformanceReport" class="text-primary hover:text-primary-dark">
-                                    <i class="fas fa-download text-xl"></i>
-                                </button>
+                                <div class="flex space-x-2">
+                                    <button onclick="downloadReport('performance', 'pdf')" class="text-red-600 hover:text-red-800">
+                                        <i class="fas fa-file-pdf text-xl"></i>
+                                    </button>
+                                    <button onclick="downloadReport('performance', 'excel')" class="text-green-600 hover:text-green-800">
+                                        <i class="fas fa-file-excel text-xl"></i>
+                                    </button>
+                                    <button onclick="downloadReport('performance', 'csv')" class="text-blue-600 hover:text-blue-800">
+                                        <i class="fas fa-file-csv text-xl"></i>
+                                    </button>
+                                </div>
                             </div>
                             <h3 class="text-lg font-semibold text-gray-900 mb-2">Performance Report</h3>
                             <p class="text-gray-600 text-sm">Monthly loan performance and collection rates</p>
-                        </div>
+                        </div>  
 
                         <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow card-flat">
                             <div class="flex items-center justify-between mb-4">
                                 <div class="p-3 bg-emerald-100 rounded-lg">
                                     <i class="fas fa-users text-emerald-600 text-2xl"></i>
                                 </div>
-                                <!-- TODO: Download Data of client with history of loan -->
-                                <button id="downloadClientReport" class="text-emerald-600 hover:text-emerald-800">
-                                    <i class="fas fa-download text-xl"></i>
-                                </button>
+                                <div class="flex space-x-2">
+                                    <button onclick="downloadReport('client', 'pdf')" class="text-red-600 hover:text-red-800">
+                                        <i class="fas fa-file-pdf text-xl"></i>
+                                    </button>
+                                    <button onclick="downloadReport('client', 'excel')" class="text-green-600 hover:text-green-800">
+                                        <i class="fas fa-file-excel text-xl"></i>
+                                    </button>
+                                    <button onclick="downloadReport('client', 'csv')" class="text-blue-600 hover:text-blue-800">
+                                        <i class="fas fa-file-csv text-xl"></i>
+                                    </button>
+                                </div>
                             </div>
                             <h3 class="text-lg font-semibold text-gray-900 mb-2">Client Report</h3>
                             <p class="text-gray-600 text-sm">Detailed client information and loan history</p>
@@ -530,17 +552,23 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                                 <div class="p-3 bg-purple-100 rounded-lg">
                                     <i class="fas fa-money-bill-wave text-purple-600 text-2xl"></i>
                                 </div>
-                                <!-- TODO: Download the Revenue, expenses, and profit analysis -->
-                                <button id="downloadFinancialReport" class="text-purple-600 hover:text-purple-800">
-                                    <i class="fas fa-download text-xl"></i>
-                                </button>
+                                <div class="flex space-x-2">
+                                    <button onclick="downloadReport('financial', 'pdf')" class="text-red-600 hover:text-red-800">
+                                        <i class="fas fa-file-pdf text-xl"></i>
+                                    </button>
+                                    <button onclick="downloadReport('financial', 'excel')" class="text-green-600 hover:text-green-800">
+                                        <i class="fas fa-file-excel text-xl"></i>
+                                    </button>
+                                    <button onclick="downloadReport('financial', 'csv')" class="text-blue-600 hover:text-blue-800">
+                                        <i class="fas fa-file-csv text-xl"></i>
+                                    </button>
+                                </div>
                             </div>
                             <h3 class="text-lg font-semibold text-gray-900 mb-2">Financial Report</h3>
                             <p class="text-gray-600 text-sm">Revenue, expenses, and profit analysis</p>
                         </div>
                     </div>
 
-                    <!-- TODO: Statistic Charts, monthlyTrendsChart, riskAnalysisChart, and loanAndPaymentsChart -->
                     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 card-flat">
                         <h3 class="text-lg font-semibold text-gray-900 mb-4">
                             <i class="fas fa-chart-area mr-2 text-indigo-600"></i>Advanced Analytics
@@ -555,10 +583,10 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                             <div>
                                 <canvas id="loanAndPaymentsChart" height="200"></canvas>
                             </div>
+                        </div>
                     </div>
                 </section>
 
-                <!-- Settings Section () -->
                 <section id="settings" class="tab-content hidden">
                     <div class="mb-6">
                         <h2 class="text-2xl font-bold text-gray-900">System Settings</h2>
@@ -566,7 +594,6 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                     </div>
 
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <!-- TODO: Make a Stacking pop up notifications on the bottom right for (New Pending Loan, Overdue Loans, New Payments) -->
                         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 card-flat">
                             <h3 class="text-lg font-semibold text-gray-900 mb-4">
                                 <i class="fas fa-bell mr-2 text-yellow-600"></i>Notifications
@@ -575,36 +602,35 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                                 <div class="flex items-center justify-between">
                                     <span class="text-sm font-medium text-gray-700">New Pending Loan</span>
                                     <label class="relative inline-flex items-center cursor-pointer">
-                                        <input type="checkbox" checked class="sr-only peer">
+                                        <input type="checkbox" checked class="sr-only peer" id="notifPendingLoan">
                                         <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-light rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                                     </label>
                                 </div>
                                 <div class="flex items-center justify-between">
                                     <span class="text-sm font-medium text-gray-700">Overdue Loan Alerts</span>
                                     <label class="relative inline-flex items-center cursor-pointer">
-                                        <input type="checkbox" checked class="sr-only peer">
+                                        <input type="checkbox" checked class="sr-only peer" id="notifOverdueLoan">
                                         <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-light rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                                     </label>
                                 </div>
                                 <div class="flex items-center justify-between">
                                     <span class="text-sm font-medium text-gray-700">New Payments</span>
                                     <label class="relative inline-flex items-center cursor-pointer">
-                                        <input type="checkbox" class="sr-only peer">
+                                        <input type="checkbox" class="sr-only peer" id="notifNewPayment">
                                         <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-light rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                                     </label>
                                 </div>
                             </div>
                         </div>
-                        <!-- TODO: Change the logged in admin password and download the whole database schema with the backup data into .sql file -->
                         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 card-flat">
                             <h3 class="text-lg font-semibold text-gray-900 mb-4">
                                 <i class="fas fa-shield-alt mr-2 text-emerald-600"></i>Security
                             </h3>
                             <div class="space-y-4">
-                                <button class="w-full bg-primary text-white py-2 px-4 rounded-lg hover:bg-primary-dark transition-colors">
+                                <button id="changePasswordBtn" class="w-full bg-primary text-white py-2 px-4 rounded-lg hover:bg-primary-dark transition-colors">
                                     <i class="fas fa-key mr-2"></i>Change Password
                                 </button>
-                                <button class="w-full bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors">
+                                <button id="backupDataBtn" class="w-full bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors">
                                     <i class="fas fa-download mr-2"></i>Backup Data
                                 </button>
                             </div>
@@ -616,7 +642,6 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
         </main>
     </div>
 
-    <!-- Add New Client Modal -->
     <div id="addClientModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-60 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
         <div class="relative w-full max-w-lg shadow-2xl rounded-2xl bg-white p-6 sm:p-8 space-y-6 transform transition-all duration-300 ease-out scale-95 modal-content">
             <h3 class="text-2xl font-bold text-gray-900 border-b pb-3 mb-4"><i class="fas fa-user-plus"></i> Add New Client</h3>
@@ -665,7 +690,6 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
         </div>
     </div>
 
-    <!-- Approve Loan Modal -->
     <div id="approveLoanModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-60 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
         <div class="relative w-full max-w-md shadow-2xl rounded-2xl bg-white p-6 sm:p-8 space-y-6 transform transition-all duration-300 ease-out scale-95 modal-content">
             <h3 class="text-2xl font-bold text-gray-900 border-b pb-3 mb-4">Approve Loan Application</h3>
@@ -697,7 +721,6 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
         </div>
     </div>
 
-    <!-- Collector QR Scanner Modal (TODO: Open Camera and scan the generated QR from the client, in that qr, it will contain the loan id and the payment amount which will automatically be deducted when scaned with this modal) -->
     <div id="qrScannerModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-60 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
         <div class="relative w-full max-w-sm shadow-2xl rounded-2xl bg-white p-6 sm:p-8 space-y-6 transform transition-all duration-300 ease-out scale-95 modal-content">
             <h3 class="text-2xl font-bold text-gray-900 border-b pb-3 mb-4">Record Payment (Manual/QR)</h3>
@@ -739,7 +762,6 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
         </div>
     </div>
 
-    <!-- New Loan Modal -->
     <div id="newLoanModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-60 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
         <div class="relative p-6 border w-full max-w-md shadow-2xl rounded-2xl bg-white transform scale-100 transition-transform">
             <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">
@@ -774,7 +796,6 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
         </div>
     </div>
 
-    <!-- Client Details Modal -->
     <div id="clientDetailsModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-60 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
         <div class="relative p-6 border w-full max-w-md shadow-2xl rounded-2xl bg-white transform scale-100 transition-transform">
             <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">
@@ -840,7 +861,6 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
         </div>
     </div>
     
-    <!-- Loan Details Modal -->
     <div id="loanDetailsModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-60 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
         <div class="relative p-6 border w-full max-w-md shadow-2xl rounded-2xl bg-white transform scale-100 transition-transform">
             <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">
@@ -906,8 +926,37 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
             </div>
         </div>
     </div>
+
+    <div id="changePasswordModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-60 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+        <div class="relative w-full max-w-md shadow-2xl rounded-2xl bg-white p-6 sm:p-8 space-y-6 transform transition-all duration-300 ease-out scale-95 modal-content">
+            <h3 class="text-2xl font-bold text-gray-900 border-b pb-3 mb-4">Change Password</h3>
+            <form id="changePasswordForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
+                    <input type="password" name="current_password" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+                    <input type="password" name="new_password" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
+                    <input type="password" name="confirm_password" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition">
+                </div>
+                <div id="changePasswordMessage" class="hidden p-3 text-center rounded-lg text-sm font-medium"></div>
+                <div class="flex justify-end space-x-3 pt-4 border-t mt-6">
+                    <button type="button" id="closeChangePasswordModal" class="bg-gray-200 text-gray-700 py-2.5 px-5 rounded-lg hover:bg-gray-300 transition-colors font-medium">
+                        Cancel
+                    </button>
+                    <button type="submit" id="changePasswordSubmitBtn" class="bg-primary text-white py-2.5 px-5 rounded-lg hover:bg-primary-dark transition-colors font-semibold shadow-lg shadow-primary/30">
+                        <i class="fas fa-key mr-2"></i> Change Password
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
-    
         document.addEventListener('DOMContentLoaded', () => {
             const sidebar = document.getElementById('sidebar');
             const sidebarOverlay = document.getElementById('sidebarOverlay');
@@ -917,7 +966,6 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
             const allTabs = document.querySelectorAll('.tab-content');
             const allLinks = document.querySelectorAll('.sidebar-nav-item');
             
-        
             function openSidebar() {
                 sidebar.classList.remove('-translate-x-full');
                 sidebarOverlay.classList.remove('hidden');
@@ -954,7 +1002,6 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                     pageTitle.textContent = title;
                 }
                 
-            
                 if (window.innerWidth < 1024) {
                     closeSidebarFn();
                 }
@@ -972,7 +1019,6 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                 });
             });
 
-        
             document.getElementById('totalClientsCard').addEventListener('click', (e) => {
                 e.preventDefault();
                 window.location.hash = 'clients';
@@ -985,7 +1031,6 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                 switchTab('loans');
             });
 
-            // Show Message Modal
             function showMessageModal(title, message, type = 'success') {
                 const modal = document.getElementById('adminMessageModal');
                 const modalTitle = document.getElementById('adminModalTitle');
@@ -1013,7 +1058,24 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
             }
             window.showMessageModal = showMessageModal;
 
-            // Show New Loan Modal
+            function showNotification(message, type = 'info') {
+                const container = document.getElementById('notificationContainer');
+                const notification = document.createElement('div');
+                notification.className = `notification border-l-${type === 'success' ? 'green' : type === 'warning' ? 'yellow' : type === 'error' ? 'red' : 'blue'}-500`;
+                notification.innerHTML = `
+                    <div class="flex items-center">
+                        <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'warning' ? 'exclamation-triangle' : type === 'error' ? 'times-circle' : 'info-circle'} text-${type === 'success' ? 'green' : type === 'warning' ? 'yellow' : type === 'error' ? 'red' : 'blue'}-500 mr-3"></i>
+                        <span class="text-sm font-medium">${message}</span>
+                    </div>
+                `;
+                container.appendChild(notification);
+                
+                setTimeout(() => {
+                    notification.remove();
+                }, 5000);
+            }
+            window.showNotification = showNotification;
+
             function showNewLoanModal(clientId, clientName) {
                 const modal = document.getElementById('newLoanModal');
                 const modalClientId = document.getElementById('newLoanClientId');
@@ -1027,7 +1089,6 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
             }
             window.showNewLoanModal = showNewLoanModal;
             
-            // Show Client Details Modal
             function showClientDetailsModal(clientId, clientName, clientEmail, clientPhone, clientAddress, clientBranch, clientDateJoined) {
                 const modal = document.getElementById('clientDetailsModal');
                 const modalClientId = document.getElementById('clientMemberID');
@@ -1047,13 +1108,11 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                 modalClientBranch.textContent = clientBranch.charAt(0).toUpperCase() + clientBranch.slice(1);;
                 modalClientDateJoined.textContent = clientDateJoined;
                 
-
                 closeBtn.onclick = () => modal.classList.add('hidden');
                 modal.classList.remove('hidden');
             }
             window.showClientDetailsModal = showClientDetailsModal;
 
-            // Show Loan Details Modal
             function showLoanDetailsModal(loanId, loanStatus, loanAmount, loanBalance, loanMonthly, loanClientName, loanPurpose) {
                 const modal = document.getElementById('loanDetailsModal');
                 const modalLoanId = document.getElementById('loanId');
@@ -1098,12 +1157,26 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                 }
             }
             window.toggleModal = toggleModal;
+
+            document.getElementById('changePasswordBtn').addEventListener('click', () => {
+                document.getElementById('changePasswordModal').classList.remove('hidden');
+            });
+
+            document.getElementById('closeChangePasswordModal').addEventListener('click', () => {
+                document.getElementById('changePasswordModal').classList.add('hidden');
+            });
+
+            document.getElementById('backupDataBtn').addEventListener('click', () => {
+                window.location.href = 'api.php?action=backup_database';
+            });
             
         });
-    </script>
 
-    <script>
-        
+        function downloadReport(type, format) {
+            const branch = document.getElementById('branchSelector').value || 'all';
+            window.location.href = `api.php?action=download_report&type=${type}&format=${format}&branch=${branch}`;
+        }
+        window.downloadReport = downloadReport;
     </script>
 </body>
 </html>

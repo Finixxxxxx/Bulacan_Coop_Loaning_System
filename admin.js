@@ -3,9 +3,13 @@ const API_URL = 'api.php';
         let loansData = [];
         let pendingLoans = [];
         let branchChartInstance = null;
+        let totalOutstandingBalanceChartInstance = null;
+        let monthlyTrendsChartInstance = null;
+        let riskAnalysisChartInstance = null;
+        let loansAndPaymentsChartInstance = null;
+        const branches = ['malolos','hagonoy','calumpit','balagtas', 'marilao', 'stamaria', 'plaridel'];
         let adminStats = {};
 
-        // If a global showMessageModal wasn't defined earlier, define a fallback.
         if (typeof window.showMessageModal === 'undefined') {
             window.showMessageModal = function(title, message, type = 'success') {
                 const modal = document.getElementById('adminMessageModal');
@@ -63,8 +67,14 @@ const API_URL = 'api.php';
                 populatePendingLoans();
                 populateClientsTable();
                 populateLoansTable();
-                updateBranchStatistics();
-                fetchPaymentHistory(branch); // refresh payments list too
+                updateBranchChart();
+                updateTotalOustandingChart();
+                updateMonthlyTrendsChart()
+                updateRiskAnalysisChart()
+                updateLoansAndPaymentsChart()
+                fetchPaymentHistory(branch);
+
+                checkNotifications();
 
             } catch (error) {
                 console.error('Fetch error:', error);
@@ -72,9 +82,28 @@ const API_URL = 'api.php';
             }
         }
 
+        function checkNotifications() {
+            const notifPending = document.getElementById('notifPendingLoan').checked;
+            const notifOverdue = document.getElementById('notifOverdueLoan').checked;
+            const notifPayment = document.getElementById('notifNewPayment').checked;
+
+            if (notifPending && pendingLoans.length > 0) {
+                showNotification(`You have ${pendingLoans.length} pending loan applications`, 'warning');
+            }
+
+            const overdueLoans = loansData.filter(l => l.loan_status === 'Overdue');
+            if (notifOverdue && overdueLoans.length > 0) {
+                showNotification(`You have ${overdueLoans.length} overdue loans`, 'error');
+            }
+
+            const todayPayments = adminStats.payments_today || 0;
+            if (notifPayment && todayPayments > 0) {
+                showNotification(`₱${todayPayments.toLocaleString()} collected today`, 'success');
+            }
+        }
+
         function updateDashboardStats() {
             const totalClients = clientsData.length;
-            // Use stats from API when available
             const totalOutstanding = adminStats.total_outstanding ?? loansData.reduce((sum, l) => sum + parseFloat(l.current_balance || 0), 0);
             const activeLoansCount = adminStats.active_loans_count ?? loansData.filter(l => l.loan_status === 'Active' || l.loan_status === 'Overdue').length;
             const pendingCount = pendingLoans.length;
@@ -84,7 +113,6 @@ const API_URL = 'api.php';
             document.getElementById('pendingLoansCount').textContent = pendingCount;
             document.getElementById('totalOutstandingAmount').textContent = formatCurrency(totalOutstanding);
 
-            // Payments today and rate
             const paymentsToday = adminStats.payments_today ?? 0;
             const paymentsRate = adminStats.payments_rate_from_yesterday ?? 0;
             document.getElementById('totalPaymentsToday').textContent = formatCurrency(paymentsToday);
@@ -99,14 +127,12 @@ const API_URL = 'api.php';
                 icon.classList.add('fa-arrow-up', 'text-emerald-600');
             }
 
-            // Pending payments estimate: sum monthly_payment for loans with next_payment_date today (approx)
             const today = new Date().toISOString().slice(0,10);
             const pendingSum = loansData
                 .filter(l => l.loan_status === 'Active' && l.next_payment_date && l.next_payment_date.slice(0,10) === today)
                 .reduce((s, l) => s + parseFloat(l.monthly_payment || 0), 0);
             document.getElementById('totalPendingPaymentsTodal').textContent = formatCurrency(pendingSum);
 
-            // Overdue total
             const overdueSum = loansData
                 .filter(l => l.loan_status === 'Overdue')
                 .reduce((s, l) => s + parseFloat(l.current_balance || 0), 0);
@@ -116,15 +142,13 @@ const API_URL = 'api.php';
             document.getElementById('activeLoansCount').textContent = activeLoansCount;
         }
 
-        function updateBranchStatistics() {
-            // derive branches dynamically from clients or use default list
+        function updateBranchChart() {
             const branchSet = new Set(clientsData.map(c => c.c_branch).filter(Boolean));
-            const branches = Array.from(branchSet.length ? branchSet : ['malolos','hagonoy','calumpit','balagtas']);
+            const branches = Array.from(branchSet.length ? branchSet : ['malolos','hagonoy','calumpit','balagtas', 'marilao', 'stamaria', 'plaridel']);
             const loanCounts = branches.map(branch => 
                 loansData.filter(loan => {
                     const client = clientsData.find(c => c.client_id == loan.client_id);
-                    if (!client) return false;
-                    // count active/paid loans (exclude pending/declined)
+                    if (!client) return false
                     return client.c_branch === branch && loan.loan_status !== 'Pending' && loan.loan_status !== 'Declined';
                 }).length
             );
@@ -160,6 +184,191 @@ const API_URL = 'api.php';
                     }
                 }
             });
+        }
+
+        async function updateTotalOustandingChart(){
+            const chartFilter = document.getElementById("outstandingBalanceFilter").value;
+            
+            try {
+                const response = await fetch(API_URL + '?action=get_outstanding_chart_data&filter=' + encodeURIComponent(chartFilter));
+                const data = await response.json();
+                
+                if (data.error) {
+                    console.error('Chart data error:', data.error);
+                    return;
+                }
+
+                const ctx = document.getElementById('totalOutstandingBalanceChart').getContext('2d');
+                
+                if (totalOutstandingBalanceChartInstance) {
+                    totalOutstandingBalanceChartInstance.destroy();
+                }
+
+                totalOutstandingBalanceChartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: data.labels || [],
+                        datasets: [{
+                            label: 'Total Outstanding Balance',
+                            data: data.data || [],
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return '₱' + (value / 1000).toFixed(0) + 'K';
+                                    }
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Error fetching chart data:', error);
+            }
+        }
+
+        async function updateMonthlyTrendsChart(){
+            try {
+                const response = await fetch(API_URL + '?action=get_monthly_trends_data');
+                const data = await response.json();
+                
+                if (data.error) {
+                    console.error('Monthly trends error:', data.error);
+                    return;
+                }
+
+                const ctx = document.getElementById('monthlyTrendsChart').getContext('2d');
+                
+                if (monthlyTrendsChartInstance) {
+                    monthlyTrendsChartInstance.destroy();
+                }
+
+                monthlyTrendsChartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: data.labels || [],
+                        datasets: [
+                            {
+                                label: 'Loans Issued',
+                                data: data.loans_issued || [],
+                                borderColor: '#3b82f6',
+                                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                                fill: true
+                            },
+                            {
+                                label: 'Payments',
+                                data: data.payments || [],
+                                borderColor: '#10b981',
+                                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                                fill: true
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Error fetching monthly trends:', error);
+            }
+        }
+
+        async function updateRiskAnalysisChart(){
+            try {
+                const response = await fetch(API_URL + '?action=get_risk_analysis_data');
+                const data = await response.json();
+                
+                if (data.error) {
+                    console.error('Risk analysis error:', data.error);
+                    return;
+                }
+
+                const ctx = document.getElementById('riskAnalysisChart').getContext('2d');
+                
+                if (riskAnalysisChartInstance) {
+                    riskAnalysisChartInstance.destroy();
+                }
+
+                riskAnalysisChartInstance = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: data.labels || ['Low Risk', 'Medium Risk', 'High Risk'],
+                        datasets: [{
+                            data: data.data || [65, 25, 10],
+                            backgroundColor: ['#10b981', '#f59e0b', '#ef4444']
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Error fetching risk analysis:', error);
+            }
+        }
+
+        async function updateLoansAndPaymentsChart(){
+            try {
+                const response = await fetch(API_URL + '?action=get_loans_payments_data');
+                const data = await response.json();
+                
+                if (data.error) {
+                    console.error('Loans payments error:', data.error);
+                    return;
+                }
+
+                const ctx = document.getElementById('loanAndPaymentsChart').getContext('2d');
+                
+                if (loansAndPaymentsChartInstance) {
+                    loansAndPaymentsChartInstance.destroy();
+                }
+
+                loansAndPaymentsChartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: data.labels || [],
+                        datasets: [{
+                            label: 'Loan Status',
+                            data: data.data || [],
+                            backgroundColor: ['#3b82f6', '#10b981', '#ef4444', '#f59e0b']
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Error fetching loans payments:', error);
+            }
         }
 
         function populateClientsTable(searchTerm = '') {
@@ -221,7 +430,7 @@ const API_URL = 'api.php';
                 const client = clientsData.find(c => c.client_id == loan.client_id);
                 const name = client ? `${client.c_firstname} ${client.c_lastname}` : '';
                 return name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                       loan.loan_id.toString().includes(searchTerm);
+                    loan.loan_id.toString().includes(searchTerm);
             });
 
             if (filteredLoans.length === 0) {
@@ -318,7 +527,6 @@ const API_URL = 'api.php';
             }
         }
 
-        // Event wiring
         document.getElementById('showAddClientModal').addEventListener('click', () => document.getElementById('addClientModal').classList.remove('hidden'));
         document.getElementById('closeAddClientModal').addEventListener('click', () => document.getElementById('addClientModal').classList.add('hidden'));
 
@@ -359,13 +567,11 @@ const API_URL = 'api.php';
                 return;
             }
 
-
             document.getElementById('loanIdToApprove').value = loanId;
             document.getElementById('approveClientName').textContent = loan.client_name;
             document.getElementById('approveLoanAmount').textContent = formatCurrency(loan.loan_amount);
             document.getElementById('approveLoanTerm').textContent = `${loan.term_months} Months`;
             
-
             const principal = parseFloat(loan.loan_amount);
             const termMonths = parseInt(loan.term_months);
             const annualRate = parseFloat(document.getElementById('approveInterestRate').value);
@@ -403,7 +609,6 @@ const API_URL = 'api.php';
                 : (monthlyPayment.toFixed(2));
         });
 
-
         document.getElementById('closeApproveModal').addEventListener('click', () => document.getElementById('approveLoanModal').classList.add('hidden'));
 
         document.getElementById('approveLoanForm').addEventListener('submit', async function(e) {
@@ -421,9 +626,8 @@ const API_URL = 'api.php';
             formData.append('action', 'approve_loan');
             formData.append('loan_id', loanId);
             formData.append('interest_rate', interestRate);
-            formData.append('term_months', pendingLoans.find(l => l.loan_id == loanId)?.term_months || 0);
+            formData.append('monthly_payment', monthlyPayment);
 
-            // FIX THIS, FALLING TO COULD NOT CONNECT TO THE SERVER
             try {
                 const response = await fetch(API_URL, { method: 'POST', body: formData });
                 const result = await response.json();
@@ -431,7 +635,7 @@ const API_URL = 'api.php';
                 if (result.success) {
                     showMessageModal('Loan Approved!', result.message, 'success');
                     document.getElementById('approveLoanModal').classList.add('hidden');
-                    fetchAdminData(document.getElementById('branchSelector').value);
+                    fetchAdminData();
                 } else {
                     showMessageModal('Approval Failed', result.message || 'An unexpected error occurred.', 'error');
                 }
@@ -455,7 +659,7 @@ const API_URL = 'api.php';
                 `Are you sure you want to decline the loan application for ${loan.client_name} (₱${parseFloat(loan.loan_amount).toLocaleString()})?`, 
                 'info'
             );
-
+            
             document.getElementById('closeAdminMessageModal').onclick = async function() {
                 document.getElementById('adminMessageModal').classList.add('hidden');
                 
@@ -469,7 +673,7 @@ const API_URL = 'api.php';
 
                     if (result.success) {
                         showMessageModal('Loan Declined!', result.message, 'success');
-                        fetchAdminData(document.getElementById('branchSelector').value);
+                        fetchAdminData();
                     } else {
                         showMessageModal('Decline Failed', result.message || 'An unexpected error occurred.', 'error');
                     }
@@ -521,20 +725,46 @@ const API_URL = 'api.php';
             }
         });
 
+        document.getElementById('changePasswordForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const submitBtn = document.getElementById('changePasswordSubmitBtn');
+            const initialBtnText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Changing...';
+            submitBtn.disabled = true;
+
+            const formData = new FormData(this);
+            formData.append('action', 'change_admin_password');
+
+            try {
+                const response = await fetch(API_URL, { method: 'POST', body: formData });
+                const result = await response.json();
+
+                if (result.success) {
+                    showMessageModal('Password Changed!', result.message, 'success');
+                    this.reset();
+                    document.getElementById('changePasswordModal').classList.add('hidden');
+                } else {
+                    showMessageModal('Password Change Failed', result.message || 'An unexpected error occurred.', 'error');
+                }
+            } catch (error) {
+                showMessageModal('Network Error', 'Could not connect to the server.', 'error');
+            } finally {
+                submitBtn.innerHTML = initialBtnText;
+                submitBtn.disabled = false;
+            }
+        });
+
         document.getElementById('clientSearch').addEventListener('input', (e) => populateClientsTable(e.target.value));
         document.getElementById('loanSearch').addEventListener('input', (e) => populateLoansTable(e.target.value));
 
-        // branch filter wiring
         document.getElementById('branchSelector').addEventListener('change', function() {
             const branch = this.value || 'all';
             fetchAdminData(branch);
             fetchPaymentHistory(branch);
         });
 
-        // Export clients CSV
         document.getElementById('exportClientsBtn').addEventListener('click', function() {
             const branch = document.getElementById('branchSelector').value || 'all';
-            // open the CSV download in a new tab/window
             window.location = API_URL + '?action=export_clients_csv&branch=' + encodeURIComponent(branch);
         });
 
@@ -544,7 +774,6 @@ const API_URL = 'api.php';
             sidebar.classList.toggle('-translate-x-full');
         });
 
-        // keep anchor tab handlers consistent with markup
         document.querySelectorAll('.sidebar-nav-item').forEach(tabLink => {
             tabLink.addEventListener('click', function(e) {
                 e.preventDefault();
@@ -570,12 +799,10 @@ const API_URL = 'api.php';
             };
         });
 
-        // initial load
         document.addEventListener('DOMContentLoaded', function() {
             fetchAdminData(document.getElementById('branchSelector').value || 'all');
         });
 
-        // close modals on clicking overlay background
         window.addEventListener('click', function(e) {
             if (e.target.classList && e.target.classList.contains('fixed')) {
                 e.target.classList.add('hidden');
