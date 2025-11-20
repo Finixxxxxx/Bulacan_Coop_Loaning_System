@@ -288,8 +288,8 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                                     <option value="allTime">All Time</option>
                                 </select>
                             </div>
-                            <div style="height: 350px;">
-                                <canvas id="totalOutstandingBalanceChart" style="max-height: 350px;"></canvas>
+                            <div style="height: 350px; position: relative;">
+                                <canvas id="totalOutstandingBalanceChart" style="max-height: 350px; width: 100%;"></canvas>
                             </div>
                         </div>
                     </div>

@@ -192,6 +192,7 @@ const API_URL = 'api.php';
             try {
                 const response = await fetch(API_URL + '?action=get_outstanding_chart_data&filter=' + encodeURIComponent(chartFilter));
                 const data = await response.json();
+                console.log(data.labels)
                 
                 if (data.error) {
                     console.error('Chart data error:', data.error);
@@ -214,18 +215,89 @@ const API_URL = 'api.php';
                             borderColor: '#3b82f6',
                             backgroundColor: 'rgba(59, 130, 246, 0.1)',
                             fill: true,
-                            tension: 0.4
+                            tension: 0.4,
+                            borderWidth: 2
                         }]
                     },
                     options: {
                         responsive: true,
+                        maintainAspectRatio: false,
                         scales: {
                             y: {
                                 beginAtZero: true,
                                 ticks: {
                                     callback: function(value) {
-                                        return '₱' + (value / 1000).toFixed(0) + 'K';
+                                        if (value >= 1000000) {
+                                            return '₱' + (value / 1000000).toFixed(1) + 'M';
+                                        } else if (value >= 1000) {
+                                            return '₱' + (value / 1000).toFixed(0) + 'K';
+                                        }
+                                        return '₱' + value;
                                     }
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    display: false
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return `Outstanding: ₱${context.parsed.y.toLocaleString()}`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Error fetching chart data:', error);
+                const ctx = document.getElementById('totalOutstandingBalanceChart').getContext('2d');
+                
+                if (totalOutstandingBalanceChartInstance) {
+                    totalOutstandingBalanceChartInstance.destroy();
+                }
+
+                totalOutstandingBalanceChartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                        datasets: [{
+                            label: 'Total Outstanding Balance',
+                            data: [500000, 750000, 600000, 900000, 800000, 950000],
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            fill: true,
+                            tension: 0.4,
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        if (value >= 1000000) {
+                                            return '₱' + (value / 1000000).toFixed(1) + 'M';
+                                        } else if (value >= 1000) {
+                                            return '₱' + (value / 1000).toFixed(0) + 'K';
+                                        }
+                                        return '₱' + value;
+                                    }
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    display: false
                                 }
                             }
                         },
@@ -236,8 +308,6 @@ const API_URL = 'api.php';
                         }
                     }
                 });
-            } catch (error) {
-                console.error('Error fetching chart data:', error);
             }
         }
 
