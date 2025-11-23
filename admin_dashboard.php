@@ -93,6 +93,17 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
             from { transform: translateX(100%); opacity: 0; }
             to { transform: translateX(0); opacity: 1; }
         }
+        .modal-overlay {
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+        }
+        .modal-content {
+            animation: modalSlideIn 0.3s ease-out;
+        }
+        @keyframes modalSlideIn {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
     </style>
     <script>
         tailwind.config = {
@@ -213,11 +224,10 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
             <div id="notificationContainer" class="notification-container"></div>
 
             <div id="mainContent" class="space-y-10">
-                <!-- Overview Section -->
-                <section id="overview" class="tab-content">
+                <section id="overview" class="tab-content fade-in">
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                        <div id="totalClientsCard" class="stat-card bg-gradient-to-r from-sky-500 to-sky-600 p-6 rounded-xl shadow-lg text-white cursor-pointer" data-tab="clients">
+                        <div id="totalClients" class="stat-card bg-gradient-to-r from-sky-500 to-sky-600 p-6 rounded-xl shadow-lg text-white cursor-pointer" data-tab="clients">
                             <div class="flex items-center justify-between">
                                 <div>
                                     <p class="text-sky-100 text-sm font-medium">Total Clients</p>
@@ -269,9 +279,7 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                         </div>
                     </div>
                     
-                    <!-- Statistic Charts -->
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6"> 
-                        <!-- Total Loans per Branch -->
                         <div class="bg-white p-6 rounded-xl shadow-md card-flat">
                             <h3 class="text-xl font-bold text-gray-800 mb-4 border-b pb-3">Total Loans per Branch</h3>
                             <div style="height: 350px;">
@@ -279,7 +287,6 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                             </div>
                         </div>
 
-                        <!-- Loan Repayment Progress -->
                         <div class="bg-white p-6 rounded-xl shadow-md card-flat">
                             <div class="flex justify-between items-center mb-4">
                                 <h3 class="text-xl font-bold text-gray-800 border-b pb-3">Loan Repayment Progress</h3>
@@ -296,7 +303,6 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                         </div>
                     </div>
 
-                    <!-- Upcoming Payments -->
                     <div class="bg-white p-6 rounded-xl shadow-md card-flat mt-6">
                         <div class="flex justify-between items-center mb-4">
                             <h3 class="text-xl font-bold text-gray-800 border-b pb-3">Upcoming Payments</h3>
@@ -311,7 +317,7 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                     </div>
                 </section>
 
-                <section id="clients" class="tab-content hidden">
+                <section id="clients" class="tab-content hidden fade-in">
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                         <div>
                             <h2 class="text-2xl font-bold text-gray-900 hidden">Client Management</h2>
@@ -371,7 +377,7 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                     </div>
                 </section>
 
-                <section id="loans" class="tab-content hidden">
+                <section id="loans" class="tab-content hidden fade-in">
                     
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                         <div>
@@ -433,7 +439,7 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                     </div>
                 </section>
 
-                <section id="payments" class="tab-content hidden">
+                <section id="payments" class="tab-content hidden fade-in">
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                         <div>
                             <h2 class="text-2xl font-bold text-gray-900">Payment Management</h2>
@@ -515,7 +521,7 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                     </div>
                 </section>
                 
-                <section id="reports" class="tab-content hidden">
+                <section id="reports" class="tab-content hidden fade-in">
                     <div class="mb-6">
                         <h2 class="text-2xl font-bold text-gray-900">Reports & Analytics</h2>
                         <p class="text-gray-600 text-sm mt-1">Generate comprehensive reports and analytics</p>
@@ -604,7 +610,7 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                     </div>
                 </section>
 
-                <section id="settings" class="tab-content hidden">
+                <section id="settings" class="tab-content hidden fade-in">
                     <div class="mb-6">
                         <h2 class="text-2xl font-bold text-gray-900">System Settings</h2>
                         <p class="text-gray-600 text-sm mt-1">Configure your loan management system</p>
@@ -659,9 +665,15 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
         </main>
     </div>
 
-    <div id="addClientModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-60 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-        <div class="relative w-full max-w-lg shadow-2xl rounded-2xl bg-white p-6 sm:p-8 space-y-6 transform transition-all duration-300 ease-out scale-95 modal-content">
-            <h3 class="text-2xl font-bold text-gray-900 border-b pb-3 mb-4"><i class="fas fa-user-plus"></i> Add New Client</h3>
+    <!-- Add Client Modal -->
+    <div id="addClientModal" class="hidden fixed inset-0 modal-overlay overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+        <div class="relative w-full max-w-lg shadow-2xl rounded-2xl bg-white p-6 sm:p-8 space-y-6 transform modal-content">
+            <div class="flex justify-between items-center border-b pb-4">
+                <h3 class="text-2xl font-bold text-gray-900"><i class="fas fa-user-plus text-primary mr-2"></i> Add New Client</h3>
+                <button id="closeAddClientModal" class="text-gray-400 hover:text-gray-600 transition">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
             <form id="addClientForm" class="space-y-4">
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
@@ -711,9 +723,15 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
         </div>
     </div>
 
-    <div id="approveLoanModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-60 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-        <div class="relative w-full max-w-md shadow-2xl rounded-2xl bg-white p-6 sm:p-8 space-y-6 transform transition-all duration-300 ease-out scale-95 modal-content">
-            <h3 class="text-2xl font-bold text-gray-900 border-b pb-3 mb-4">Approve Loan Application</h3>
+    <!-- Approve Loan Modal -->
+    <div id="approveLoanModal" class="hidden fixed inset-0 modal-overlay overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+        <div class="relative w-full max-w-md shadow-2xl rounded-2xl bg-white p-6 sm:p-8 space-y-6 transform modal-content">
+            <div class="flex justify-between items-center border-b pb-4">
+                <h3 class="text-2xl font-bold text-gray-900"><i class="fas fa-check-circle text-emerald-600 mr-2"></i> Approve Loan Application</h3>
+                <button id="closeApproveModal" class="text-gray-400 hover:text-gray-600 transition">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
             <div id="loanSummary" class="bg-primary/5 p-4 rounded-xl text-sm font-medium space-y-1 border border-primary/20">
                 <p><strong>Client:</strong> <span id="approveClientName" class="text-gray-800"></span></p>
                 <p><strong>Amount:</strong> <span id="approveLoanAmount" class="text-gray-800"></span></p>
@@ -742,9 +760,15 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
         </div>
     </div>
 
-    <div id="qrScannerModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-60 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-        <div class="relative w-full max-w-sm shadow-2xl rounded-2xl bg-white p-6 sm:p-8 space-y-6 transform transition-all duration-300 ease-out scale-95 modal-content">
-            <h3 class="text-2xl font-bold text-gray-900 border-b pb-3 mb-4">Record Payment (Manual/QR)</h3>
+    <!-- QR Scanner Modal -->
+    <div id="qrScannerModal" class="hidden fixed inset-0 modal-overlay overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+        <div class="relative w-full max-w-sm shadow-2xl rounded-2xl bg-white p-6 sm:p-8 space-y-6 transform modal-content">
+            <div class="flex justify-between items-center border-b pb-4">
+                <h3 class="text-2xl font-bold text-gray-900"><i class="fas fa-qrcode text-primary mr-2"></i> Record Payment</h3>
+                <button id="closeQRScannerModal" class="text-gray-400 hover:text-gray-600 transition">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
             <p class="text-sm text-gray-600 mb-4 bg-yellow-50 p-3 rounded-lg border border-yellow-200">
                 <i class="fas fa-info-circle mr-2 text-yellow-600"></i> Manual entry for demo purposes.
             </p>
@@ -770,8 +794,9 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
         </div>
     </div>
     
-    <div id="adminMessageModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-60 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-        <div class="relative p-8 border w-96 shadow-2xl rounded-2xl bg-white transform scale-100 transition-transform">
+    <!-- Admin Message Modal -->
+    <div id="adminMessageModal" class="hidden fixed inset-0 modal-overlay overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+        <div class="relative p-8 border w-96 shadow-2xl rounded-2xl bg-white transform modal-content">
             <div class="text-center">
                 <div id="adminModalIcon" class="mx-auto flex items-center justify-center h-16 w-16 rounded-full mb-4"></div>
                 <h3 id="adminModalTitle" class="text-xl font-bold text-gray-900 mb-2"></h3>
@@ -783,18 +808,44 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
         </div>
     </div>
 
-    <div id="newLoanModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-60 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-        <div class="relative p-6 border w-full max-w-md shadow-2xl rounded-2xl bg-white transform scale-100 transition-transform">
-            <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">
-                <i class="fa-solid fa-hand-holding-dollar text-green-600 mr-1"></i>
-                New Loan
-            </h2>
+    <!-- Confirm Decline Modal -->
+    <div id="confirmDeclineModal" class="hidden fixed inset-0 modal-overlay overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+        <div class="relative p-8 border w-96 shadow-2xl rounded-2xl bg-white transform modal-content">
+            <div class="text-center">
+                <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full mb-4 bg-red-100"><i class="fas fa-x text-red-600 text-2xl"></i></div>
+                <h3 class="text-xl font-bold text-gray-900 mb-2">Confirm Decline</h3>
+                <p accesskey=""class="text-gray-600 mb-6">Do you want to decline this Loan Request?</p>
+                <div class="flex space-x-2">
+                    <button id="closeConfirmDeclineModal" class="w-full bg-primary text-white py-2.5 rounded-lg hover:bg-primary-dark transition-colors font-semibold">
+                        Close
+                    </button>
+                    <button id="confirmConfirmDeclineModal" class="w-full bg-red-600 text-white py-2.5 rounded-lg hover:bg-red-700 transition-colors font-semibold">
+                        Confirm
+                    </button>
+                </div>
+                
+            </div>
+        </div>
+    </div>
+
+    <!-- New Loan Modal -->
+    <div id="newLoanModal" class="hidden fixed inset-0 modal-overlay overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+        <div class="relative p-6 border w-full max-w-md shadow-2xl rounded-2xl bg-white transform modal-content">
+            <div class="flex justify-between items-center border-b pb-4 mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">
+                    <i class="fa-solid fa-hand-holding-dollar text-green-600 mr-2"></i>
+                    New Loan Application
+                </h2>
+                <button id="closeNewLoanModal" class="text-gray-400 hover:text-gray-600 transition">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
             <div class="space-y-4 text-gray-800">
                 <div class="flex justify-between border-b pb-2">
                     <span class="font-semibold text-gray-600 flex items-center gap-2">
-                        <i class="fa-solid fa-id-card"></i> Client ID:
+                        <i class="fa-solid fa-id-card"></i> Member ID:
                     </span>
-                    <span id="newLoanClientId">M001</span>
+                    <span id="newLoanMemberId" class="font-bold text-primary">M001</span>
                 </div>
 
                 <div class="flex justify-between border-b pb-2">
@@ -804,31 +855,51 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                     <span id="newLoanClientName">Juan Dela Cruz</span>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Loan Amount</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Loan Amount (₱)</label>
                     <input type="number" id="newLoanAmount" name="loan_amount" value="1000.00" step="0.01" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition">
                 </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Loan Term (Months)</label>
+                    <select id="newLoanTerm" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition">
+                        <option value="3">3 Months</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Loan Purpose</label>
+                    <textarea id="newLoanPurpose" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition" placeholder="Enter loan purpose..."></textarea>
+                </div>
+                <div id="newLoanMessage" class="hidden p-3 text-center rounded-lg text-sm font-medium"></div>
             </div>
 
-            <div class="mt-8 text-center">
-                <button id="closeNewLoanModal" class="w-full bg-primary text-white py-2.5 rounded-lg hover:bg-primary-dark transition-colors font-semibold flex items-center justify-center gap-2">
-                    Close
+            <div class="mt-8 flex justify-end space-x-3">
+                <button id="closeNewLoanModal" class="bg-gray-200 text-gray-700 py-2.5 px-5 rounded-lg hover:bg-gray-300 transition-colors font-medium">
+                    Cancel
+                </button>
+                <button id="submitNewLoanBtn" class="bg-primary text-white py-2.5 px-5 rounded-lg hover:bg-primary-dark transition-colors font-semibold shadow-lg shadow-primary/30">
+                    <i class="fas fa-paper-plane mr-2"></i> Submit Application
                 </button>
             </div>
         </div>
     </div>
 
-    <div id="clientDetailsModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-60 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-        <div class="relative p-6 border w-full max-w-md shadow-2xl rounded-2xl bg-white transform scale-100 transition-transform">
-            <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">
-                <i class="fa-solid fa-user-circle text-primary"></i>
-                Client Details
-            </h2>
-            <div class="space-y-4 text-gray-800">
+    <!-- Client Details Modal -->
+    <div id="clientDetailsModal" class="hidden fixed inset-0 modal-overlay overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+        <div class="relative p-6 border w-full max-w-md shadow-2xl rounded-2xl bg-white transform modal-content">
+            <div class="flex justify-between items-center border-b pb-4 mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">
+                    <i class="fa-solid fa-user-circle text-primary mr-2"></i>
+                    Client Details
+                </h2>
+                <button id="closeClientDetailsModal" class="text-gray-400 hover:text-gray-600 transition">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="space-y-4 text-gray-800 mb-6">
                 <div class="flex justify-between border-b pb-2">
                     <span class="font-semibold text-gray-600 flex items-center gap-2">
                         <i class="fa-solid fa-id-card"></i> Member ID:
                     </span>
-                    <span id="clientMemberID">M001</span>
+                    <span id="clientMemberID" class="font-bold text-primary">M001</span>
                 </div>
 
                 <div class="flex justify-between border-b pb-2">
@@ -874,26 +945,35 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                 </div>
             </div>
 
-            <div class="mt-8 text-center">
-                <button id="closeClientDetailsModal" class="w-full bg-primary text-white py-2.5 rounded-lg hover:bg-primary-dark transition-colors font-semibold flex items-center justify-center gap-2">
+            <div class="flex justify-end space-x-3 pt-4 border-t">
+                <button id="deactivateClientBtn" class="bg-red-600 text-white py-2.5 px-5 rounded-lg hover:bg-red-700 transition-colors font-semibold">
+                    <i class="fas fa-user-slash mr-2"></i> Deactivate Client
+                </button>
+                <button id="closeClientDetailsModal" class="bg-gray-200 text-gray-700 py-2.5 px-5 rounded-lg hover:bg-gray-300 transition-colors font-medium">
                     Close
                 </button>
             </div>
         </div>
     </div>
     
-    <div id="loanDetailsModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-60 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-        <div class="relative p-6 border w-full max-w-md shadow-2xl rounded-2xl bg-white transform scale-100 transition-transform">
-            <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">
-                <i class="fa-solid fa-money-bill-wave text-orange-600"></i>
-                Loan Details
-            </h2>
-            <div class="space-y-4 text-gray-800">
+    <!-- Loan Details Modal -->
+    <div id="loanDetailsModal" class="hidden fixed inset-0 modal-overlay overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+        <div class="relative p-6 border w-full max-w-md shadow-2xl rounded-2xl bg-white transform modal-content">
+            <div class="flex justify-between items-center border-b pb-4 mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">
+                    <i class="fa-solid fa-money-bill-wave text-orange-600 mr-2"></i>
+                    Loan Details
+                </h2>
+                <button id="closeLoanDetailsModal" class="text-gray-400 hover:text-gray-600 transition">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="space-y-4 text-gray-800 mb-6">
                 <div class="flex justify-between border-b pb-2">
                     <span class="font-semibold text-gray-600 flex items-center gap-2">
                         <i class="fa-solid fa-id-card"></i> Loan ID:
                     </span>
-                    <span id="loanId">L0</span>
+                    <span id="loanId" class="font-bold text-primary">L0</span>
                 </div>
 
                 <div class="flex justify-between border-b pb-2">
@@ -937,20 +1017,28 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                     </span>
                     <span id="loanPurpose">Purpose</span>
                 </div>
-
             </div>
 
-            <div class="mt-8 text-center">
-                <button id="closeLoanDetailsModal" class="w-full bg-primary text-white py-2.5 rounded-lg hover:bg-primary-dark transition-colors font-semibold flex items-center justify-center gap-2">
+            <div class="flex justify-end space-x-3 pt-4 border-t">
+                <button id="recordPaymentFromLoanBtn" class="bg-emerald-600 text-white py-2.5 px-5 rounded-lg hover:bg-emerald-700 transition-colors font-semibold">
+                    <i class="fas fa-qrcode mr-2"></i> Record Payment
+                </button>
+                <button id="closeLoanDetailsModal" class="bg-gray-200 text-gray-700 py-2.5 px-5 rounded-lg hover:bg-gray-300 transition-colors font-medium">
                     Close
                 </button>
             </div>
         </div>
     </div>
 
-    <div id="changePasswordModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-60 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-        <div class="relative w-full max-w-md shadow-2xl rounded-2xl bg-white p-6 sm:p-8 space-y-6 transform transition-all duration-300 ease-out scale-95 modal-content">
-            <h3 class="text-2xl font-bold text-gray-900 border-b pb-3 mb-4">Change Password</h3>
+    <!-- Change Password Modal -->
+    <div id="changePasswordModal" class="hidden fixed inset-0 modal-overlay overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+        <div class="relative w-full max-w-md shadow-2xl rounded-2xl bg-white p-6 sm:p-8 space-y-6 transform modal-content">
+            <div class="flex justify-between items-center border-b pb-4">
+                <h3 class="text-2xl font-bold text-gray-900"><i class="fas fa-key text-primary mr-2"></i> Change Password</h3>
+                <button id="closeChangePasswordModal" class="text-gray-400 hover:text-gray-600 transition">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
             <form id="changePasswordForm" class="space-y-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
@@ -974,6 +1062,48 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Logout Confirmation Modal -->
+    <div id="logoutConfirmationModal" class="hidden fixed inset-0 modal-overlay overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+        <div class="relative p-8 border w-96 shadow-2xl rounded-2xl bg-white transform modal-content">
+            <div class="text-center">
+                <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-4">
+                    <i class="fas fa-sign-out-alt text-red-600 text-2xl"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 mb-2">Confirm Logout</h3>
+                <p class="text-gray-600 mb-6">Are you sure you want to log out of the admin dashboard?</p>
+                <div class="flex space-x-3">
+                    <button id="cancelLogoutBtn" class="w-1/2 bg-gray-200 text-gray-700 py-2.5 rounded-lg hover:bg-gray-300 transition-colors font-medium">
+                        Cancel
+                    </button>
+                    <button id="confirmLogoutBtn" class="w-1/2 bg-red-600 text-white py-2.5 rounded-lg hover:bg-red-700 transition-colors font-semibold">
+                        <i class="fas fa-sign-out-alt mr-2"></i> Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Deactivate Client Confirmation Modal -->
+    <div id="deactivateClientConfirmationModal" class="hidden fixed inset-0 modal-overlay overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+        <div class="relative p-8 border w-96 shadow-2xl rounded-2xl bg-white transform modal-content">
+            <div class="text-center">
+                <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-yellow-100 mb-4">
+                    <i class="fas fa-user-slash text-yellow-600 text-2xl"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 mb-2">Confirm Deactivation</h3>
+                <p id="deactivateClientMessage" class="text-gray-600 mb-6">Are you sure you want to deactivate this client?</p>
+                <div class="flex space-x-3">
+                    <button id="cancelDeactivateClientBtn" class="w-1/2 bg-gray-200 text-gray-700 py-2.5 rounded-lg hover:bg-gray-300 transition-colors font-medium">
+                        Cancel
+                    </button>
+                    <button id="confirmDeactivateClientBtn" class="w-1/2 bg-yellow-600 text-white py-2.5 rounded-lg hover:bg-yellow-700 transition-colors font-semibold">
+                        <i class="fas fa-user-slash mr-2"></i> Deactivate
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -1044,11 +1174,11 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                 window.location.hash = 'loans';
                 switchTab('loans');
             });
-            document.getElementById('totalClientsCard').addEventListener('click', (e) => {
-                e.preventDefault();
-                window.location.hash = 'clients';
-                switchTab('clients');
-            });
+            // document.getElementById('totalClients').addEventListener('click', (e) => {
+            //     e.preventDefault();
+            //     window.location.hash = 'clients';
+            //     switchTab('clients');
+            // });
 
             document.getElementById('pendingLoanCard').addEventListener('click', (e) => {
                 e.preventDefault();
@@ -1083,6 +1213,13 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
             }
             window.showMessageModal = showMessageModal;
 
+            function showDeclineLoanModal(){
+                const modal = document.getElementById('confirmDeclineModal');
+                const closeBtn = document.getElementById('closeDeclineModal');
+                closeBtn.onclick = () => modal.classList.add('hidden');
+                modal.classList.remove('hidden');
+            }window.showDeclineLoanModal = showDeclineLoanModal;
+
             function showNotification(message, type = 'info') {
                 const container = document.getElementById('notificationContainer');
                 const notification = document.createElement('div');
@@ -1101,22 +1238,31 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
             }
             window.showNotification = showNotification;
 
-            function showNewLoanModal(clientId, clientName) {
+            function showNewLoanModal(clientId, memberId, clientName) {
                 const modal = document.getElementById('newLoanModal');
-                const modalClientId = document.getElementById('newLoanClientId');
+                const modalMemberId = document.getElementById('newLoanMemberId');
                 const modalClientName = document.getElementById('newLoanClientName');
                 const closeBtn = document.getElementById('closeNewLoanModal');
+                const submitBtn = document.getElementById('submitNewLoanBtn');
 
-                modalClientId.textContent = clientId;
+                modalMemberId.textContent = memberId;
                 modalClientName.textContent = clientName;
+                
+                // Store client ID for form submission
+                modal.dataset.clientId = clientId;
+                
                 closeBtn.onclick = () => modal.classList.add('hidden');
+                
+                // Clear previous event listeners and add new one
+                submitBtn.onclick = () => handleNewLoanSubmission(clientId, memberId);
+                
                 modal.classList.remove('hidden');
             }
             window.showNewLoanModal = showNewLoanModal;
             
-            function showClientDetailsModal(clientId, clientName, clientEmail, clientPhone, clientAddress, clientBranch, clientDateJoined) {
+            function showClientDetailsModal(clientId, memberId, clientName, clientEmail, clientPhone, clientAddress, clientBranch, clientDateJoined) {
                 const modal = document.getElementById('clientDetailsModal');
-                const modalClientId = document.getElementById('clientMemberID');
+                const modalMemberId = document.getElementById('clientMemberID');
                 const modalClientName = document.getElementById('clientName');
                 const modalClientEmail = document.getElementById('clientEmail');
                 const modalClientPhone = document.getElementById('clientPhone');
@@ -1124,16 +1270,26 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                 const modalClientBranch = document.getElementById('clientBranch');
                 const modalClientDateJoined = document.getElementById('clientDateJoined');
                 const closeBtn = document.getElementById('closeClientDetailsModal');
+                const deactivateBtn = document.getElementById('deactivateClientBtn');
 
-                modalClientId.textContent = clientId;
+                modalMemberId.textContent = memberId;
                 modalClientName.textContent = clientName;
                 modalClientEmail.textContent = clientEmail;
                 modalClientPhone.textContent = clientPhone;
                 modalClientAddress.textContent = clientAddress;
-                modalClientBranch.textContent = clientBranch.charAt(0).toUpperCase() + clientBranch.slice(1);;
+                modalClientBranch.textContent = clientBranch.charAt(0).toUpperCase() + clientBranch.slice(1);
                 modalClientDateJoined.textContent = clientDateJoined;
                 
+                // Store client ID for deactivation
+                modal.dataset.clientId = clientId;
+                modal.dataset.clientName = clientName;
+                modal.dataset.memberId = memberId;
+                
                 closeBtn.onclick = () => modal.classList.add('hidden');
+                
+                // Set up deactivate button
+                deactivateBtn.onclick = () => showDeactivateClientConfirmation(clientId, clientName, memberId);
+                
                 modal.classList.remove('hidden');
             }
             window.showClientDetailsModal = showClientDetailsModal;
@@ -1148,6 +1304,7 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                 const modalClientName = document.getElementById('loanClientName');
                 const modalPurpose = document.getElementById('loanPurpose');
                 const closeBtn = document.getElementById('closeLoanDetailsModal');
+                const recordPaymentBtn = document.getElementById('recordPaymentFromLoanBtn');
 
                 modalLoanId.textContent = loanId;
                 modalLoanStatus.textContent = loanStatus;
@@ -1157,31 +1314,143 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                 modalClientName.textContent = loanClientName;
                 modalPurpose.textContent = loanPurpose;
 
+                // Store loan ID for record payment
+                modal.dataset.loanId = loanId.replace('L', '');
+                
                 closeBtn.onclick = () => modal.classList.add('hidden');
+                
+                // Set up record payment button
+                recordPaymentBtn.onclick = () => {
+                    modal.classList.add('hidden');
+                    document.getElementById('paymentLoanId').value = modal.dataset.loanId;
+                    document.getElementById('paymentAmountManual').value = parseFloat(loanMonthly.replace(/[^\d.]/g, '')).toFixed(2);
+                    document.getElementById('qrScannerModal').classList.remove('hidden');
+                };
+
                 modal.classList.remove('hidden');
             }
             window.showLoanDetailsModal = showLoanDetailsModal;
 
             function toggleModal(modalId, show) {
                 const modal = document.getElementById(modalId);
-                const modalContent = modal.querySelector('.modal-content');
                 if (show) {
                     modal.classList.remove('hidden');
-                
-                    setTimeout(() => {
-                        modalContent.classList.remove('scale-95');
-                        modalContent.classList.add('scale-100', 'opacity-100');
-                    }, 50);
                 } else {
-                    modalContent.classList.remove('scale-100', 'opacity-100');
-                    modalContent.classList.add('scale-95');
-                
-                    setTimeout(() => {
-                        modal.classList.add('hidden');
-                    }, 300);
+                    modal.classList.add('hidden');
                 }
             }
             window.toggleModal = toggleModal;
+
+            // Logout functionality
+            document.getElementById('logoutBtn').addEventListener('click', function() {
+                document.getElementById('logoutConfirmationModal').classList.remove('hidden');
+            });
+
+            document.getElementById('cancelLogoutBtn').addEventListener('click', function() {
+                document.getElementById('logoutConfirmationModal').classList.add('hidden');
+            });
+
+            document.getElementById('confirmLogoutBtn').addEventListener('click', function() {
+                window.location.href = "logout.php";
+            });
+
+            // Deactivate client confirmation
+            function showDeactivateClientConfirmation(clientId, clientName, memberId) {
+                const modal = document.getElementById('deactivateClientConfirmationModal');
+                const message = document.getElementById('deactivateClientMessage');
+                const cancelBtn = document.getElementById('cancelDeactivateClientBtn');
+                const confirmBtn = document.getElementById('confirmDeactivateClientBtn');
+
+                message.textContent = `Are you sure you want to deactivate ${clientName} (${memberId})? This action cannot be undone if the client has active loans.`;
+                
+                cancelBtn.onclick = () => modal.classList.add('hidden');
+                
+                confirmBtn.onclick = () => {
+                    modal.classList.add('hidden');
+                    deactivateClientAccount(clientId);
+                };
+                
+                modal.classList.remove('hidden');
+            }
+
+            async function deactivateClientAccount(clientId) {
+                try {
+                    const formData = new FormData();
+                    formData.append('action', 'deactivate_client');
+                    formData.append('client_id', clientId);
+
+                    const response = await fetch('api.php', { method: 'POST', body: formData });
+                    const result = await response.json();
+                    if (result.success) {
+                        showMessageModal('Account Deactivated!', result.message, 'success');
+                        document.getElementById('clientDetailsModal').classList.add('hidden');
+                        // Refresh client data
+                        if (typeof fetchAdminData === 'function') {
+                            fetchAdminData();
+                        }
+                    } else {
+                        showMessageModal('Deactivation Failed', result.message || 'An unexpected error occurred.', 'error');
+                    }
+                } catch (error) {
+                    showMessageModal('Network Error', 'Could not connect to the server.', 'error');
+                }
+            }
+
+            async function handleNewLoanSubmission(clientId, memberId) {
+                const amount = document.getElementById('newLoanAmount').value;
+                const term = document.getElementById('newLoanTerm').value;
+                const purpose = document.getElementById('newLoanPurpose').value;
+                const messageDiv = document.getElementById('newLoanMessage');
+                const submitBtn = document.getElementById('submitNewLoanBtn');
+
+                if (!amount || amount < 1000 || !purpose) {
+                    messageDiv.textContent = 'Please enter a valid amount (min ₱1,000) and purpose.';
+                    messageDiv.className = 'p-3 text-center rounded-lg text-sm font-medium bg-red-100 text-red-700';
+                    messageDiv.classList.remove('hidden');
+                    return;
+                }
+
+                const initialBtnText = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Submitting...';
+                submitBtn.disabled = true;
+
+                try {
+                    const formData = new FormData();
+                    formData.append('action', 'submit_loan_admin');
+                    formData.append('client_id', clientId);
+                    formData.append('loan_amount', amount);
+                    formData.append('term_months', term);
+                    formData.append('loan_purpose', purpose);
+
+                    const response = await fetch('api.php', { method: 'POST', body: formData });
+                    const result = await response.json();
+                    console.log(result);
+                    if (result.success) {
+                        messageDiv.textContent = result.message;
+                        messageDiv.className = 'p-3 text-center rounded-lg text-sm font-medium bg-green-100 text-green-700';
+                        messageDiv.classList.remove('hidden');
+                        
+                        setTimeout(() => {
+                            document.getElementById('newLoanModal').classList.add('hidden');
+                            if (typeof fetchAdminData === 'function') {
+                                fetchAdminData();
+                            }
+                        }, 2000);
+                    } else {
+                        messageDiv.textContent = result.message || 'An unexpected error occurred.';
+                        messageDiv.className = 'p-3 text-center rounded-lg text-sm font-medium bg-red-100 text-red-700';
+                        messageDiv.classList.remove('hidden');
+                    }
+                } catch (error) {
+                    console.log(error);
+                    messageDiv.textContent = 'Could not connect to the server. Please try again.';
+                    messageDiv.className = 'p-3 text-center rounded-lg text-sm font-medium bg-red-100 text-red-700';
+                    messageDiv.classList.remove('hidden');
+                } finally {
+                    submitBtn.innerHTML = initialBtnText;
+                    submitBtn.disabled = false;
+                }
+            }
 
             document.getElementById('changePasswordBtn').addEventListener('click', () => {
                 document.getElementById('changePasswordModal').classList.remove('hidden');
@@ -1195,6 +1464,12 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                 window.location.href = 'api.php?action=backup_database';
             });
             
+            // Close modals when clicking outside
+            document.addEventListener('click', function(e) {
+                if (e.target.classList.contains('modal-overlay')) {
+                    e.target.classList.add('hidden');
+                }
+            });
         });
 
         function downloadReport(type, format) {

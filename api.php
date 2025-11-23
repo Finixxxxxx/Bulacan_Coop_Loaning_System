@@ -262,7 +262,47 @@ switch ($action) {
         
         echo json_encode($response);
         break;
-    
+
+    // ==================
+    // Submit Loan - Admin Dashboard | Loans
+    // ==================
+    case 'submit_loan_admin':
+        if ($role !== 'admin') json_error('Access denied for this action.');
+        $client_id = $_POST['client_id'] ?? '';
+        $amount = $_POST['loan_amount'] ?? '';
+        $term = $_POST['term_months'] ?? '';
+        $purpose = $_POST['loan_purpose'] ?? '';
+
+        if (empty($client_id) || empty($amount) || empty($term) || empty($purpose) || !is_numeric($amount) || $amount < 1000) {
+            json_error('Invalid loan details provided.');
+        }
+
+        $sql_check = "SELECT loan_id FROM loans WHERE client_id = ? AND loan_status IN ('Active', 'Pending') LIMIT 1";
+        if ($stmt = $mysqli->prepare($sql_check)) {
+            $stmt->bind_param("i", $client_id);
+            $stmt->execute();
+            $stmt->store_result();
+            if ($stmt->num_rows > 0) {
+                $stmt->close();
+                json_error('Client already has an active or pending loan application.');
+            }
+            $stmt->close();
+        }
+
+        $sql_insert = "INSERT INTO loans (client_id, loan_amount, term_months, current_balance, loan_purpose, loan_status) VALUES (?, ?, ?, ?, ?, 'Pending')";
+        if ($stmt = $mysqli->prepare($sql_insert)) {
+            $stmt->bind_param("idids", $client_id, $amount, $term, $amount, $purpose);
+            if ($stmt->execute()) {
+                echo json_encode(['success' => true, 'message' => 'Loan application submitted for review.']);
+            } else {
+                json_error('Failed to submit loan application: ' . $stmt->error);
+            }
+            $stmt->close();
+        } else {
+            json_error('Database prepare error for loan submission: ' . $mysqli->error);
+        }
+        break;
+
     // ==================
     // Add Client - Admin Dashboard | Client Management
     // ==================

@@ -69,6 +69,18 @@ function initializeEventListeners() {
         $('#changePasswordModal').addClass('hidden');
     });
 
+    $('#closeNewLoanModal').on('click', function() {
+        $('#newLoanModal').addClass('hidden');
+    });
+
+    $('#closeClientDetailsModal').on('click', function() {
+        $('#clientDetailsModal').addClass('hidden');
+    });
+
+    $('#closeLoanDetailsModal').on('click', function() {
+        $('#loanDetailsModal').addClass('hidden');
+    });
+
     // Form submissions
     $('#addClientForm').on('submit', handleAddClient);
     $('#approveLoanForm').on('submit', handleApproveLoan);
@@ -119,10 +131,15 @@ function initializeEventListeners() {
     // Logout
     $('#logoutBtn').on('click', function(e) {
         e.preventDefault();
-        showMessageModal('Confirm Logout', 'Are you sure you want to log out of the admin dashboard?', 'info');
-        $('#closeAdminMessageModal').off('click').on('click', function() {
-            window.location.href = "logout.php";
-        });
+        $('#logoutConfirmationModal').removeClass('hidden');
+    });
+
+    $('#cancelLogoutBtn').on('click', function() {
+        $('#logoutConfirmationModal').addClass('hidden');
+    });
+
+    $('#confirmLogoutBtn').on('click', function() {
+        window.location.href = "logout.php";
     });
 
     // Sidebar and navigation
@@ -141,6 +158,13 @@ function initializeEventListeners() {
         const targetTab = $(this).data('tab');
         window.location.hash = targetTab;
         switchTab(targetTab);
+    });
+
+    // Close modals when clicking outside
+    $(document).on('click', function(e) {
+        if ($(e.target).hasClass('modal-overlay')) {
+            $(e.target).addClass('hidden');
+        }
     });
 }
 
@@ -618,22 +642,18 @@ function populateClientsTable(searchTerm = '') {
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-semibold">${formatCurrency(outstanding)}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm">${client.c_branch || 'N/A'}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                    <button onclick="showClientDetailsModal('${client.member_id}', '${client.c_firstname} ${client.c_lastname}', '${(client.c_email||'N/A')}', '${(client.c_phone||'N/A')}', '${(client.c_address||'')}', '${(client.c_branch||'N/A')}', '${(client.date_joined||'N/A')}')" 
-                            class="text-blue-600 hover:text-blue-900 mx-1">
+                    <button onclick="showClientDetailsModal(${client.client_id}, '${client.member_id}', '${client.c_firstname} ${client.c_lastname}', '${(client.c_email||'N/A')}', '${(client.c_phone||'N/A')}', '${(client.c_address||'')}', '${(client.c_branch||'N/A')}', '${(client.date_joined||'N/A')}')" 
+                            class="text-blue-600 hover:text-blue-900 mx-1 p-2 rounded-lg hover:bg-blue-50 transition-colors">
                         <i class="fas fa-eye"></i>
                     </button>
                     ${(client.c_status !== 'Deactivated' && !client.member_id.endsWith('-D')) ? `
-                    <button onclick="showNewLoanModal(${client.client_id}, '${client.c_firstname} ${client.c_lastname}')" 
-                            class="text-green-600 hover:text-green-900 mx-1">
+                    <button onclick="showNewLoanModal(${client.client_id}, '${client.member_id}', '${client.c_firstname} ${client.c_lastname}')" 
+                            class="text-green-600 hover:text-green-900 mx-1 p-2 rounded-lg hover:bg-green-50 transition-colors">
                         <i class="fas fa-money-bill"></i>
-                    </button>
-                    <button onclick="deactivateClientAccount(${client.client_id})" 
-                            class="text-red-600 hover:text-red-900 mx-1">
-                        <i class="fas fa-user-slash"></i>
                     </button>
                     ` : `
                     <button onclick="reactivateClientAccount(${client.client_id})" 
-                            class="text-green-600 hover:text-green-900 mx-1">
+                            class="text-green-600 hover:text-green-900 mx-1 p-2 rounded-lg hover:bg-green-50 transition-colors">
                         <i class="fas fa-user-check"></i>
                     </button>
                     `}
@@ -687,8 +707,8 @@ function populateLoansTable(searchTerm = '') {
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold">${formatCurrency(loan.current_balance)}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm">${statusBadge}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                    <button onclick="showLoanDetailsModal('${loan.loan_id}', '${loan.loan_status}', '${formatCurrency(loan.loan_amount)}', '${formatCurrency(loan.current_balance)}', '${formatCurrency(loan.monthly_payment)}', '${clientName}', '${loan.loan_purpose}')"
-                            class="text-blue-600 hover:text-blue-900 mx-1"><i class="fas fa-eye"></i></button>
+                    <button onclick="showLoanDetailsModal('L${loan.loan_id}', '${loan.loan_status}', '${formatCurrency(loan.loan_amount)}', '${formatCurrency(loan.current_balance)}', '${formatCurrency(loan.monthly_payment)}', '${clientName}', '${loan.loan_purpose}')"
+                            class="text-blue-600 hover:text-blue-900 mx-1 p-2 rounded-lg hover:bg-blue-50 transition-colors"><i class="fas fa-eye"></i></button>
                 </td>
             </tr>
         `;
@@ -714,8 +734,8 @@ function populatePendingLoans() {
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${loan.term_months} Months</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${(loan.loan_purpose || '').substring(0, 50)}...</td>
                 <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                    <button onclick="showApproveLoanModal(${loan.loan_id})" class="text-green-600 hover:text-green-900 mx-1 p-1 rounded hover:bg-green-100"><i class="fas fa-check"></i> Approve</button>
-                    <button onclick="declineLoan(${loan.loan_id})" class="text-red-600 hover:text-red-900 mx-1 p-1 rounded hover:bg-red-100"><i class="fas fa-times"></i> Decline</button>
+                    <button onclick="showApproveLoanModal(${loan.loan_id})" class="text-green-600 hover:text-green-900 mx-1 p-2 rounded-lg hover:bg-green-50 transition-colors"><i class="fas fa-check"></i> Approve</button>
+                    <button onclick="declineLoan(${loan.loan_id})" class="text-red-600 hover:text-red-900 mx-1 p-2 rounded-lg hover:bg-red-50 transition-colors"><i class="fas fa-times"></i> Decline</button>
                 </td>
             </tr>
         `;
@@ -768,10 +788,11 @@ async function deactivateClientAccount(clientId) {
         return;
     }
     
-    showMessageModal('Confirm Deactivation', `Are you sure you want to deactivate ${client.c_firstname} ${client.c_lastname} (${client.member_id})? This action cannot be undone if the client has active loans.`, 'info');
+    $('#deactivateClientConfirmationModal').removeClass('hidden');
+    $('#deactivateClientMessage').text(`Are you sure you want to deactivate ${client.c_firstname} ${client.c_lastname} (${client.member_id})? This action cannot be undone if the client has active loans.`);
     
-    $('#closeAdminMessageModal').off('click').on('click', async function() {
-        $('#adminMessageModal').addClass('hidden');
+    $('#confirmDeactivateClientBtn').off('click').on('click', async function() {
+        $('#deactivateClientConfirmationModal').addClass('hidden');
         
         try {
             const formData = new FormData();
@@ -789,10 +810,6 @@ async function deactivateClientAccount(clientId) {
             }
         } catch (error) {
             showMessageModal('Network Error', 'Could not connect to the server.', 'error');
-        } finally {
-            $('#closeAdminMessageModal').off('click').on('click', function() {
-                $('#adminMessageModal').addClass('hidden');
-            });
         }
     });
 }
@@ -1008,10 +1025,10 @@ window.declineLoan = async function(loanId) {
         return;
     }
     
-    showMessageModal('Confirm Decline', `Are you sure you want to decline the loan application for ${loan.client_name} (₱${parseFloat(loan.loan_amount).toLocaleString()})?`, 'info');
+    showDeclineLoanModal()
     
-    $('#closeAdminMessageModal').off('click').on('click', async function() {
-        $('#adminMessageModal').addClass('hidden');
+    $('#confirmConfirmDeclineModal').off('click').on('click', async function() {
+        $('#confirmDeclineModal').addClass('hidden');
         
         try {
             const formData = new FormData();
