@@ -34,7 +34,6 @@ function generate_member_id($branch, $mysqli) {
         $max_number = 0;
         while ($row = $result->fetch_assoc()) {
             $member_id = $row['member_id'];
-            // Extract number from member_id (handle formats like MAL001, MAL001-1, etc.)
             if (preg_match('/^' . $branch_code . '(\d+)/', $member_id, $matches)) {
                 $current_num = (int)$matches[1];
                 if ($current_num > $max_number) {
@@ -125,16 +124,18 @@ function deactivate_client_account($client_id, $mysqli) {
     return false;
 }
 
-function calculate_monthly_payment($principal, $annualRate, $termMonths) {
-    if ($termMonths <= 0) return $principal;
+function calculate_loan_totals($principal) {
+    $interest_rate = 4.5; // 4.5%
+    $term_days = 100;
     
-    $monthlyRate = ($annualRate / 100) / 12;
+    $interest_amount = $principal * ($interest_rate / 100);
+    $total_balance = $principal + $interest_amount;
+    $daily_payment = $total_balance / $term_days;
     
-    if ($monthlyRate == 0) {
-        return $principal / $termMonths;
-    }
-    
-    $payment = $principal * ($monthlyRate / (1 - pow(1 + $monthlyRate, -$termMonths)));
-    return round($payment, 2);
+    return [
+        'interest_amount' => round($interest_amount, 2),
+        'total_balance' => round($total_balance, 2),
+        'daily_payment' => round($daily_payment, 2)
+    ];
 }
 ?>

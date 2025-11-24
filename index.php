@@ -1,20 +1,26 @@
 <?php
 session_start();
 require_once 'db_config.php';
-if(isset($_SESSION["loggedin"]) && $_SESSION["loggedin"] === true && $_SESSION["role"] === "client"){
-    header("location: client_portal.php");
-    exit;
+
+if(isset($_SESSION["loggedin"]) && $_SESSION["loggedin"] === true){
+    switch($_SESSION["role"]){
+        case "client":
+            header("location: client_portal.php");
+            exit;
+        case "admin":
+            header("location: admin_dashboard.php");
+            exit;
+        case "collector":
+            header("location: collector_dashboard.php");
+            exit;
+    }
 }
-if(isset($_SESSION["loggedin"]) && $_SESSION["loggedin"] === true && $_SESSION["role"] === "admin"){
-    header("location: admin_dashboard.php");
-    exit;
-}
+
 $username_err = $password_err = $login_err = "";
 
 if($_SERVER["REQUEST_METHOD"] == "POST"){
-
     if(empty(trim($_POST["username"]))){
-        $username_err = "Please enter your Email Address.";
+        $username_err = "Please enter your username/email.";
     } else{
         $username = trim($_POST["username"]);
     }
@@ -26,13 +32,11 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     }
 
     if(empty($username_err) && empty($password_err)){
-        
         // Check clients first (using email)
         $sql = "SELECT client_id, member_id, c_firstname, c_lastname, c_email, c_phone, c_password_hash, c_status FROM clients WHERE c_email = ?";
         
         if($stmt = $mysqli->prepare($sql)){
             $stmt->bind_param("s", $param_username);
-            
             $param_username = $username;
             
             if($stmt->execute()){
@@ -43,7 +47,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                     if($stmt->fetch()){
                         // Check if account is deactivated
                         if (str_ends_with($member_id, '-D') || $status === 'Deactivated') {
-                            $login_err = "Account is deactivated. Please contact administrator.";
+                            $login_err = "Your account is deactivated. Please contact administrator.";
                         } else if(password_verify($password, $hashed_password)){
                             session_regenerate_id();
                             $_SESSION["loggedin"] = true;
@@ -52,8 +56,9 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                             $_SESSION["client_name"] = $firstname . " " . $lastname;
                             $_SESSION["role"] = "client";
                             header("location: client_portal.php");
+                            exit;
                         } else{
-                            $login_err = "Invalid email or password.";
+                            $login_err = "Invalid username or password.";
                         }
                     }
                 } else{
@@ -80,7 +85,35 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                                     }
                                 }
                             } else {
-                                $login_err = "Invalid email or password.";
+                                // Check collectors
+                                $sql_collector = "SELECT collector_id, col_username, col_fullname, col_branch, col_password_hash FROM collectors WHERE col_username = ? AND col_status = 'Active'";
+                                if($stmt_collector = $mysqli->prepare($sql_collector)){
+                                    $stmt_collector->bind_param("s", $param_collector_username);
+                                    $param_collector_username = $username;
+                                    if($stmt_collector->execute()){
+                                        $stmt_collector->store_result();
+                                        if($stmt_collector->num_rows == 1){
+                                            $stmt_collector->bind_result($collector_id, $col_username, $col_fullname, $col_branch, $col_hashed_password);
+                                            if($stmt_collector->fetch()){
+                                                if(password_verify($password, $col_hashed_password)){
+                                                    session_regenerate_id();
+                                                    $_SESSION["loggedin"] = true;
+                                                    $_SESSION["collector_id"] = $collector_id;
+                                                    $_SESSION["collector_name"] = $col_fullname;
+                                                    $_SESSION["collector_branch"] = $col_branch;
+                                                    $_SESSION["role"] = "collector";
+                                                    header("location: collector_dashboard.php");
+                                                    exit;
+                                                } else {
+                                                    $login_err = "Invalid username or password.";
+                                                }
+                                            }
+                                        } else {
+                                            $login_err = "Invalid username or password.";
+                                        }
+                                    }
+                                    $stmt_collector->close();
+                                }
                             }
                         }
                         $stmt_admin->close();
@@ -162,12 +195,12 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
             <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post" id="loginForm" class="space-y-6">
                 
                 <div>
-                    <label for="username" class="block text-sm font-semibold text-gray-700 mb-2">Email Address</label>
+                    <label for="username" class="block text-sm font-semibold text-gray-700 mb-2">Username/Email</label>
                     <div class="relative">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <i class="fas fa-envelope text-gray-400"></i>
+                            <i class="fas fa-user text-gray-400"></i>
                         </div>
-                        <input type="email" id="username" name="username" placeholder="Enter your email" required 
+                        <input type="text" id="username" name="username" placeholder="Enter your username or email" required 
                             class="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-lg focus:border-primary focus:ring-1 focus:ring-primary transition duration-200 shadow-inner text-gray-800"
                             value="<?php echo $username ?? ''; ?>">
                     </div>
@@ -186,9 +219,6 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                             <i id="toggleIcon" class="fas fa-eye"></i>
                         </button>
                     </div>
-                    <p class="text-xs text-gray-500 mt-2">
-                        <i class="fas fa-info-circle mr-1"></i>Hint: Last name (no spaces) + 3 numbers from Member ID + last 4 digits of phone number.
-                    </p>
                     <span class="text-xs text-red-500 mt-1 block"><?php echo $password_err; ?></span>
                 </div>
 

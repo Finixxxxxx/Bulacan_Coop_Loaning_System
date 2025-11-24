@@ -73,8 +73,8 @@ $member_id = $_SESSION["member_id"];
                             <p id="currentBalance" class="text-3xl font-bold text-gray-900">₱0.00</p>
                         </div>
                         <div>
-                            <p class="text-sm font-medium">Monthly Due</p>
-                            <p id="monthlyPayment" class="text-2xl font-bold text-red-600">₱0.00</p>
+                            <p class="text-sm font-medium">Daily Due</p>
+                            <p id="dailyPayment" class="text-2xl font-bold text-red-600">₱0.00</p>
                         </div>
                         <div>
                             <p class="text-sm font-medium">Next Payment Due</p>
@@ -86,10 +86,31 @@ $member_id = $_SESSION["member_id"];
                             <span id="loanStatusBadge" class="status-badge bg-gray-100 text-gray-600">Loading...</span>
                         </div>
                     </div>
+                    <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                        <h4 class="font-semibold text-blue-800 mb-2">Loan Information</h4>
+                        <div class="grid grid-cols-2 gap-2 text-sm text-blue-700">
+                            <div>
+                                <span>Term:</span>
+                                <span id="loanTerm" class="font-semibold">100 Days</span>
+                            </div>
+                            <div>
+                                <span>Interest Rate:</span>
+                                <span id="interestRate" class="font-semibold">4.5%</span>
+                            </div>
+                            <div>
+                                <span>Days Paid:</span>
+                                <span id="daysPaid" class="font-semibold">0/100</span>
+                            </div>
+                            <div>
+                                <span>Total Amount:</span>
+                                <span id="totalAmount" class="font-semibold">₱0.00</span>
+                            </div>
+                        </div>
+                    </div>
                     <div id="noActiveLoanMessage" class="hidden text-center p-8 bg-blue-50 rounded-lg">
                         <i class="fas fa-info-circle text-blue-500 text-2xl mb-2"></i>
                         <p class="text-lg font-medium text-blue-800">No Active Loan Found.</p>
-                        <p class="text-sm text-blue-700">Apply for a new loan below!</p>
+                        <p class="text-sm text-blue-700">Contact administrator for loan applications.</p>
                     </div>
                 </div>
             </section>
@@ -106,10 +127,11 @@ $member_id = $_SESSION["member_id"];
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount Paid</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Method</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
                             </tr>
                         </thead>
                         <tbody id="paymentHistoryBody" class="bg-white divide-y divide-gray-200">
-                            <tr><td colspan="3" class="text-center py-4 text-gray-500">No payment history found.</td></tr>
+                            <tr><td colspan="4" class="text-center py-4 text-gray-500">No payment history found.</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -130,7 +152,7 @@ $member_id = $_SESSION["member_id"];
                 </div>
                 
                 <div class="flex space-x-2 mt-3 mb-4">
-                    <button onclick="setQuickAmount(document.getElementById('monthlyPayment').textContent.replace(/[^0-9.]/g, ''))" class="text-xs bg-gray-100 text-gray-700 px-3 py-1 rounded-full hover:bg-gray-200 transition">Monthly Due</button>
+                    <button onclick="setQuickAmount(document.getElementById('dailyPayment').textContent.replace(/[^0-9.]/g, ''))" class="text-xs bg-gray-100 text-gray-700 px-3 py-1 rounded-full hover:bg-gray-200 transition">Daily Due</button>
                     <button onclick="setQuickAmount(document.getElementById('currentBalance').textContent.replace(/[^0-9.]/g, ''))" class="text-xs bg-gray-100 text-gray-700 px-3 py-1 rounded-full hover:bg-gray-200 transition">Full Balance</button>
                 </div>
                 
@@ -140,38 +162,25 @@ $member_id = $_SESSION["member_id"];
                 </button>
             </section>
 
-            <!-- New Loan Application Card -->
-            <section class="bg-white p-6 rounded-2xl shadow-lg border-l-4 border-yellow-500 card-hover fade-in">
+            <!-- Account Information Card -->
+            <section class="bg-white p-6 rounded-2xl shadow-lg border-l-4 border-purple-500 card-hover fade-in">
                 <h2 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
-                    <i class="fas fa-file-invoice-dollar text-yellow-500 mr-3"></i> Apply for New Loan
+                    <i class="fas fa-user-circle text-purple-500 mr-3"></i> Account Information
                 </h2>
-                <form id="loanApplicationForm" class="space-y-4">
-                    <div>
-                        <label for="loanAmountInput" class="block text-sm font-medium text-gray-700 mb-1">Amount (₱)</label>
-                        <input type="number" id="loanAmountInput" required min="1000" step="500" placeholder="e.g. 50000"
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition duration-150">
+                <div class="space-y-3 text-sm">
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Member ID:</span>
+                        <span class="font-semibold"><?php echo htmlspecialchars($member_id); ?></span>
                     </div>
-                    <div>
-                        <label for="loanTermInput" class="block text-sm font-medium text-gray-700 mb-1">Term (Months)</label>
-                        <select id="loanTermInput" required
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition duration-150">
-                            <option value="6">6 Months</option>
-                            <option value="12">12 Months</option>
-                            <option value="18">18 Months</option>
-                            <option value="24">24 Months</option>
-                        </select>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Name:</span>
+                        <span class="font-semibold"><?php echo htmlspecialchars($client_name); ?></span>
                     </div>
-                    <div>
-                        <label for="loanPurposeInput" class="block text-sm font-medium text-gray-700 mb-1">Purpose</label>
-                        <textarea id="loanPurposeInput" rows="3" required placeholder="e.g. Educational expenses for child, business expansion"
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition duration-150"></textarea>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Status:</span>
+                        <span id="accountStatus" class="status-badge bg-green-100 text-green-800">Active</span>
                     </div>
-                    <div id="applicationMessage" class="hidden p-3 text-center rounded-lg text-sm"></div>
-                    <button type="submit" id="submitLoanBtn"
-                            class="w-full bg-yellow-600 text-white font-semibold py-3 rounded-xl hover:bg-yellow-700 transition-colors duration-200 shadow-lg shadow-yellow-500/50">
-                        <i class="fas fa-paper-plane mr-2"></i> Submit Application
-                    </button>
-                </form>
+                </div>
             </section>
         </div>
     </main>

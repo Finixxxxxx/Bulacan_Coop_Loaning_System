@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Oct 21, 2025 at 10:48 AM
+-- Generation Time: Nov 23, 2024 at 10:48 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -66,6 +66,22 @@ CREATE TABLE `clients` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `collectors`
+--
+
+CREATE TABLE `collectors` (
+  `collector_id` int(11) NOT NULL,
+  `col_username` varchar(50) NOT NULL,
+  `col_password_hash` varchar(255) NOT NULL,
+  `col_fullname` varchar(150) NOT NULL,
+  `col_branch` enum('malolos','hagonoy','calumpit','balagtas','marilao','staMaria','plaridel') NOT NULL,
+  `col_status` enum('Active','Inactive') DEFAULT 'Active',
+  `date_registered` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `loans`
 --
 
@@ -73,15 +89,16 @@ CREATE TABLE `loans` (
   `loan_id` int(11) NOT NULL,
   `client_id` int(11) NOT NULL,
   `loan_amount` decimal(10,2) NOT NULL,
-  `interest_rate` decimal(5,2) NOT NULL DEFAULT 15.00,
-  `term_months` int(3) NOT NULL DEFAULT 12,
-  `monthly_payment` decimal(10,2) NOT NULL,
+  `interest_rate` decimal(5,2) NOT NULL DEFAULT 4.50,
+  `term_days` int(11) NOT NULL DEFAULT 100,
+  `daily_payment` decimal(10,2) NOT NULL,
+  `total_balance` decimal(10,2) NOT NULL,
   `current_balance` decimal(10,2) NOT NULL,
-  `loan_purpose` text DEFAULT NULL,
   `application_date` timestamp NOT NULL DEFAULT current_timestamp(),
   `approval_date` datetime DEFAULT NULL,
   `next_payment_date` date DEFAULT NULL,
-  `loan_status` enum('Pending','Active','Paid','Declined','Overdue') DEFAULT 'Pending'
+  `loan_status` enum('Pending','Active','Paid','Declined','Overdue') DEFAULT 'Pending',
+  `days_paid` int(11) NOT NULL DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -94,9 +111,11 @@ CREATE TABLE `payments` (
   `payment_id` int(11) NOT NULL,
   `loan_id` int(11) NOT NULL,
   `client_id` int(11) NOT NULL,
+  `collector_id` int(11) DEFAULT NULL,
   `payment_amount` decimal(10,2) NOT NULL,
   `payment_date` timestamp NOT NULL DEFAULT current_timestamp(),
-  `payment_method` varchar(50) DEFAULT 'Cash'
+  `payment_method` varchar(50) DEFAULT 'Cash',
+  `payment_type` enum('daily','partial','full') DEFAULT 'daily'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -119,6 +138,13 @@ ALTER TABLE `clients`
   ADD UNIQUE KEY `c_email` (`c_email`);
 
 --
+-- Indexes for table `collectors`
+--
+ALTER TABLE `collectors`
+  ADD PRIMARY KEY (`collector_id`),
+  ADD UNIQUE KEY `col_username` (`col_username`);
+
+--
 -- Indexes for table `loans`
 --
 ALTER TABLE `loans`
@@ -131,7 +157,8 @@ ALTER TABLE `loans`
 ALTER TABLE `payments`
   ADD PRIMARY KEY (`payment_id`),
   ADD KEY `loan_id` (`loan_id`),
-  ADD KEY `client_id` (`client_id`);
+  ADD KEY `client_id` (`client_id`),
+  ADD KEY `collector_id` (`collector_id`);
 
 --
 -- AUTO_INCREMENT for dumped tables
@@ -148,6 +175,12 @@ ALTER TABLE `admins`
 --
 ALTER TABLE `clients`
   MODIFY `client_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `collectors`
+--
+ALTER TABLE `collectors`
+  MODIFY `collector_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `loans`
@@ -176,7 +209,8 @@ ALTER TABLE `loans`
 --
 ALTER TABLE `payments`
   ADD CONSTRAINT `payments_ibfk_1` FOREIGN KEY (`loan_id`) REFERENCES `loans` (`loan_id`),
-  ADD CONSTRAINT `payments_ibfk_2` FOREIGN KEY (`client_id`) REFERENCES `clients` (`client_id`);
+  ADD CONSTRAINT `payments_ibfk_2` FOREIGN KEY (`client_id`) REFERENCES `clients` (`client_id`),
+  ADD CONSTRAINT `payments_ibfk_3` FOREIGN KEY (`collector_id`) REFERENCES `collectors` (`collector_id`);
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

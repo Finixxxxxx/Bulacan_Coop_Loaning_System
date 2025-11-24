@@ -4,10 +4,12 @@ const API_URL = 'api.php';
 let clientsData = [];
 let loansData = [];
 let pendingLoans = [];
+let collectorsData = [];
 let branchChartInstance = null;
 let monthlyTrendsChartInstance = null;
 let riskAnalysisChartInstance = null;
 let loansAndPaymentsChartInstance = null;
+let collectorReportChartInstance = null;
 const branches = ['malolos','hagonoy','calumpit','balagtas', 'marilao', 'stamaria', 'plaridel'];
 let adminStats = {};
 
@@ -57,12 +59,12 @@ function initializeEventListeners() {
         $('#addClientModal').addClass('hidden');
     });
 
-    $('#closeApproveModal').on('click', function() {
-        $('#approveLoanModal').addClass('hidden');
+    $('#closeAddCollectorModal').on('click', function() {
+        $('#addCollectorModal').addClass('hidden');
     });
 
-    $('#closeQRScannerModal').on('click', function() {
-        $('#qrScannerModal').addClass('hidden');
+    $('#closeApproveModal').on('click', function() {
+        $('#approveLoanModal').addClass('hidden');
     });
 
     $('#closeChangePasswordModal').on('click', function() {
@@ -83,8 +85,8 @@ function initializeEventListeners() {
 
     // Form submissions
     $('#addClientForm').on('submit', handleAddClient);
+    $('#addCollectorForm').on('submit', handleAddCollector);
     $('#approveLoanForm').on('submit', handleApproveLoan);
-    $('#recordPaymentForm').on('submit', handleRecordPayment);
     $('#changePasswordForm').on('submit', handleChangePassword);
 
     // Search and filter events
@@ -100,6 +102,7 @@ function initializeEventListeners() {
         const branch = $(this).val() || 'all';
         fetchAdminData(branch);
         fetchPaymentHistory(branch);
+        fetchUnpaidPaidClients();
     });
 
     // Button events
@@ -107,8 +110,8 @@ function initializeEventListeners() {
         $('#addClientModal').removeClass('hidden');
     });
 
-    $('#showPaymentQRModal').on('click', function() {
-        $('#qrScannerModal').removeClass('hidden');
+    $('#showAddCollectorModal').on('click', function() {
+        $('#addCollectorModal').removeClass('hidden');
     });
 
     $('#changePasswordBtn').on('click', function() {
@@ -124,9 +127,6 @@ function initializeEventListeners() {
         window.location.hash = 'loans';
         switchTab('loans');
     });
-
-    // Interest rate calculation
-    $('#approveInterestRate').on('input', calculateMonthlyPayment);
 
     // Logout
     $('#logoutBtn').on('click', function(e) {
@@ -216,26 +216,137 @@ async function fetchAdminData(branch = 'all') {
         clientsData = data.clients || [];
         loansData = data.loans || [];
         pendingLoans = data.pending_loans || [];
+        collectorsData = data.collectors || [];
         adminStats = data || {};
 
         updateDashboardStats();
         populatePendingLoans();
         populateClientsTable();
         populateLoansTable();
+        populateCollectorsTable();
         updateBranchChart();
-        updateRepaymentProgress();
         updateUpcomingPayments();
         updateMonthlyTrendsChart();
-        updateRiskAnalysisChart();
         updateLoansAndPaymentsChart();
         fetchPaymentHistory(branch);
-
+        fetchUnpaidPaidClients();
+        generateCollectorReport();
         checkNotifications();
 
     } catch (error) {
         console.error('Fetch error:', error);
         showMessageModal('Connection Error', 'Failed to load data. Please check your PHP server and database connection.', 'error');
     }
+}
+
+async function fetchUnpaidPaidClients() {
+    try {
+        const today = new Date().toISOString().split('T')[0];
+        const branch = $('#branchSelector').val() || 'all';
+        
+        // This would typically call an API endpoint to get unpaid/paid clients
+        // For now, we'll filter from existing data
+        const unpaidClients = loansData.filter(loan => 
+            loan.loan_status === 'Active' && 
+            (!loan.last_payment_date || loan.last_payment_date.split('T')[0] !== today)
+        );
+        
+        const paidClients = loansData.filter(loan => 
+            loan.loan_status === 'Active' && 
+            loan.last_payment_date && 
+            loan.last_payment_date.split('T')[0] === today
+        );
+
+        updateUnpaidClientsDisplay(unpaidClients);
+        updatePaidClientsDisplay(paidClients);
+
+    } catch (error) {
+        console.error('Error fetching unpaid/paid clients:', error);
+    }
+}
+
+function updateUnpaidClientsDisplay(unpaidClients) {
+    const container = $('#unpaidClientsContainer');
+    const countElement = $('#unpaidCount');
+    
+    container.empty();
+    countElement.text(`${unpaidClients.length} clients`);
+
+    if (unpaidClients.length === 0) {
+        container.html(`
+            <div class="text-center py-8 text-gray-500">
+                <i class="fas fa-check-circle text-2xl mb-2"></i>
+                <p>All clients paid today!</p>
+            </div>
+        `);
+        return;
+    }
+
+    unpaidClients.forEach(loan => {
+        const client = clientsData.find(c => c.client_id == loan.client_id);
+        if (!client) return;
+
+        const clientCard = `
+            <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                        <i class="fas fa-user text-red-600"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-gray-900 text-sm">${client.c_firstname} ${client.c_lastname}</h4>
+                        <p class="text-xs text-gray-600">${client.member_id} • Loan L${loan.loan_id}</p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <p class="font-semibold text-gray-900">${formatCurrency(loan.daily_payment)}</p>
+                    <p class="text-xs text-gray-500">Due Today</p>
+                </div>
+            </div>
+        `;
+        container.append(clientCard);
+    });
+}
+
+function updatePaidClientsDisplay(paidClients) {
+    const container = $('#paidClientsContainer');
+    const countElement = $('#paidCount');
+    
+    container.empty();
+    countElement.text(`${paidClients.length} clients`);
+
+    if (paidClients.length === 0) {
+        container.html(`
+            <div class="text-center py-8 text-gray-500">
+                <i class="fas fa-clock text-2xl mb-2"></i>
+                <p>No payments collected today</p>
+            </div>
+        `);
+        return;
+    }
+
+    paidClients.forEach(loan => {
+        const client = clientsData.find(c => c.client_id == loan.client_id);
+        if (!client) return;
+
+        const clientCard = `
+            <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                        <i class="fas fa-user text-green-600"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-gray-900 text-sm">${client.c_firstname} ${client.c_lastname}</h4>
+                        <p class="text-xs text-gray-600">${client.member_id} • Loan L${loan.loan_id}</p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <p class="font-semibold text-green-600">${formatCurrency(loan.daily_payment)}</p>
+                    <p class="text-xs text-gray-500">Paid Today</p>
+                </div>
+            </div>
+        `;
+        container.append(clientCard);
+    });
 }
 
 function checkNotifications() {
@@ -285,8 +396,8 @@ function updateDashboardStats() {
 
     const today = new Date().toISOString().slice(0,10);
     const pendingSum = loansData
-        .filter(l => l.loan_status === 'Active' && l.next_payment_date && l.next_payment_date.slice(0,10) === today)
-        .reduce((s, l) => s + parseFloat(l.monthly_payment || 0), 0);
+        .filter(l => l.loan_status === 'Active')
+        .reduce((s, l) => s + parseFloat(l.daily_payment || 0), 0);
     $('#totalPendingPaymentsTodal').text(formatCurrency(pendingSum));
 
     const overdueSum = loansData
@@ -339,82 +450,79 @@ function updateBranchChart() {
     });
 }
 
-async function updateRepaymentProgress() {
+let collectorAmountChartInstance = null;
+let collectorClientsChartInstance = null;
+$('#collectorReportDate').on('change', function () {
+    generateCollectorReport();
+});
+$('#branchSelector').on('change', function () {
+    generateCollectorReport();
+});
+async function generateCollectorReport() {
     try {
-        const response = await fetch(API_URL + '?action=get_repayment_progress');
+        const reportDate = $('#collectorReportDate').val();
+        const branch = $('#branchSelector').val() || 'all';
+
+        const url = `${API_URL}?action=get_collector_reports&report_type=all&date=${reportDate}&branch=${branch}`;
+        const response = await fetch(url);
         const data = await response.json();
-        
+
         if (data.error) {
-            console.error('Repayment progress error:', data.error);
+            showMessageModal('Report Error', data.error, 'error');
             return;
         }
+        const amountCtx = $('#collectorAmountCollectedChart')[0].getContext('2d');
 
-        const container = $('#repaymentProgressContainer');
-        container.empty();
-
-        if (!data.loans || data.loans.length === 0) {
-            container.html(`
-                <div class="text-center py-8 text-gray-500">
-                    <i class="fas fa-file-invoice-dollar text-3xl mb-2"></i>
-                    <p>No active loans found</p>
-                </div>
-            `);
-            return;
+        if (collectorAmountChartInstance) {
+            collectorAmountChartInstance.destroy();
         }
 
-        data.loans.forEach(loan => {
-            const progress = ((loan.loan_amount - loan.current_balance) / loan.loan_amount) * 100;
-            const progressPercent = Math.min(Math.max(progress, 0), 100);
-            
-            const progressBar = `
-                <div class="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                    <div class="flex justify-between items-start mb-2">
-                        <div>
-                            <h4 class="font-semibold text-gray-900">${loan.client_name}</h4>
-                            <p class="text-sm text-gray-600">Loan L${loan.loan_id}</p>
-                        </div>
-                        <span class="text-sm font-medium ${loan.days_until_due <= 3 ? 'text-red-600' : loan.days_until_due <= 7 ? 'text-orange-600' : 'text-green-600'}">
-                            ${loan.days_until_due === 0 ? 'Due Today' : loan.days_until_due === 1 ? 'Due Tomorrow' : `Due in ${loan.days_until_due} days`}
-                        </span>
-                    </div>
-                    
-                    <div class="mb-2">
-                        <div class="flex justify-between text-sm text-gray-600 mb-1">
-                            <span>Progress</span>
-                            <span>${progressPercent.toFixed(1)}%</span>
-                        </div>
-                        <div class="w-full bg-gray-200 rounded-full h-2">
-                            <div class="bg-green-600 h-2 rounded-full transition-all duration-300" 
-                                 style="width: ${progressPercent}%"></div>
-                        </div>
-                    </div>
-                    
-                    <div class="grid grid-cols-2 gap-2 text-sm">
-                        <div>
-                            <span class="text-gray-500">Paid:</span>
-                            <span class="font-semibold ml-1">₱${(loan.loan_amount - loan.current_balance).toLocaleString()}</span>
-                        </div>
-                        <div>
-                            <span class="text-gray-500">Balance:</span>
-                            <span class="font-semibold ml-1">₱${loan.current_balance.toLocaleString()}</span>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            container.append(progressBar);
+        collectorAmountChartInstance = new Chart(amountCtx, {
+            type: 'bar',
+            data: {
+                labels: data.amount_labels || [],
+                datasets: [{
+                    label: 'Amount Collected (₱)',
+                    data: data.amount_values || [],
+                    backgroundColor: '#3b82f6',
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+
+        const clientsCtx = $('#collectorClientsCollectedChart')[0].getContext('2d');
+
+        if (collectorClientsChartInstance) {
+            collectorClientsChartInstance.destroy();
+        }
+
+        collectorClientsChartInstance = new Chart(clientsCtx, {
+            type: 'bar',
+            data: {
+                labels: data.client_labels || [],
+                datasets: [{
+                    label: 'Clients Collected',
+                    data: data.client_values || [],
+                    backgroundColor: '#10b981',
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: { y: { beginAtZero: true } }
+            }
         });
 
     } catch (error) {
-        console.error('Error fetching repayment progress:', error);
-        $('#repaymentProgressContainer').html(`
-            <div class="text-center py-8 text-gray-500">
-                <i class="fas fa-exclamation-triangle text-2xl mb-2"></i>
-                <p>Failed to load repayment progress</p>
-            </div>
-        `);
+        console.error('Error generating collector report:', error);
+        showMessageModal('Report Error', 'Failed to generate collector report.', 'error');
     }
 }
+
 
 async function updateUpcomingPayments() {
     try {
@@ -452,7 +560,7 @@ async function updateUpcomingPayments() {
                         </div>
                     </div>
                     <div class="text-right">
-                        <p class="font-semibold text-gray-900">₱${payment.monthly_payment.toLocaleString()}</p>
+                        <p class="font-semibold text-gray-900">₱${payment.daily_payment.toLocaleString()}</p>
                         <p class="text-xs ${payment.days_until_due === 0 ? 'text-red-600' : payment.days_until_due === 1 ? 'text-orange-600' : 'text-gray-600'}">
                             ${payment.days_until_due === 0 ? 'Today' : payment.days_until_due === 1 ? 'Tomorrow' : `In ${payment.days_until_due} days`}
                         </p>
@@ -522,45 +630,6 @@ async function updateMonthlyTrendsChart() {
         });
     } catch (error) {
         console.error('Error fetching monthly trends:', error);
-    }
-}
-
-async function updateRiskAnalysisChart() {
-    try {
-        const response = await fetch(API_URL + '?action=get_risk_analysis_data');
-        const data = await response.json();
-        
-        if (data.error) {
-            console.error('Risk analysis error:', data.error);
-            return;
-        }
-
-        const ctx = $('#riskAnalysisChart')[0].getContext('2d');
-        
-        if (riskAnalysisChartInstance) {
-            riskAnalysisChartInstance.destroy();
-        }
-
-        riskAnalysisChartInstance = new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels: data.labels || ['Low Risk', 'Medium Risk', 'High Risk'],
-                datasets: [{
-                    data: data.data || [65, 25, 10],
-                    backgroundColor: ['#10b981', '#f59e0b', '#ef4444']
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: {
-                        position: 'bottom'
-                    }
-                }
-            }
-        });
-    } catch (error) {
-        console.error('Error fetching risk analysis:', error);
     }
 }
 
@@ -665,6 +734,41 @@ function populateClientsTable(searchTerm = '') {
     });
 }
 
+function populateCollectorsTable() {
+    const collectorsBody = $('#collectorsTableBody');
+    collectorsBody.empty();
+
+    if (collectorsData.length === 0) {
+        collectorsBody.html('<tr><td colspan="5" class="text-center py-4 text-gray-500">No collectors found.</td></tr>');
+        return;
+    }
+
+    collectorsData.forEach(collector => {
+        const row = `
+            <tr>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${collector.col_fullname}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${collector.col_username}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${collector.col_branch}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                    <span class="status-badge ${collector.col_status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}">
+                        ${collector.col_status}
+                    </span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                    <button class="text-blue-600 hover:text-blue-900 mx-1 p-2 rounded-lg hover:bg-blue-50 transition-colors">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="text-red-600 hover:text-red-900 mx-1 p-2 rounded-lg hover:bg-red-50 transition-colors">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+        
+        collectorsBody.append(row);
+    });
+}
+
 
 function populateLoansTable(searchTerm = '') {
     const loansBody = $('#loansTableBody');
@@ -707,7 +811,7 @@ function populateLoansTable(searchTerm = '') {
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold">${formatCurrency(loan.current_balance)}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm">${statusBadge}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                    <button onclick="showLoanDetailsModal('L${loan.loan_id}', '${loan.loan_status}', '${formatCurrency(loan.loan_amount)}', '${formatCurrency(loan.current_balance)}', '${formatCurrency(loan.monthly_payment)}', '${clientName}', '${loan.loan_purpose}')"
+                    <button onclick="showLoanDetailsModal('L${loan.loan_id}', '${loan.loan_status}', '${formatCurrency(loan.loan_amount)}', '${formatCurrency(loan.current_balance)}', '${formatCurrency(loan.daily_payment)}', '${clientName}', ${loan.days_paid || 0}, ${loan.term_days || 100})"
                             class="text-blue-600 hover:text-blue-900 mx-1 p-2 rounded-lg hover:bg-blue-50 transition-colors"><i class="fas fa-eye"></i></button>
                 </td>
             </tr>
@@ -731,8 +835,7 @@ function populatePendingLoans() {
             <tr>
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${loan.client_name}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatCurrency(loan.loan_amount)}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${loan.term_months} Months</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${(loan.loan_purpose || '').substring(0, 50)}...</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${loan.term_days || 100} Days</td>
                 <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
                     <button onclick="showApproveLoanModal(${loan.loan_id})" class="text-green-600 hover:text-green-900 mx-1 p-2 rounded-lg hover:bg-green-50 transition-colors"><i class="fas fa-check"></i> Approve</button>
                     <button onclick="declineLoan(${loan.loan_id})" class="text-red-600 hover:text-red-900 mx-1 p-2 rounded-lg hover:bg-red-50 transition-colors"><i class="fas fa-times"></i> Decline</button>
@@ -878,6 +981,34 @@ async function handleAddClient(e) {
     }
 }
 
+async function handleAddCollector(e) {
+    e.preventDefault();
+    const submitBtn = $('#addCollectorSubmitBtn');
+    const initialBtnText = submitBtn.html();
+    submitBtn.html('<i class="fas fa-spinner fa-spin mr-2"></i> Saving...').prop('disabled', true);
+
+    const formData = new FormData(this);
+    formData.append('action', 'add_collector');
+
+    try {
+        const response = await fetch(API_URL, { method: 'POST', body: formData });
+        const result = await response.json();
+
+        if (result.success) {
+            showMessageModal('Collector Added!', result.message, 'success');
+            this.reset();
+            $('#addCollectorModal').addClass('hidden');
+            fetchAdminData($('#branchSelector').val());
+        } else {
+            showMessageModal('Failed to Add Collector', result.message || 'An unexpected error occurred.', 'error');
+        }
+    } catch (error) {
+        showMessageModal('Network Error', 'Could not connect to the server.', 'error');
+    } finally {
+        submitBtn.html(initialBtnText).prop('disabled', false);
+    }
+}
+
 async function handleApproveLoan(e) {
     e.preventDefault();
     const submitBtn = $('#approveLoanSubmitBtn');
@@ -885,14 +1016,10 @@ async function handleApproveLoan(e) {
     submitBtn.html('<i class="fas fa-spinner fa-spin mr-2"></i> Approving...').prop('disabled', true);
 
     const loanId = $('#loanIdToApprove').val();
-    const interestRate = $('#approveInterestRate').val();
-    const monthlyPayment = $('#calculatedMonthlyPayment').val().replace(/,/g, '');
 
     const formData = new FormData();
     formData.append('action', 'approve_loan');
     formData.append('loan_id', loanId);
-    formData.append('interest_rate', interestRate);
-    formData.append('monthly_payment', monthlyPayment);
 
     try {
         const response = await fetch(API_URL, { method: 'POST', body: formData });
@@ -904,39 +1031,6 @@ async function handleApproveLoan(e) {
             fetchAdminData();
         } else {
             showMessageModal('Approval Failed', result.message || 'An unexpected error occurred.', 'error');
-        }
-    } catch (error) {
-        showMessageModal('Network Error', 'Could not connect to the server.', 'error');
-    } finally {
-        submitBtn.html(initialBtnText).prop('disabled', false);
-    }
-}
-
-async function handleRecordPayment(e) {
-    e.preventDefault();
-    const submitBtn = $('#recordPaymentSubmitBtn');
-    const initialBtnText = submitBtn.html();
-    submitBtn.html('<i class="fas fa-spinner fa-spin mr-2"></i> Recording...').prop('disabled', true);
-
-    const loanId = $('#paymentLoanId').val();
-    const paymentAmount = $('#paymentAmountManual').val();
-
-    const formData = new FormData();
-    formData.append('action', 'record_payment');
-    formData.append('loan_id', loanId);
-    formData.append('payment_amount', paymentAmount);
-
-    try {
-        const response = await fetch(API_URL, { method: 'POST', body: formData });
-        const result = await response.json();
-
-        if (result.success) {
-            showMessageModal('Payment Recorded!', result.message, 'success');
-            this.reset();
-            $('#qrScannerModal').addClass('hidden');
-            fetchAdminData($('#branchSelector').val());
-        } else {
-            showMessageModal('Payment Failed', result.message || 'An unexpected error occurred.', 'error');
         }
     } catch (error) {
         showMessageModal('Network Error', 'Could not connect to the server.', 'error');
@@ -971,28 +1065,6 @@ async function handleChangePassword(e) {
     }
 }
 
-// Helper Functions
-function calculateMonthlyPayment() {
-    const loanId = $('#loanIdToApprove').val();
-    const loan = pendingLoans.find(l => l.loan_id == loanId);
-    if (!loan) return;
-    
-    const principal = parseFloat(loan.loan_amount);
-    const termMonths = parseInt(loan.term_months);
-    const annualRate = parseFloat($(this).val());
-
-    const monthlyRate = (annualRate / 100) / 12;
-
-    let monthlyPayment;
-    if (termMonths <= 0 || monthlyRate <= 0) {
-        monthlyPayment = principal / termMonths;
-    } else {
-        monthlyPayment = principal * (monthlyRate / (1 - Math.pow(1 + monthlyRate, -termMonths)));
-    }
-    
-    $('#calculatedMonthlyPayment').val(isNaN(monthlyPayment) ? 'N/A' : monthlyPayment.toFixed(2));
-}
-
 // Global functions for modal handling
 window.showApproveLoanModal = function(loanId) {
     const loan = pendingLoans.find(l => l.loan_id == loanId);
@@ -1004,16 +1076,16 @@ window.showApproveLoanModal = function(loanId) {
     $('#loanIdToApprove').val(loanId);
     $('#approveClientName').text(loan.client_name);
     $('#approveLoanAmount').text(formatCurrency(loan.loan_amount));
-    $('#approveLoanTerm').text(`${loan.term_months} Months`);
+    $('#approveLoanTerm').text(`${loan.term_days || 100} Days`);
     
+    // Calculate totals based on 100-day, 4.5% interest logic
     const principal = parseFloat(loan.loan_amount);
-    const termMonths = parseInt(loan.term_months);
-    const annualRate = parseFloat($('#approveInterestRate').val());
+    const interest = principal * 0.045;
+    const totalBalance = principal + interest;
+    const dailyPayment = totalBalance / 100;
     
-    const monthlyRate = (annualRate / 100) / 12;
-    const monthlyPayment = principal * (monthlyRate / (1 - Math.pow(1 + monthlyRate, -termMonths)));
-    
-    $('#calculatedMonthlyPayment').val(isNaN(monthlyPayment) ? 'N/A' : monthlyPayment.toFixed(2));
+    $('#approveTotalBalance').text(formatCurrency(totalBalance));
+    $('#approveDailyPayment').text(formatCurrency(dailyPayment));
 
     $('#approveLoanModal').removeClass('hidden');
 }
