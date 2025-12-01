@@ -238,21 +238,9 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                     <span class="text-xs text-red-500 mt-1 block"><?php echo $password_err; ?></span>
                 </div>
 
-                <div class="flex justify-between items-center text-sm">
-                    <div class="flex items-center">
-                        <input id="remember-me" name="remember-me" type="checkbox" class="h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary">
-                        <label for="remember-me" class="ml-2 block text-gray-600">
-                            Remember me
-                        </label>
-                    </div>
-                    <a href="#" class="font-medium text-primary hover:text-accent-color transition-colors">
-                        Forgot Password?
-                    </a>
-                </div>
-
                 <button type="submit" 
                         class="w-full bg-primary text-white font-bold tracking-wider py-3.5 rounded-lg hover:bg-primary-dark transition-colors duration-300 shadow-xl shadow-primary/40 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transform hover:scale-[1.005]">
-                    <i class="fas fa-sign-in-alt mr-2"></i> SECURE LOG IN
+                    <i class="fas fa-sign-in-alt mr-2"></i> LOG IN
                 </button>
             </form>
         </div>

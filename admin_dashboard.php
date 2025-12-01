@@ -759,10 +759,10 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
             <form id="newLoanForm" class="space-y-4">
                 <input type="hidden" name="client_id" id="newLoanClientId">
                 <input type="hidden" name="member_id" id="newLoanMemberId">
-                <p class="text-sm text-gray-600 mb-4">Client: <strong id="newLoanClientNameDisplay" class="text-primary"></strong></p>
+                <p class="text-sm text-gray-600 mb-4">Client: <strong id="newLoanClientName" class="text-primary"></strong></p>
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-1">Loan Amount (Principal)</label>
-                    <input type="number" step="100" min="1000" id="newLoanAmount" name="loan_amount" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent input-focus-style" placeholder="e.g., 5000">
+                    <input type="number" step="100" min="10000" value="10000.00" id="newLoanAmount" name="loan_amount" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent input-focus-style" placeholder="e.g., 5000">
                 </div>
 
                 <div class="bg-gray-50 p-4 rounded-lg space-y-2 text-sm">
@@ -770,6 +770,10 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                     <div class="flex justify-between">
                         <span class="text-gray-600">Processing Fee (- ₱200):</span>
                         <span id="calcProcessingFee" class="font-bold text-red-500">₱0.00</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Amount Received:</span>
+                        <span id="calcAmountReceived" class="font-bold text-green-500">₱0.00</span>
                     </div>
                     <div class="flex justify-between">
                         <span class="text-gray-600">Interest (15%):</span>
@@ -790,7 +794,7 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                 <div class="flex justify-end space-x-3 pt-4 border-t mt-6">
                     <button type="button" id="cancelNewLoanBtn" class="bg-gray-200 text-gray-700 py-2.5 px-5 rounded-lg hover:bg-gray-300 transition-colors font-semibold"> Cancel </button>
                     <button type="submit" id="submitNewLoanBtn" class="bg-primary text-white py-2.5 px-5 rounded-lg hover:bg-primary-dark transition-colors font-semibold shadow-lg shadow-primary/30">
-                        <i class="fas fa-paper-plane mr-2"></i> Submit for Approval
+                        <i class="fas fa-paper-plane mr-2"></i> Submit Loan
                     </button>
                 </div>
             </form>
@@ -834,12 +838,12 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                     <span id="clientDateJoined">2023-01-01</span>
                 </div>
             </div>
-            <div class="flex justify-between space-x-3 pt-4 border-t">
-                <button id="deactivateClientBtn" class="w-1/2 bg-red-600 text-white py-2.5 px-3 rounded-lg hover:bg-red-700 transition-colors font-semibold shadow-md shadow-red-600/20">
-                    <i class="fas fa-trash-alt mr-2"></i> Deactivate
+            <div class="flex justify-end space-x-3 pt-4 border-t">
+                <button id="closeClientDetailsModal" class="w-1/2 bg-gray-400 text-white py-2.5 px-3 rounded-lg hover:bg-gray-500 transition-colors font-semibold shadow-md shadow-gray-600/20">
+                    <i class="fas fa-times mr-2"></i> Close
                 </button>
-                <button id="viewClientLoansBtn" class="w-1/2 bg-yellow-600 text-white py-2.5 px-3 rounded-lg hover:bg-yellow-700 transition-colors font-semibold shadow-md shadow-yellow-600/20">
-                    <i class="fas fa-list-alt mr-2"></i> View Loans
+                <button id="deactivateClientBtn" class="w-1/2 bg-red-600 text-white py-2.5 px-3 rounded-lg hover:bg-red-700 transition-colors font-semibold shadow-md shadow-red-600/20">
+                    <i class="fas fa-user-slash mr-2"></i> Deactivate
                 </button>
             </div>
         </div>
@@ -1119,15 +1123,17 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                 const modal = document.getElementById('newLoanModal');
                 const modalMemberId = document.getElementById('newLoanMemberId');
                 const modalClientName = document.getElementById('newLoanClientName');
-                const closeBtn = document.getElementById('closeNewLoanModal');
                 const submitBtn = document.getElementById('submitNewLoanBtn');
+                const closeBtn = document.getElementById('cancelNewLoanBtn');
+                
+                closeBtn.addEventListener('click', ()=>{
+                    modal.classList.add('hidden')
+                })
 
                 modalMemberId.textContent = memberId;
                 modalClientName.textContent = clientName;
                 
                 modal.dataset.clientId = clientId;
-                
-                closeBtn.onclick = () => modal.classList.add('hidden');
                 
                 const amountInput = document.getElementById('newLoanAmount');
                 amountInput.addEventListener('input', updateLoanCalculation);
@@ -1348,13 +1354,7 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                         messageDiv.textContent = result.message;
                         messageDiv.className = 'p-3 text-center rounded-lg text-sm font-medium bg-green-100 text-green-700';
                         messageDiv.classList.remove('hidden');
-                        
-                        setTimeout(() => {
-                            document.getElementById('newLoanModal').classList.add('hidden');
-                            if (typeof fetchAdminData === 'function') {
-                                fetchAdminData();
-                            }
-                        }, 2000);
+                        fetchAdminData();
                     } else {
                         messageDiv.textContent = result.message || 'An unexpected error occurred.';
                         messageDiv.className = 'p-3 text-center rounded-lg text-sm font-medium bg-red-100 text-red-700';
