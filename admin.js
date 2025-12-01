@@ -144,8 +144,6 @@ function initializeEventListeners() {
         window.location.href = "logout.php"
     })
 
-
-    $('#sidebarToggle, #closeSidebar, #sidebarOverlay').on('click', toggleSidebar)
     
     $('.sidebar-nav-item').on('click', function(e) {
         e.preventDefault()
@@ -170,10 +168,20 @@ function initializeEventListeners() {
     })
 }
 
-function toggleSidebar() {
-    $('#sidebar').toggleClass('-translate-x-full')
-    $('#sidebarOverlay').toggleClass('hidden')
-}
+const sidebar = document.getElementById('sidebar');
+const overlay = document.getElementById('sidebarOverlay');
+const mobileBtn = document.getElementById('mobileSidebarBtn');
+
+mobileBtn.addEventListener('click', () => {
+    sidebar.classList.remove('-translate-x-full');
+    overlay.classList.remove('hidden');
+});
+
+document.getElementById('sidebarOverlay').addEventListener('click', () => {
+    sidebar.classList.toggle('-translate-x-full');
+    overlay.classList.toggle('hidden');
+});
+
 
 function switchTab(targetId) {
     $('.tab-content').addClass('hidden')
@@ -190,9 +198,6 @@ function switchTab(targetId) {
     }
     $('#page-title').text(title)
     
-    if (window.innerWidth < 1024) {
-        toggleSidebar()
-    }
 }
 
 function formatCurrency(amount) {

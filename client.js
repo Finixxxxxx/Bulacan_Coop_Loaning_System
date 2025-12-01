@@ -1,6 +1,5 @@
 const API_URL = 'api.php';
 
-// Utility Functions
 function showNotification(message, type = 'info') {
     const notification = document.createElement('div');
     notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg ${
@@ -71,7 +70,6 @@ function calculateDaysUntilDue(nextPaymentDate) {
     return daysDiff;
 }
 
-// Data Fetching
 window.clientData = {};
 async function fetchClientData() {
     try {
@@ -123,7 +121,6 @@ function updateLoanInformation(data) {
     const noLoanMessage = document.getElementById('noActiveLoanMessage');
 
     if (!loan) {
-        // No active loan
         loanContainer.classList.add('hidden');
         loanInfo.classList.add('hidden');
         noLoanMessage.classList.remove('hidden');
@@ -131,12 +128,10 @@ function updateLoanInformation(data) {
         return;
     }
 
-    // Show loan details and hide no loan message
     loanContainer.classList.remove('hidden');
     loanInfo.classList.remove('hidden');
     noLoanMessage.classList.add('hidden');
 
-    // Update basic loan information
     document.getElementById('currentBalance').textContent = formatCurrency(loan.current_balance);
     document.getElementById('dailyPayment').textContent = formatCurrency(loan.daily_payment);
     document.getElementById('totalAmount').textContent = formatCurrency(loan.total_balance);
@@ -144,7 +139,6 @@ function updateLoanInformation(data) {
     document.getElementById('netAmount').textContent = formatCurrency(loan.net_amount || (loan.loan_amount - 200));
     document.getElementById('daysPaid').textContent = `${loan.days_paid || 0}/100`;
 
-    // Update next payment date
     const nextPaymentDate = loan.next_payment_date;
     const nextPaymentElement = document.getElementById('nextPaymentDate');
     const dueDaysElement = document.querySelector('[data-due-days]');
@@ -173,7 +167,6 @@ function updateLoanInformation(data) {
         dueDaysElement.textContent = '';
     }
 
-    // Update loan status badge
     const statusBadge = document.getElementById('loanStatusBadge');
     statusBadge.textContent = loan.loan_status;
     statusBadge.className = 'status-badge ';
@@ -195,7 +188,6 @@ function updateLoanInformation(data) {
             statusBadge.classList.add('bg-gray-100', 'text-gray-800');
     }
 
-    // Store loan data for QR generation
     window.CURRENT_LOAN_ID = loan.loan_id;
 }
 

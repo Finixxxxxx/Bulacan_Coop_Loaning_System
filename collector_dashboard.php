@@ -23,6 +23,13 @@ $collector_username = $_SESSION["collector_username"] ?? "";
     <script type="module" src="collector.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        :root {
+            --primary-color: #1E40AF;
+            --primary-light: #EFF6FF;
+            --primary-dark: #1E3A8A;
+            --background-soft: #F9FAFB;
+            --text-base: #1F2937;
+        }
         body { 
             font-family: 'Inter', sans-serif; 
             background-color: #f8fafc;
@@ -47,18 +54,44 @@ $collector_username = $_SESSION["collector_username"] ?? "";
         #qrReader__dashboard_section{
             display: none;
         }
+        #sidebar {
+            width: 16rem;
+            z-index: 50;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .sidebar-nav-item {
+            transition: all 0.2s;
+            color: #4B5563;
+            background-color: transparent;
+            padding: 10px 12px;
+        }
+        .sidebar-nav-item:hover {
+            color: var(--primary-dark); 
+            background-color: #F3F4F6;
+        }
+        .sidebar-nav-item.active {
+            color: var(--primary-color) !important; 
+            background-color: var(--primary-light) !important; 
+            font-weight: 600;
+            border-left: 4px solid var(--primary-color);
+            padding-left: 14px !important;
+        }
+
     </style>
 </head>
 <body class="min-h-screen">
     <div class="flex min-h-screen">
-        
-        <div class="w-64 bg-white shadow-lg flex flex-col h-screen">
+        <div id="sidebarOverlay" class="hidden fixed inset-0 bg-black/50 z-40 md:hidden"></div>
+        <div id="sidebar" class="fixed inset-y-0 left-0 w-64 bg-white shadow-lg transform -translate-x-full md:translate-x-0 transition-transform duration-300 z-50">
             <div class="p-4 border-b">
                 <div class="flex items-center">
-                    <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center mr-3">
-                        <i class="fas fa-coins text-white text-sm"></i>
+                    <div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center mr-3 shadow-lg shadow-primary/30">
+                        <i class="fas fa-handshake text-white text-xl"></i>
                     </div>
-                    <span class="font-semibold text-gray-900">Bulacan Coop</span>
+                    <div>
+                        <p class="font-semibold text-gray-900">Bulacan Coop</p>
+                        <p class="text-gray-500 text-xs">Loaning Management System</p>
+                    </div>
                 </div>
             </div>
             <nav class="p-4">
@@ -92,14 +125,27 @@ $collector_username = $_SESSION["collector_username"] ?? "";
         </div>
 
         
-        <div class="flex-1 p-6">
-            <header class="mb-8">
-                <h1 class="text-2xl font-bold text-gray-900" id="pageTitle">Collector Dashboard</h1>
-                <p class="text-gray-600" id="pageSubtitle">Manage daily payments and collections</p>
+        <div class="flex-1 p-6 md:ml-64">
+            <header class="md:flex items-center justify-between mb-8 space-x-2">
+                
+                <div class="md:block flex space-x-4 mb-2 md:mb-0">
+                    <button id="mobileSidebarBtn" class="text-gray-700 focus:outline-none md:hidden">
+                        <i class="fas fa-bars text-2xl"></i>
+                    </button>
+                    <h1 class="text-2xl font-bold text-gray-900" id="pageTitle">Collector Dashboard</h1>
+                    <p class="text-gray-600 md:flex hidden" id="pageSubtitle">Manage daily payments and collections</p>
+                </div>
+                <div class="flex space-x-4">
+                    <button id="scanQRBtn" class="bg-primary text-white px-6 py-3 rounded-lg font-semibold hover:bg-primary-dark transition-colors flex items-center">
+                        <i class="fas fa-qrcode mr-2"></i> Scan QR Code
+                    </button>
+                    <button id="manualEntryBtn" class="bg-gray-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-700 transition-colors flex items-center">
+                        <i class="fas fa-keyboard mr-2"></i> Manual Entry
+                    </button>
+                </div>
             </header>
 
-            
-            <div id="dashboard" class="tab-content">
+            <div id="dashboard" class="tab-content fade-in">
                 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                     <div class="bg-white p-6 rounded-xl shadow-md card-hover">
@@ -137,16 +183,6 @@ $collector_username = $_SESSION["collector_username"] ?? "";
                             </div>
                         </div>
                     </div>
-                </div>
-
-                
-                <div class="mb-8 flex space-x-4">
-                    <button id="scanQRBtn" class="bg-primary text-white px-6 py-3 rounded-lg font-semibold hover:bg-primary-dark transition-colors flex items-center">
-                        <i class="fas fa-qrcode mr-2"></i> Scan QR Code
-                    </button>
-                    <button id="manualEntryBtn" class="bg-gray-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-700 transition-colors flex items-center">
-                        <i class="fas fa-keyboard mr-2"></i> Manual Entry
-                    </button>
                 </div>
 
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -194,7 +230,7 @@ $collector_username = $_SESSION["collector_username"] ?? "";
             </div>
 
             
-            <div id="profile" class="tab-content hidden">
+            <div id="profile" class="tab-content hidden fade-in">
                 <div class="bg-white rounded-xl shadow-md p-6 card-hover">
                     
                     <form id="profileForm" class="space-y-6">
@@ -581,6 +617,20 @@ $collector_username = $_SESSION["collector_username"] ?? "";
                 e.target.classList.add('hidden');
                 stopQRScanner();
             }
+        });
+
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+        const mobileBtn = document.getElementById('mobileSidebarBtn');
+
+        mobileBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('-translate-x-full');
+            overlay.classList.toggle('hidden');
+        });
+
+        overlay.addEventListener('click', () => {
+            sidebar.classList.add('-translate-x-full');
+            overlay.classList.add('hidden');
         });
     </script>
 </body>

@@ -87,10 +87,6 @@ function updateUnpaidClients(unpaidClients) {
                 <div class="text-right">
                     <p class="font-semibold text-gray-900">${formatCurrency(client.daily_payment)}</p>
                     <p class="text-xs text-gray-500">Due Today</p>
-                    <button onclick="recordPayment(${client.loan_id}, ${client.daily_payment})" 
-                            class="mt-1 bg-primary text-white px-3 py-1 rounded text-xs hover:bg-primary-dark transition-colors">
-                        <i class="fas fa-peso-sign mr-1"></i> Collect
-                    </button>
                 </div>
             </div>
         `;
@@ -180,33 +176,6 @@ function updateTodayPayments(todayPayments) {
     });
 }
 
-async function recordPayment(loanId, amount) {
-    try {
-        const formData = new FormData();
-        formData.append('action', 'record_payment');
-        formData.append('loan_id', loanId);
-        formData.append('payment_amount', amount);
-
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            body: formData
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-            showNotification('Payment recorded successfully!', 'success');
-            fetchCollectorData();
-        } else {
-            showNotification('Payment failed: ' + result.message, 'error');
-        }
-    } catch (error) {
-        console.error('Payment error:', error);
-        showNotification('Payment failed. Please try again.', 'error');
-    }
-}
-
-window.recordPayment = recordPayment;
 document.addEventListener('DOMContentLoaded', function() {
     fetchCollectorData();
     setInterval(fetchCollectorData, 30000);

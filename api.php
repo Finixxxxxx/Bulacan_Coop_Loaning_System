@@ -775,8 +775,6 @@ switch ($action) {
         if (!is_numeric($client_id) || $client_id <= 0 || !is_numeric($loan_id) || $loan_id <= 0 || !is_numeric($payment_amount) || $payment_amount <= 0) {
             json_error('Invalid payment details.');
         }
-
-        // Verify client and loan match
         $sql_verify = "SELECT l.loan_id FROM loans l WHERE l.loan_id = ? AND l.client_id = ? AND l.loan_status IN ('Active', 'Overdue')";
         if ($stmt = $mysqli->prepare($sql_verify)) {
             $stmt->bind_param("ii", $loan_id, $client_id);
@@ -788,8 +786,6 @@ switch ($action) {
             }
             $stmt->close();
         }
-
-        // Process payment using the same logic as record_payment
         $mysqli->begin_transaction();
         $success = false;
 
@@ -807,18 +803,15 @@ switch ($action) {
                     $term_days = (int)$loan['term_days'];
                     $next_payment_date = $loan['next_payment_date'];
 
-                    // Check for missed payments
                     $missed_days = 0;
                     if ($next_payment_date && $next_payment_date < date('Y-m-d')) {
                         $missed_days = floor((strtotime(date('Y-m-d')) - strtotime($next_payment_date)) / (60 * 60 * 24));
                     }
 
-                    // Add missed payments to current payment
                     if ($missed_days > 0) {
                         $payment_amount += ($daily_payment * $missed_days);
                     }
 
-                    // Determine payment type
                     $payment_type = 'daily';
                     if ($payment_amount >= $current_balance) {
                         $payment_type = 'full';
@@ -1179,15 +1172,10 @@ switch ($action) {
             echo "Generated:\t" . date('Y-m-d H:i:s') . "\n\n";
 
             if ($result && $result->num_rows > 0) {
-                // Print headers
                 $firstRow = $result->fetch_assoc();
                 $headers = array_keys($firstRow);
                 echo implode("\t", $headers) . "\n";
-
-                // Print first row
                 echo implode("\t", array_values($firstRow)) . "\n";
-
-                // Continue remaining rows
                 while ($row = $result->fetch_assoc()) {
                     echo implode("\t", array_values($row)) . "\n";
                 }
@@ -1195,7 +1183,6 @@ switch ($action) {
                 echo "No data available\n";
             }
         } else {
-            // PDF output (simplified - in production use a PDF library like TCPDF or FPDF)
             echo "Bulacan Coop - " . ucfirst($type) . " Report\n";
             echo "===============================\n\n";
             echo "Branch: " . ($branch === 'all' ? 'All Branches' : ucfirst($branch)) . "\n";
@@ -1380,8 +1367,6 @@ switch ($action) {
         $branch_filter = $_REQUEST['branch'] ?? 'all';
         
         $response = ['labels' => [], 'loans_issued' => [], 'payments' => []];
-        
-        // Loans issued with branch filter
         $sql_loans = "SELECT 
             DATE_FORMAT(l.application_date, '%Y-%m') as month,
             COUNT(*) as loans_count,
@@ -1397,8 +1382,6 @@ switch ($action) {
         
         $sql_loans .= " GROUP BY YEAR(l.application_date), MONTH(l.application_date) 
             ORDER BY YEAR(l.application_date), MONTH(l.application_date)";
-            
-        // Payments with branch filter
         $sql_payments = "SELECT 
             DATE_FORMAT(p.payment_date, '%Y-%m') as month,
             SUM(p.payment_amount) as total_payments
@@ -1412,8 +1395,6 @@ switch ($action) {
         
         $sql_payments .= " GROUP BY YEAR(p.payment_date), MONTH(p.payment_date) 
             ORDER BY YEAR(p.payment_date), MONTH(p.payment_date)";
-        
-        // Prepare and execute loans query
         $stmt_loans = $mysqli->prepare($sql_loans);
         if ($branch_filter !== 'all') {
             $stmt_loans->bind_param("s", $branch_filter);
@@ -1421,7 +1402,6 @@ switch ($action) {
         $stmt_loans->execute();
         $result_loans = $stmt_loans->get_result();
         
-        // Prepare and execute payments query
         $stmt_payments = $mysqli->prepare($sql_payments);
         if ($branch_filter !== 'all') {
             $stmt_payments->bind_param("s", $branch_filter);

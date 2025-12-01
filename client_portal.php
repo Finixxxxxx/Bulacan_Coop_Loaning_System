@@ -197,7 +197,7 @@ $client_id = $_SESSION["client_id"];
             </button>
             <div class="text-center">
                 <h3 class="text-xl font-semibold text-gray-900 mb-1">Payment QR Code</h3>
-                <p class="text-sm text-gray-500 mb-4">Show this code at the branch teller.</p>
+                <p class="text-sm text-gray-500 mb-4">Show this code at the branch collector.</p>
                 <div id="qrCodeContainer" class="mb-4 flex justify-center p-2 bg-gray-50 rounded-lg">
                     <canvas id="qrCanvas" class="border border-gray-300 rounded-lg"></canvas>
                 </div>
@@ -229,7 +229,6 @@ $client_id = $_SESSION["client_id"];
         </div>
     </div>
 
-    <!-- Logout Confirmation Modal -->
     <div id="logoutConfirmationModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-75 overflow-y-auto h-full w-full z-50 flex items-center justify-center fade-in">
         <div class="relative p-8 border w-96 shadow-2xl rounded-2xl bg-white transform modal-content">
             <div class="text-center">
@@ -353,7 +352,6 @@ $client_id = $_SESSION["client_id"];
             document.getElementById('messageModal').classList.add('hidden');
         });
 
-        // Logout functionality
         document.getElementById('logoutBtn').addEventListener('click', function() {
             document.getElementById('logoutConfirmationModal').classList.remove('hidden');
         });

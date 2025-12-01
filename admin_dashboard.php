@@ -23,47 +23,53 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
         
         :root {
-            --primary-color: #2563EB;
-            --primary-light: #BFDBFE;
-            --primary-dark: #1D4ED8;
-            --background-soft: #f4f6f9;
+            --primary-color: #1E40AF;
+            --primary-light: #EFF6FF;
+            --primary-dark: #1E3A8A;
+            --background-soft: #F9FAFB;
+            --text-base: #1F2937;
         }
         body { 
             font-family: 'Inter', sans-serif; 
             background-color: var(--background-soft); 
+            color: var(--text-base);
         }
         .bg-primary { background-color: var(--primary-color); } 
         .hover\:bg-primary-dark:hover { background-color: var(--primary-dark); }
         .text-primary { color: var(--primary-color); }
-        #sidebar {
-            width: 16rem;
-            z-index: 50;
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.05);
-        }
+
         .sidebar-nav-item {
             transition: all 0.2s;
             color: #4B5563;
             background-color: transparent;
+            padding: 10px 12px;
         }
         .sidebar-nav-item:hover {
-            color: #1F2937;
-            background-color: #F9FAFB;
+            color: var(--primary-dark); 
+            background-color: #F3F4F6;
         }
         .sidebar-nav-item.active {
             color: var(--primary-color) !important; 
-            background-color: #EFF6FF !important;
+            background-color: var(--primary-light) !important; 
             font-weight: 600;
+            border-left: 4px solid var(--primary-color);
+            padding-left: 14px !important;
         }
+
         .card-flat { 
             transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
             border-radius: 0.75rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.08);
+            border: 1px solid #E5E7EB;
         }
         .card-flat:hover { 
-            transform: translateY(-2px); 
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1); 
+            transform: translateY(-1px); 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
-        
+        .input-focus-style:focus {
+            border-color: var(--primary-color) !important;
+            box-shadow: 0 0 0 1px var(--primary-color) !important;
+        }
         .status-badge {
             padding: 0.35rem 1rem;
             border-radius: 9999px;
@@ -72,36 +78,16 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
             text-transform: uppercase;
             letter-spacing: 0.05em;
         }
-        .notification-container {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            z-index: 1000;
-            max-width: 400px;
-        }
-        .notification {
-            background: white;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 10px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            border-left: 4px solid;
-            animation: slideInRight 0.3s ease-out;
-        }
-        @keyframes slideInRight {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
         .modal-overlay {
-            background: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(4px);
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(3px);
         }
-        .modal-content {
-            animation: modalSlideIn 0.3s ease-out;
+        .fade-in {
+            animation: fadeIn 0.4s ease-out;
         }
-        @keyframes modalSlideIn {
-            from { transform: translateY(-20px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
     <script>
@@ -119,27 +105,26 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
         }
     </script>
 </head>
-<body class="bg-background-soft min-h-screen">
+<body class="bg-background-soft min-h-screen antialiased">
     <div id="dashboard" class="flex min-h-screen">
-        
-        <div id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out">
+        <div id="sidebarOverlay" class="hidden fixed inset-0 bg-black/50 z-40 md:hidden"></div>
+        <div id="sidebar" class="fixed inset-y-0 left-0 w-64 bg-white shadow-lg transform -translate-x-full md:translate-x-0 transition-transform duration-300 z-50">
             <div class="flex flex-col h-full">
-                <div class="flex items-center justify-between p-4 border-b border-gray-200">
-                    <div class="flex items-center">
-                        <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center mr-3">
-                            <i class="fas fa-coins text-white text-sm"></i>
-                        </div>
-                        <span class="font-semibold text-gray-900">Bulacan Coop</span>
+                <div class="flex items-center m-3">
+                    <div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center mr-3 shadow-lg shadow-primary/30">
+                        <i class="fas fa-handshake text-white text-xl"></i>
                     </div>
-                    <button id="closeSidebar" class="lg:hidden p-1 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100">
-                        <i class="fas fa-times"></i>
-                    </button>
+                    <div>
+                        <p class="font-semibold text-gray-900">Bulacan Coop</p>
+                        <p class="text-gray-500 text-xs">Loaning Management System</p>
+                    </div>
                 </div>
-                <div class="p-4 border-b border-gray-200">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
+
+                <div class="p-4 border-b border-gray-100">
+                    <label class="block text-xs font-semibold text-gray-500 mb-2 uppercase">
                         <i class="fas fa-filter mr-2 text-primary"></i>Filter by Branch
                     </label>
-                    <select id="branchSelector" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent">
+                    <select id="branchSelector" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent input-focus-style">
                         <option value="all">All Branches</option>
                         <option value="malolos">Malolos Branch</option>
                         <option value="hagonoy">Hagonoy Branch</option>
@@ -151,69 +136,67 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                     </select>
                 </div>
 
-                <nav class="flex-1 p-4">
-                    <div class="space-y-2">
-                        <button class="sidebar-nav-item active w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg" data-tab="overview">
+                <nav class="flex-1 p-3">
+                    <div class="space-y-1">
+                        <button class="sidebar-nav-item active w-full flex items-center font-medium rounded-lg" data-tab="overview">
                             <i class="fas fa-tachometer-alt mr-3 w-5"></i>
                             Overview
                         </button>
-                        <button class="sidebar-nav-item w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg" data-tab="clients">
+                        <button class="sidebar-nav-item w-full flex items-center font-medium rounded-lg" data-tab="clients">
                             <i class="fas fa-users mr-3 w-5"></i>
                             Clients
                         </button>
-                        <button class="sidebar-nav-item w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg" data-tab="loans">
+                        <button class="sidebar-nav-item w-full flex items-center font-medium rounded-lg" data-tab="loans">
                             <i class="fas fa-list-alt mr-3 w-5"></i>
                             Loans
                         </button>
-                        <button class="sidebar-nav-item w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg" data-tab="payments">
+                        <button class="sidebar-nav-item w-full flex items-center font-medium rounded-lg" data-tab="payments">
                             <i class="fas fa-credit-card mr-3 w-5"></i>
                             Payments
                         </button>
-                        <button class="sidebar-nav-item w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg" data-tab="collectors">
+                        <button class="sidebar-nav-item w-full flex items-center font-medium rounded-lg" data-tab="collectors">
                             <i class="fas fa-user-friends mr-3 w-5"></i>
                             Collectors
                         </button>
-                        <button class="sidebar-nav-item w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg" data-tab="settings">
+                        <button class="sidebar-nav-item w-full flex items-center font-medium rounded-lg" data-tab="settings">
                             <i class="fas fa-cog mr-3 w-5"></i>
-                            Settings
+                            Reports & Settings
                         </button>
                     </div>
                 </nav>
 
-                <div class="p-4 border-t border-gray-200">
+                <div class="p-4 border-t border-gray-100 bg-gray-50">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center">
-                            <div class="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center mr-3">
-                                <i class="fas fa-user text-gray-600 text-sm"></i>
+                            <div class="w-9 h-9 bg-primary/10 rounded-full flex items-center justify-center mr-3">
+                                <i class="fas fa-user-shield text-primary text-md"></i>
                             </div>
                             <div>
-                                <p class="text-sm font-medium text-gray-900"><?php echo htmlspecialchars($admin_name); ?></p>
+                                <p class="text-sm font-semibold text-gray-900"><?php echo htmlspecialchars($admin_name); ?></p>
                                 <p class="text-xs text-gray-500">System Administrator</p>
                             </div>
                         </div>
-                        <button id="logoutBtn" class="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
-                            <i class="fas fa-right-from-bracket"></i>
+                        <button id="logoutBtn" class="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Logout">
+                            <i class="fas fa-sign-out-alt"></i>
                         </button>
                     </div>
                 </div>
             </div>
         </div>
-
-        <div id="sidebarOverlay" class="fixed inset-0 bg-gray-600 bg-opacity-50 z-40 lg:hidden hidden"></div>
         
         <main class="flex-1 lg:ml-64 px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 overflow-y-auto">
             
-            <header class="bg-white shadow-sm border-b border-gray-200 rounded-xl p-4 mb-8">
+            <header class="bg-white rounded-xl p-4 mb-8 card-flat">
                 <div class="flex justify-between items-center h-full">
                     <div class="flex items-center">
-                        <button id="sidebarToggle" class="lg:hidden mr-4 p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100">
-                            <i class="fas fa-bars text-xl"></i>
+                        <button id="mobileSidebarBtn" class="text-gray-700 focus:outline-none md:hidden mr-3">
+                            <i class="fas fa-bars text-2xl"></i>
                         </button>
-                        <h1 id="page-title" class="text-2xl font-extrabold text-gray-900 transition-all duration-300">Dashboard Overview</h1>
+                        <h1 id="page-title" class="text-2xl font-bold text-gray-900 transition-all duration-300">Dashboard Overview</h1>
                     </div>
                     <div class="flex items-center space-x-4">
                         <span class="text-sm text-gray-600 hidden sm:inline">
-                            <i class="fas fa-user-shield mr-2 text-primary"></i> Admin: <?php echo htmlspecialchars($admin_name); ?>
+                            <i class="fas fa-calendar-alt mr-2 text-primary"></i> Today: <?php echo date('F j, Y'); ?>
                         </span>
                     </div>
                 </div>
@@ -222,59 +205,64 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
             <div id="notificationContainer" class="notification-container"></div>
 
             <div id="mainContent" class="space-y-10">
+                
                 <section id="overview" class="tab-content fade-in">
                     
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-                        <div id="totalClients" class="stat-card bg-gradient-to-r from-sky-500 to-sky-600 p-6 rounded-xl shadow-lg text-white cursor-pointer" data-tab="clients">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                        <div id="totalClients" class="stat-card bg-gradient-to-r from-sky-500 to-sky-600 p-6 rounded-xl shadow-xl shadow-sky-500/30 text-white cursor-pointer hover:shadow-sky-500/50 transition-all duration-300" data-tab="clients">
                             <div class="flex items-center justify-between">
                                 <div>
-                                    <p class="text-sky-100 text-sm font-medium">Total Clients</p>
-                                    <p class="text-3xl font-bold" id="totalClientsCount">0</p>
-                                    <p class="text-sky-100 text-xs mt-1">Click to view clients</p>
+                                    <p class="text-sky-100 text-sm font-medium uppercase tracking-wider">Total Clients</p>
+                                    <p class="text-4xl font-extrabold mt-1" id="totalClientsCount">0</p>
+                                    <p class="text-sky-100 text-xs mt-2 font-light">Click to manage clients</p>
                                 </div>
-                                <div class="p-3 bg-white bg-opacity-20 rounded-lg">
-                                    <i class="fas fa-users text-2xl"></i>
+                                <div class="p-4 bg-black bg-opacity-10 rounded-lg">
+                                    <i class="fas fa-users text-3xl"></i>
                                 </div>
                             </div>
                         </div>
-                        <div class="stat-card bg-gradient-to-r from-rose-500 to-rose-600 p-6 rounded-xl shadow-lg text-white">
+                        <div class="stat-card bg-gradient-to-r from-rose-500 to-rose-600 p-6 rounded-xl shadow-xl shadow-rose-500/30 text-white hover:shadow-rose-500/50 transition-all duration-300">
                             <div class="flex items-center justify-between">
                                 <div>
-                                    <p class="text-rose-100 text-sm font-medium">Total Active Loan</p>
-                                    <p id="totalOutstandingAmount" class="text-3xl font-bold">₱0</p>
-                                    <p class="text-rose-100 text-xs mt-1">Active Loans <strong class="text-md font-base bg-rose-200/50 rounded-full py-1 px-2 ml-1" id="activeLoansCount">0</strong></p>
+                                    <p class="text-rose-100 text-sm font-medium uppercase tracking-wider">Total Outstanding</p>
+                                    <p id="totalOutstandingAmount" class="text-4xl font-extrabold mt-1">₱0</p>
+                                    <p class="text-rose-100 text-xs mt-2 font-light">Active Loans: <strong class="ml-1 font-semibold" id="activeLoansCount">0</strong></p>
                                 </div>
-                                <div class="p-3 bg-white bg-opacity-20 rounded-lg">
-                                    <i class="fas fa-hand-holding-usd text-2xl"></i>
+                                <div class="p-4 bg-black bg-opacity-10 rounded-lg">
+                                    <i class="fas fa-hand-holding-usd text-3xl"></i>
                                 </div>
                             </div>
                         </div>
-                        <div class="stat-card bg-gradient-to-r from-emerald-500 to-emerald-600 p-6 rounded-xl shadow-lg text-white">
+                        <div class="stat-card bg-gradient-to-r from-emerald-500 to-emerald-600 p-6 rounded-xl shadow-xl shadow-emerald-500/30 text-white hover:shadow-emerald-500/50 transition-all duration-300">
                             <div class="flex items-center justify-between">
                                 <div>
-                                    <p class="text-emerald-100 text-sm font-medium">Total Payments Today</p>
-                                    <p id="totalPaymentsToday" class="text-3xl font-bold">₱0</p>
-                                    <p class="text-emerald-100 text-xs mt-1">
-                                        <i id="payRateFromYesterdayIcon" class="fas fa-arrow-up text-white"></i>
-                                        Rate from yesterday <strong id="payRateFromYesterday" class="text-sm font-base bg-emerald-200/50 rounded-full py-1 px-2 ml-1">0%</strong></p>
+                                    <p class="text-emerald-100 text-sm font-medium uppercase tracking-wider">Payments Today</p>
+                                    <p id="totalPaymentsToday" class="text-4xl font-extrabold mt-1">₱0</p>
+                                    <p class="text-emerald-100 text-xs mt-2 font-light">
+                                        <i id="payRateFromYesterdayIcon" class="fas fa-arrow-up text-white mr-1"></i>
+                                        Rate from yesterday <strong id="payRateFromYesterday" class="ml-1 font-semibold">0%</strong></p>
                                 </div>
-                                <div class="p-3 bg-white bg-opacity-20 rounded-lg">
-                                    <i class="fas fa-money-bill-wave text-2xl"></i>
+                                <div class="p-4 bg-black bg-opacity-10 rounded-lg">
+                                    <i class="fas fa-money-bill-wave text-3xl"></i>
                                 </div>
                             </div>
                         </div>
                     </div>
                     
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6"> 
-                        <div class="bg-white p-6 rounded-xl shadow-md card-flat">
-                            <h3 class="text-xl font-bold text-gray-800 mb-4 border-b pb-3">Total Loans per Branch</h3>
+                        <div class="bg-white p-6 rounded-xl card-flat">
+                            <h3 class="text-xl font-bold text-gray-800 mb-4 border-b pb-3">
+                                <i class="fas fa-chart-pie mr-2 text-primary"></i>Total Loans per Branch
+                            </h3>
                             <div style="height: 350px;">
                                 <canvas id="branchChart" style="max-height: 350px;"></canvas>
                             </div>
                         </div>
 
-                        <div class="bg-white p-6 rounded-xl shadow-md card-flat">
-                            <h3 class="text-xl font-bold text-gray-800 mb-4 border-b pb-3">Loans Issued and Payments</h3>
+                        <div class="bg-white p-6 rounded-xl card-flat">
+                            <h3 class="text-xl font-bold text-gray-800 mb-4 border-b pb-3">
+                                <i class="fas fa-chart-bar mr-2 text-primary"></i>Monthly Loan & Payment Trends
+                            </h3>
                             <div style="height: 350px;">
                                 <canvas id="monthlyTrendsChart" style="max-height: 350px;"></canvas>
                             </div>
@@ -286,56 +274,54 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                         <div>
                             <h2 class="text-2xl font-bold text-gray-900">Client Management</h2>
-                            <p class="text-gray-600 text-sm mt-1">Manage your loan clients and their information</p>
+                            <p class="text-gray-600 text-sm mt-1">Manage your loan clients and their information.</p>
                         </div>
                         <div class="flex gap-3 w-full sm:w-auto">
-                            <button id="exportClientsBtn" class="w-1/2 sm:w-auto bg-emerald-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-emerald-700 transition-colors">
-                                <i class="fas fa-download text-xl mr-2"></i>Export
+                            <button id="exportClientsBtn" class="w-1/2 sm:w-auto bg-emerald-600 text-white px-4 py-2.5 rounded-lg font-semibold hover:bg-emerald-700 transition-colors shadow-md shadow-emerald-600/20">
+                                <i class="fas fa-download mr-2"></i>Export
                             </button>
-                            <button id="showAddClientModal" class="w-full sm:w-auto bg-primary text-white py-2.5 px-5 rounded-lg hover:bg-primary-dark transition-colors font-semibold shadow-lg">
-                                <i class="fas fa-plus mr-2"></i> Add New Client
+                            <button id="showAddClientModal" class="w-full sm:w-auto bg-primary text-white py-2.5 px-5 rounded-lg hover:bg-primary-dark transition-colors font-semibold shadow-md shadow-primary/20">
+                                <i class="fas fa-user-plus mr-2"></i> Add New Client
                             </button>
                         </div>
                     </div>
                     
-                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-6 card-flat">
+                    <div class="bg-white p-4 rounded-xl mb-6 card-flat">
                         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                             <div class="relative md:col-span-2">
                                 <i class="fas fa-search absolute left-3 top-3.5 text-gray-400"></i>
-                                <input type="text" id="clientSearch" placeholder="Search by name or ID..." class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition shadow-sm">
+                                <input type="text" id="clientSearch" placeholder="Search by name, ID, or email..." 
+                                    class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent input-focus-style transition">
                             </div>
-                            <select id="statusFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent hidden">
+                            <select id="statusFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent input-focus-style hidden">
                                 <option value="">All Status</option>
-                                <option value="Active">Active</option>
-                                <option value="Paid">Paid</option>
-                                <option value="Overdue">Overdue</option>
                             </select>
-                            <select id="sortBy" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent hidden">
+                            <select id="sortBy" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent input-focus-style hidden">
                                 <option value="name">Sort by Name</option>
-                                <option value="outstanding">Sort by Outstanding</option>
-                                <option value="date">Sort by Date</option>
                             </select>
                             <button id="clearFilters" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors hidden">
-                                <i class="fas fa-times mr-2"></i>Clear
+                                <i class="fas fa-times mr-2"></i>Clear Filters
                             </button>
                         </div>
                     </div>
 
-                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 table-container card-flat">
+                    <div class="bg-white rounded-xl overflow-hidden card-flat">
                         <div class="overflow-x-auto">
                             <table class="min-w-full divide-y divide-gray-200">
                                 <thead class="bg-gray-50">
                                     <tr>
-                                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"><i class="fas fa-id-card mr-2"></i>Member ID</th>
-                                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"><i class="fas fa-user mr-2"></i>Name</th>
-                                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"><i class="fas fa-mail mr-2"></i>Email</th>
-                                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"><i class="fas fa-dollar-sign mr-2"></i>Outstanding</th>
-                                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"><i class="fas fa-building mr-2"></i>Branch</th>
-                                        <th class="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider"><i class="fas fa-cogs mr-2"></i>Actions</th>
+                                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"><i class="fas fa-id-card mr-2"></i>Member ID</th>
+                                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"><i class="fas fa-user mr-2"></i>Name</th>
+                                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"><i class="fas fa-envelope mr-2"></i>Email</th>
+                                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"><i class="fas fa-dollar-sign mr-2"></i>Outstanding</th>
+                                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"><i class="fas fa-building mr-2"></i>Branch</th>
+                                        <th class="px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider"><i class="fas fa-cogs mr-2"></i>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody id="clientsTableBody" class="bg-white divide-y divide-gray-100 text-sm">
-                                    <tr><td colspan="6" class="text-center py-8 text-gray-500">Loading client data...</td></tr>
+                                    <tr><td colspan="6" class="text-center py-8 text-gray-500">
+                                        <i class="fas fa-spinner fa-spin text-2xl mb-2"></i><p>Loading client data...</p>
+                                    </td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -349,91 +335,88 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                             <h2 class="text-2xl font-bold text-gray-900">Loan Management</h2>
                             <p class="text-gray-600 text-sm mt-1">View all loan applications and transactions.</p>
                         </div>
-                        <div class="flex space-x-2 items-center">
-                            <div class="flex flex-wrap justify-between items-center space-y-3 sm:space-y-0 sm:space-x-4">
-                                <input type="text" id="loanSearch" placeholder="Search by Loan ID or Client..." class="w-full sm:max-w-sm px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition shadow-sm">
-                            </div>
-                            <button id="newLoanBtn" class="bg-primary text-white px-4 py-2.5 rounded-lg font-medium hover:bg-primary-dark transition-colors">
+                        <div class="flex space-x-3 items-center w-full sm:w-auto">
+                            <input type="text" id="loanSearch" placeholder="Search by Loan ID or Client..." 
+                                class="w-full sm:max-w-xs px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent input-focus-style transition shadow-sm">
+                            <button id="newLoanBtn" class="bg-primary text-white px-4 py-2.5 rounded-lg font-semibold hover:bg-primary-dark transition-colors shadow-md shadow-primary/20 whitespace-nowrap">
                                 <i class="fas fa-plus mr-2"></i>New Loan
                             </button>
                         </div>
                     </div>
 
-                    
-                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden card-flat">
+                    <div class="bg-white rounded-xl overflow-hidden card-flat">
                         <div class="overflow-x-auto">
                             <table class="min-w-full divide-y divide-gray-200">
                                 <thead class="bg-gray-50">
                                     <tr>
-                                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"><i class="fas fa-hashtag mr-2"></i>Loan ID</th>
-                                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"><i class="fas fa-user mr-2"></i>Client Name</th>
-                                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"><i class="fas fa-dollar-sign mr-2"></i>Amount</th>
-                                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"><i class="fas fa-balance-scale mr-2"></i>Balance</th>
-                                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"><i class="fas fa-info-circle mr-2"></i>Status</th>
-                                        <th class="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider"><i class="fas fa-cogs mr-2"></i>Actions</th>
+                                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"><i class="fas fa-hashtag mr-2"></i>Loan ID</th>
+                                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"><i class="fas fa-user mr-2"></i>Client Name</th>
+                                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"><i class="fas fa-sack-dollar mr-2"></i>Amount</th>
+                                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"><i class="fas fa-balance-scale-left mr-2"></i>Balance</th>
+                                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"><i class="fas fa-info-circle mr-2"></i>Status</th>
+                                        <th class="px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider"><i class="fas fa-cogs mr-2"></i>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody id="loansTableBody" class="bg-white divide-y divide-gray-100 text-sm">
-                                    <tr><td colspan="6" class="text-center py-8 text-gray-500">Loading loan data...</td></tr>
+                                    <tr><td colspan="6" class="text-center py-8 text-gray-500">
+                                        <i class="fas fa-spinner fa-spin text-2xl mb-2"></i><p>Loading loan data...</p>
+                                    </td></tr>
                                 </tbody>
                             </table>
                         </div>
                     </div>
-
                 </section>
 
                 <section id="payments" class="tab-content hidden fade-in">
-                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-                        <div>
-                            <h2 class="text-2xl font-bold text-gray-900">Payment Management</h2>
-                            <p class="text-gray-600 text-sm mt-1">Track and manage all loan payments</p>
-                        </div>
+                    <div class="mb-6">
+                        <h2 class="text-2xl font-bold text-gray-900">Payment Management</h2>
+                        <p class="text-gray-600 text-sm mt-1">Track and manage all loan payments and collections.</p>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 card-flat">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                        <div class="bg-white p-6 rounded-xl card-flat">
                             <div class="flex items-center justify-between">
                                 <div>
-                                    <p class="text-gray-600 text-sm font-medium">Today's Collections</p>
-                                    <p id="totalCollectionsToday" class="text-2xl font-bold text-emerald-600">₱0</p>
+                                    <p class="text-gray-600 text-sm font-medium uppercase tracking-wider">Today's Collections</p>
+                                    <p id="totalCollectionsToday" class="text-3xl font-bold text-emerald-600 mt-1">₱0</p>
                                 </div>
                                 <div class="p-3 bg-emerald-100 rounded-lg">
-                                    <i class="fas fa-money-check-alt text-emerald-600 text-xl"></i>
+                                    <i class="fas fa-money-check-alt text-emerald-600 text-2xl"></i>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 card-flat">
+                        <div class="bg-white p-6 rounded-xl card-flat">
                             <div class="flex items-center justify-between">
                                 <div>
-                                    <p class="text-gray-600 text-sm font-medium">Pending Payments</p>
-                                    <p id="totalPendingPaymentsTodal" class="text-2xl font-bold text-orange-600">₱0</p>
+                                    <p class="text-gray-600 text-sm font-medium uppercase tracking-wider">Pending Payments</p>
+                                    <p id="totalPendingPaymentsTodal" class="text-3xl font-bold text-orange-600 mt-1">₱0</p>
                                 </div>
                                 <div class="p-3 bg-orange-100 rounded-lg">
-                                    <i class="fas fa-clock text-orange-600 text-xl"></i>
+                                    <i class="fas fa-clock text-orange-600 text-2xl"></i>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 card-flat">
+                        <div class="bg-white p-6 rounded-xl card-flat">
                             <div class="flex items-center justify-between">
                                 <div>
-                                    <p class="text-gray-600 text-sm font-medium">Late Payments</p>
-                                    <p id="totalOverduePayments" class="text-2xl font-bold text-red-600">₱0</p>
+                                    <p class="text-gray-600 text-sm font-medium uppercase tracking-wider">Total Overdue</p>
+                                    <p id="totalOverduePayments" class="text-3xl font-bold text-red-600 mt-1">₱0</p>
                                 </div>
                                 <div class="p-3 bg-red-100 rounded-lg">
-                                    <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
+                                    <i class="fas fa-exclamation-triangle text-red-600 text-2xl"></i>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 card-flat">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-4 justify-between flex items-center">
+                    <div class="bg-white rounded-xl p-6 card-flat">
+                        <h3 class="text-xl font-bold text-gray-900 mb-4 justify-between flex items-center border-b pb-3">
                             <div class="flex items-center">
-                                <i class="fas fa-receipt mr-2 text-primary"></i>Recent Payments
+                                <i class="fas fa-receipt mr-2 text-primary"></i>Recent Payments History
                             </div>
-                            <select name="payment_date_filter" id="paymentDateFilter" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                            <select name="payment_date_filter" id="paymentDateFilter" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:border-transparent input-focus-style">
                                 <option value="all">All Time</option>
                                 <option value="today">Today</option>
                                 <option value="thisWeek">This Week</option>
@@ -457,143 +440,150 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                         <div>
                             <h2 class="text-2xl font-bold text-gray-900">Collector Management</h2>
-                            <p class="text-gray-600 text-sm mt-1">Manage payment collectors and their assignments</p>
+                            <p class="text-gray-600 text-sm mt-1">Manage payment collectors and their assignments.</p>
                         </div>
-                        <button id="showAddCollectorModal" class="w-full sm:w-auto bg-primary text-white py-2.5 px-5 rounded-lg hover:bg-primary-dark transition-colors font-semibold shadow-lg">
-                            <i class="fas fa-plus mr-2"></i> Add New Collector
+                        <button id="showAddCollectorModal" class="w-full sm:w-auto bg-primary text-white py-2.5 px-5 rounded-lg hover:bg-primary-dark transition-colors font-semibold shadow-md shadow-primary/20">
+                            <i class="fas fa-user-plus mr-2"></i> Add New Collector
                         </button>
                     </div>
 
-                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 table-container card-flat">
+                    <div class="bg-white rounded-xl overflow-hidden card-flat mb-8">
                         <div class="overflow-x-auto">
                             <table class="min-w-full divide-y divide-gray-200">
                                 <thead class="bg-gray-50">
                                     <tr>
-                                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"><i class="fas fa-user mr-2"></i>Name</th>
-                                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"><i class="fas fa-user-tag mr-2"></i>Username</th>
-                                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"><i class="fas fa-building mr-2"></i>Branch</th>
-                                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"><i class="fas fa-info-circle mr-2"></i>Status</th>
-                                        <th class="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider"><i class="fas fa-cogs mr-2"></i>Actions</th>
+                                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"><i class="fas fa-user mr-2"></i>Name</th>
+                                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"><i class="fas fa-user-tag mr-2"></i>Username</th>
+                                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"><i class="fas fa-building mr-2"></i>Branch</th>
+                                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"><i class="fas fa-info-circle mr-2"></i>Status</th>
+                                        <th class="px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider"><i class="fas fa-cogs mr-2"></i>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody id="collectorsTableBody" class="bg-white divide-y divide-gray-100 text-sm">
-                                    <tr><td colspan="5" class="text-center py-8 text-gray-500">Loading collector data...</td></tr>
+                                    <tr><td colspan="5" class="text-center py-8 text-gray-500">
+                                        <i class="fas fa-spinner fa-spin text-2xl mb-2"></i><p>Loading collector data...</p>
+                                    </td></tr>
                                 </tbody>
                             </table>
                         </div>
                     </div>
 
-                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 card-flat mt-4">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-4">
-                            <i class="fas fa-chart-bar mr-2 text-indigo-600"></i>Collector Performance Reports
+                    <div class="bg-white rounded-xl p-6 card-flat">
+                        <h3 class="text-xl font-bold text-gray-900 mb-4 border-b pb-3">
+                            <i class="fas fa-chart-line mr-2 text-indigo-600"></i>Collector Performance Reports
                         </h3>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Filter by Date</label>
-                                <input type="date" id="collectorReportDate" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" value="<?php echo date('Y-m-d'); ?>">
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">Filter by Date</label>
+                                <input type="date" id="collectorReportDate" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent input-focus-style" value="<?php echo date('Y-m-d'); ?>">
                             </div>
                         </div>
                         <div class="flex justify-between mt-6 gap-6 flex-col md:flex-row">
-                            <div class="mt-6 w-full" style="height: 300px;">
+                            <div class="w-full" style="height: 300px;">
                                 <canvas id="collectorAmountCollectedChart"></canvas>
+                                <p class="text-center text-sm font-medium text-gray-600 mt-2">Amount Collected</p>
                             </div>
-                            <div class="mt-6 w-full" style="height: 300px;">
+                            <div class="w-full" style="height: 300px;">
                                 <canvas id="collectorClientsCollectedChart"></canvas>
+                                <p class="text-center text-sm font-medium text-gray-600 mt-2">Clients Served</p>
                             </div>
                         </div>
                     </div>
                 </section>
 
                 <section id="settings" class="tab-content hidden fade-in">
-                    <div class="mb-6">
+                    
+                    <div class="mb-8">
                         <h2 class="text-2xl font-bold text-gray-900">Reports & Analytics</h2>
-                        <p class="text-gray-600 text-sm mt-1">Generate comprehensive reports and analytics</p>
+                        <p class="text-gray-600 text-sm mt-1">Generate and download comprehensive reports.</p>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow card-flat">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
+                        <div class="bg-white p-6 rounded-xl card-flat">
                             <div class="flex items-center justify-between mb-4">
                                 <div class="p-3 bg-sky-100 rounded-lg">
-                                    <i class="fas fa-chart-line text-primary text-2xl"></i>
+                                    <i class="fas fa-chart-area text-primary text-2xl"></i>
                                 </div>
-                                <div class="flex space-x-2">
-                                    <button onclick="downloadReport('performance', 'pdf')" class="text-red-600 hover:text-red-800">
+                                <div class="flex space-x-2 text-sm font-semibold">
+                                    <button onclick="downloadReport('performance', 'pdf')" class="text-red-600 hover:text-red-800 p-2 rounded-full hover:bg-red-50 transition-colors">
                                         <i class="fas fa-file-pdf text-xl"></i>
                                     </button>
-                                    <button onclick="downloadReport('performance', 'excel')" class="text-green-600 hover:text-green-800">
+                                    <button onclick="downloadReport('performance', 'excel')" class="text-green-600 hover:text-green-800 p-2 rounded-full hover:bg-green-50 transition-colors">
                                         <i class="fas fa-file-excel text-xl"></i>
                                     </button>
-                                    <button onclick="downloadReport('performance', 'csv')" class="text-blue-600 hover:text-blue-800">
+                                    <button onclick="downloadReport('performance', 'csv')" class="text-blue-600 hover:text-blue-800 p-2 rounded-full hover:bg-blue-50 transition-colors">
                                         <i class="fas fa-file-csv text-xl"></i>
                                     </button>
                                 </div>
                             </div>
-                            <h3 class="text-lg font-semibold text-gray-900 mb-2">Performance Report</h3>
-                            <p class="text-gray-600 text-sm">Monthly loan performance and collection rates</p>
+                            <h3 class="text-lg font-bold text-gray-900 mb-1">Performance Report</h3>
+                            <p class="text-gray-500 text-sm">Monthly loan performance and collection rates.</p>
                         </div>  
 
-                        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow card-flat">
+                        <div class="bg-white p-6 rounded-xl card-flat">
                             <div class="flex items-center justify-between mb-4">
                                 <div class="p-3 bg-emerald-100 rounded-lg">
                                     <i class="fas fa-users text-emerald-600 text-2xl"></i>
                                 </div>
-                                <div class="flex space-x-2">
-                                    <button onclick="downloadReport('client', 'pdf')" class="text-red-600 hover:text-red-800">
+                                <div class="flex space-x-2 text-sm font-semibold">
+                                    <button onclick="downloadReport('client', 'pdf')" class="text-red-600 hover:text-red-800 p-2 rounded-full hover:bg-red-50 transition-colors">
                                         <i class="fas fa-file-pdf text-xl"></i>
                                     </button>
-                                    <button onclick="downloadReport('client', 'excel')" class="text-green-600 hover:text-green-800">
+                                    <button onclick="downloadReport('client', 'excel')" class="text-green-600 hover:text-green-800 p-2 rounded-full hover:bg-green-50 transition-colors">
                                         <i class="fas fa-file-excel text-xl"></i>
                                     </button>
-                                    <button onclick="downloadReport('client', 'csv')" class="text-blue-600 hover:text-blue-800">
+                                    <button onclick="downloadReport('client', 'csv')" class="text-blue-600 hover:text-blue-800 p-2 rounded-full hover:bg-blue-50 transition-colors">
                                         <i class="fas fa-file-csv text-xl"></i>
                                     </button>
                                 </div>
                             </div>
-                            <h3 class="text-lg font-semibold text-gray-900 mb-2">Client Report</h3>
-                            <p class="text-gray-600 text-sm">Detailed client information and loan history</p>
+                            <h3 class="text-lg font-bold text-gray-900 mb-1">Client Report</h3>
+                            <p class="text-gray-500 text-sm">Detailed client information and loan history.</p>
                         </div>
 
-                        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow card-flat">
+                        <div class="bg-white p-6 rounded-xl card-flat">
                             <div class="flex items-center justify-between mb-4">
                                 <div class="p-3 bg-purple-100 rounded-lg">
-                                    <i class="fas fa-money-bill-wave text-purple-600 text-2xl"></i>
+                                    <i class="fas fa-money-bill-transfer text-purple-600 text-2xl"></i>
                                 </div>
-                                <div class="flex space-x-2">
-                                    <button onclick="downloadReport('financial', 'pdf')" class="text-red-600 hover:text-red-800">
+                                <div class="flex space-x-2 text-sm font-semibold">
+                                    <button onclick="downloadReport('financial', 'pdf')" class="text-red-600 hover:text-red-800 p-2 rounded-full hover:bg-red-50 transition-colors">
                                         <i class="fas fa-file-pdf text-xl"></i>
                                     </button>
-                                    <button onclick="downloadReport('financial', 'excel')" class="text-green-600 hover:text-green-800">
+                                    <button onclick="downloadReport('financial', 'excel')" class="text-green-600 hover:text-green-800 p-2 rounded-full hover:bg-green-50 transition-colors">
                                         <i class="fas fa-file-excel text-xl"></i>
                                     </button>
-                                    <button onclick="downloadReport('financial', 'csv')" class="text-blue-600 hover:text-blue-800">
+                                    <button onclick="downloadReport('financial', 'csv')" class="text-blue-600 hover:text-blue-800 p-2 rounded-full hover:bg-blue-50 transition-colors">
                                         <i class="fas fa-file-csv text-xl"></i>
                                     </button>
                                 </div>
                             </div>
-                            <h3 class="text-lg font-semibold text-gray-900 mb-2">Financial Report</h3>
-                            <p class="text-gray-600 text-sm">Revenue, expenses, and profit analysis</p>
+                            <h3 class="text-lg font-bold text-gray-900 mb-1">Financial Report</h3>
+                            <p class="text-gray-500 text-sm">Revenue, expenses, and profit analysis.</p>
                         </div>
                     </div>
+
                     <div class="mb-6">
                         <h2 class="text-2xl font-bold text-gray-900">System Settings</h2>
-                        <p class="text-gray-600 text-sm mt-1">Configure your loan management system</p>
+                        <p class="text-gray-600 text-sm mt-1">Configure your loan management system and security.</p>
                     </div>
 
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 card-flat">
-                            <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                        
+                        <div class="bg-white rounded-xl p-6 card-flat">
+                            <h3 class="text-xl font-bold text-gray-900 mb-4 border-b pb-3">
                                 <i class="fas fa-bell mr-2 text-yellow-600"></i>Notifications
                             </h3>
                             <div class="space-y-4">
                                 <div class="flex items-center justify-between">
-                                    <span class="text-sm font-medium text-gray-700">Overdue Loan Alerts</span>
+                                    <span class="text-sm font-semibold text-gray-700">Overdue Loan Alerts</span>
                                     <label class="relative inline-flex items-center cursor-pointer">
                                         <input type="checkbox" checked class="sr-only peer" id="notifOverdueLoan">
                                         <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-light rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                                     </label>
                                 </div>
                                 <div class="flex items-center justify-between">
-                                    <span class="text-sm font-medium text-gray-700">New Payments</span>
+                                    <span class="text-sm font-semibold text-gray-700">New Payments</span>
                                     <label class="relative inline-flex items-center cursor-pointer">
                                         <input type="checkbox" class="sr-only peer" id="notifNewPayment">
                                         <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-light rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
@@ -601,61 +591,51 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                                 </div>
                             </div>
                         </div>
-                        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 card-flat">
-                            <h3 class="text-lg font-semibold text-gray-900 mb-4">
-                                <i class="fas fa-shield-alt mr-2 text-emerald-600"></i>Security
+                        
+                        <div class="bg-white rounded-xl p-6 card-flat">
+                            <h3 class="text-xl font-bold text-gray-900 mb-4 border-b pb-3">
+                                <i class="fas fa-shield-alt mr-2 text-emerald-600"></i>Security & Maintenance
                             </h3>
                             <div class="space-y-4">
-                                <button id="changePasswordBtn" class="w-full bg-primary text-white py-2 px-4 rounded-lg hover:bg-primary-dark transition-colors">
-                                    <i class="fas fa-key mr-2"></i>Change Password
+                                <button id="changePasswordBtn" class="w-full bg-primary text-white py-2.5 px-4 rounded-lg font-semibold hover:bg-primary-dark transition-colors shadow-md shadow-primary/20">
+                                    <i class="fas fa-key mr-2"></i>Change Admin Password
                                 </button>
-                                <button id="backupDataBtn" class="w-full bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors">
-                                    <i class="fas fa-download mr-2"></i>Backup Data
+                                <button id="backupDataBtn" class="w-full bg-gray-600 text-white py-2.5 px-4 rounded-lg font-semibold hover:bg-gray-700 transition-colors shadow-md shadow-gray-600/20">
+                                    <i class="fas fa-download mr-2"></i>Perform Data Backup
                                 </button>
                             </div>
                         </div>
                     </div>
                 </section>
-
             </div>
         </main>
     </div>
 
-    <!-- Add Client Modal -->
     <div id="addClientModal" class="hidden fixed inset-0 modal-overlay overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-        <div class="relative w-full max-w-lg shadow-2xl rounded-2xl bg-white p-6 sm:p-8 space-y-6 transform modal-content">
+        <div class="relative w-full max-w-lg shadow-2xl rounded-2xl bg-white p-6 sm:p-8 space-y-6 transform modal-content  fade-in">
             <div class="flex justify-between items-center border-b pb-4">
                 <h3 class="text-2xl font-bold text-gray-900"><i class="fas fa-user-plus text-primary mr-2"></i> Add New Client</h3>
-                <button id="closeAddClientModal" class="text-gray-400 hover:text-gray-600 transition">
-                    <i class="fas fa-times text-xl"></i>
-                </button>
             </div>
             <form id="addClientForm" class="space-y-4">
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">First Name</label>
-                        <input type="text" name="c_firstname" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition" placeholder="Enter First Name">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
-                        <input type="text" name="c_lastname" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition" placeholder="Enter Last Name">
-                    </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Full Name</label>
+                    <input type="text" name="c_fullname" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent input-focus-style" placeholder="Enter Full Name">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-                    <input type="email" name="c_email" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition" placeholder="Enter Email (e.g. example@gmail.com)">
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Email</label>
+                    <input type="email" name="c_email" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent input-focus-style" placeholder="Enter Email">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
-                    <input type="text" name="c_phone" required placeholder="e.g. +639171234567" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition">
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Phone</label>
+                    <input type="text" name="c_phone" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent input-focus-style" placeholder="Enter Phone Number">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Address</label>
-                    <textarea name="c_address" rows="2" placeholder="Enter Address (e.g. Street, House No., Barangay, Municipality)" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition"></textarea>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Address</label>
+                    <input type="text" name="c_address" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent input-focus-style" placeholder="Enter Full Address">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Branch</label>
-                    <select name="c_branch" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition">
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Branch</label>
+                    <select name="c_branch" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent input-focus-style">
                         <option value="" disabled selected>Select Branch</option>
                         <option value="malolos">Malolos</option>
                         <option value="hagonoy">Hagonoy</option>
@@ -668,42 +648,36 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                 </div>
                 <div id="addClientMessage" class="hidden p-3 text-center rounded-lg text-sm font-medium"></div>
                 <div class="flex justify-end space-x-3 pt-4 border-t mt-6">
-                    <button type="button" id="closeAddClientModal" class="bg-gray-200 text-gray-700 py-2.5 px-5 rounded-lg hover:bg-gray-300 transition-colors font-medium">
-                        Cancel
-                    </button>
+                    <button type="button" id="closeAddClientModal" class="bg-gray-200 text-gray-700 py-2.5 px-5 rounded-lg hover:bg-gray-300 transition-colors font-semibold"> Cancel </button>
                     <button type="submit" id="addClientSubmitBtn" class="bg-emerald-600 text-white py-2.5 px-5 rounded-lg hover:bg-emerald-700 transition-colors font-semibold shadow-lg shadow-emerald-600/30">
                         <i class="fas fa-save mr-2"></i> Save Client
                     </button>
                 </div>
             </form>
         </div>
-    </div>
+    </div> 
 
-    <!-- Add Collector Modal -->
     <div id="addCollectorModal" class="hidden fixed inset-0 modal-overlay overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-        <div class="relative w-full max-w-lg shadow-2xl rounded-2xl bg-white p-6 sm:p-8 space-y-6 transform modal-content">
+        <div class="relative w-full max-w-lg shadow-2xl rounded-2xl bg-white p-6 sm:p-8 space-y-6 transform modal-content  fade-in">
             <div class="flex justify-between items-center border-b pb-4">
                 <h3 class="text-2xl font-bold text-gray-900"><i class="fas fa-user-plus text-primary mr-2"></i> Add New Collector</h3>
-                <button id="closeAddCollectorModal" class="text-gray-400 hover:text-gray-600 transition">
-                    <i class="fas fa-times text-xl"></i>
-                </button>
             </div>
             <form id="addCollectorForm" class="space-y-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                    <input type="text" name="col_fullname" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition" placeholder="Enter Full Name">
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Full Name</label>
+                    <input type="text" name="col_fullname" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent input-focus-style" placeholder="Enter Full Name">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Username</label>
-                    <input type="text" name="col_username" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition" placeholder="Enter Username">
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Username</label>
+                    <input type="text" name="col_username" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent input-focus-style" placeholder="Enter Username (e.g., col_juan)">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                    <input type="password" name="col_password" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition" placeholder="Enter Password">
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Temporary Password</label>
+                    <input type="password" name="col_password" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent input-focus-style" placeholder="Enter Initial Password">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Branch</label>
-                    <select name="col_branch" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition">
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Branch</label>
+                    <select name="col_branch" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent input-focus-style">
                         <option value="" disabled selected>Select Branch</option>
                         <option value="malolos">Malolos</option>
                         <option value="hagonoy">Hagonoy</option>
@@ -716,43 +690,37 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                 </div>
                 <div id="addCollectorMessage" class="hidden p-3 text-center rounded-lg text-sm font-medium"></div>
                 <div class="flex justify-end space-x-3 pt-4 border-t mt-6">
-                    <button type="button" id="closeAddCollectorModal" class="bg-gray-200 text-gray-700 py-2.5 px-5 rounded-lg hover:bg-gray-300 transition-colors font-medium">
-                        Cancel
-                    </button>
+                    <button type="button" id="closeAddCollectorModal" class="bg-gray-200 text-gray-700 py-2.5 px-5 rounded-lg hover:bg-gray-300 transition-colors font-semibold"> Cancel </button>
                     <button type="submit" id="addCollectorSubmitBtn" class="bg-emerald-600 text-white py-2.5 px-5 rounded-lg hover:bg-emerald-700 transition-colors font-semibold shadow-lg shadow-emerald-600/30">
-                        <i class="fas fa-save mr-2"></i> Save Collector
+                        <i class="fas fa-user-check mr-2"></i> Create Collector
                     </button>
                 </div>
             </form>
         </div>
-    </div>
+    </div> 
 
-    <!-- Edit Collector Modal -->
     <div id="editCollectorModal" class="hidden fixed inset-0 modal-overlay overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-        <div class="relative w-full max-w-lg shadow-2xl rounded-2xl bg-white p-6 sm:p-8 space-y-6 transform modal-content">
+        <div class="relative w-full max-w-lg shadow-2xl rounded-2xl bg-white p-6 sm:p-8 space-y-6 transform modal-content  fade-in">
             <div class="flex justify-between items-center border-b pb-4">
                 <h3 class="text-2xl font-bold text-gray-900"><i class="fas fa-user-edit text-primary mr-2"></i> Edit Collector</h3>
-                <button id="closeEditCollectorModal" class="text-gray-400 hover:text-gray-600 transition">
-                    <i class="fas fa-times text-xl"></i>
-                </button>
             </div>
             <form id="editCollectorForm" class="space-y-4">
                 <input type="hidden" id="editCollectorId" name="collector_id">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                    <input type="text" id="editCollectorFullname" name="col_fullname" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition" placeholder="Enter Full Name">
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Full Name</label>
+                    <input type="text" id="editCollectorFullname" name="col_fullname" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent input-focus-style" placeholder="Enter Full Name">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Username</label>
-                    <input type="text" id="editCollectorUsername" name="col_username" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition" placeholder="Enter Username">
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Username</label>
+                    <input type="text" id="editCollectorUsername" name="col_username" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent input-focus-style" placeholder="Enter Username">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">New Password (leave blank to keep current)</label>
-                    <input type="password" name="col_password" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition" placeholder="Enter New Password">
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">New Password (leave blank to keep current)</label>
+                    <input type="password" name="col_password" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent input-focus-style" placeholder="Enter New Password">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Branch</label>
-                    <select id="editCollectorBranch" name="col_branch" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition">
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Branch</label>
+                    <select id="editCollectorBranch" name="col_branch" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent input-focus-style">
                         <option value="" disabled selected>Select Branch</option>
                         <option value="malolos">Malolos</option>
                         <option value="hagonoy">Hagonoy</option>
@@ -764,352 +732,212 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                     </select>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                    <select id="editCollectorStatus" name="col_status" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition">
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Status</label>
+                    <select id="editCollectorStatus" name="col_status" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent input-focus-style">
                         <option value="Active">Active</option>
                         <option value="Inactive">Inactive</option>
                     </select>
                 </div>
                 <div id="editCollectorMessage" class="hidden p-3 text-center rounded-lg text-sm font-medium"></div>
                 <div class="flex justify-end space-x-3 pt-4 border-t mt-6">
-                    <button type="button" id="closeEditCollectorModal" class="bg-gray-200 text-gray-700 py-2.5 px-5 rounded-lg hover:bg-gray-300 transition-colors font-medium">
-                        Cancel
-                    </button>
+                    <button type="button" id="closeEditCollectorModal" class="bg-gray-200 text-gray-700 py-2.5 px-5 rounded-lg hover:bg-gray-300 transition-colors font-semibold"> Cancel </button>
                     <button type="submit" id="editCollectorSubmitBtn" class="bg-primary text-white py-2.5 px-5 rounded-lg hover:bg-primary-dark transition-colors font-semibold shadow-lg shadow-primary/30">
-                        <i class="fas fa-save mr-2"></i> Update Collector
+                        <i class="fas fa-save mr-2"></i> Save Changes
                     </button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Delete Collector Confirmation Modal -->
-    <div id="deleteCollectorConfirmationModal" class="hidden fixed inset-0 modal-overlay overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-        <div class="relative p-8 border w-96 shadow-2xl rounded-2xl bg-white transform modal-content">
-            <div class="text-center">
-                <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-4">
-                    <i class="fas fa-trash text-red-600 text-2xl"></i>
-                </div>
-                <h3 class="text-xl font-bold text-gray-900 mb-2">Confirm Deletion</h3>
-                <p id="deleteCollectorMessage" class="text-gray-600 mb-6">Are you sure you want to delete this collector?</p>
-                <div class="flex space-x-3">
-                    <button id="cancelDeleteCollectorBtn" class="w-1/2 bg-gray-200 text-gray-700 py-2.5 rounded-lg hover:bg-gray-300 transition-colors font-medium">
-                        Cancel
-                    </button>
-                    <button id="confirmDeleteCollectorBtn" class="w-1/2 bg-red-600 text-white py-2.5 rounded-lg hover:bg-red-700 transition-colors font-semibold">
-                        <i class="fas fa-trash mr-2"></i> Delete
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Approve Loan Modal -->
-    <div id="approveLoanModal" class="hidden fixed inset-0 modal-overlay overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-        <div class="relative w-full max-w-md shadow-2xl rounded-2xl bg-white p-6 sm:p-8 space-y-6 transform modal-content">
-            <div class="flex justify-between items-center border-b pb-4">
-                <h3 class="text-2xl font-bold text-gray-900"><i class="fas fa-check-circle text-emerald-600 mr-2"></i> Approve Loan Application</h3>
-                <button id="closeApproveModal" class="text-gray-400 hover:text-gray-600 transition">
-                    <i class="fas fa-times text-xl"></i>
-                </button>
-            </div>
-            <div id="loanSummary" class="bg-primary/5 p-4 rounded-xl text-sm font-medium space-y-1 border border-primary/20">
-                <p><strong>Client:</strong> <span id="approveClientName" class="text-gray-800"></span></p>
-                <p><strong>Amount:</strong> <span id="approveLoanAmount" class="text-gray-800"></span></p>
-                <p><strong>Term:</strong> <span id="approveLoanTerm" class="text-gray-800">100 Days</span></p>
-                <p><strong>Total Balance:</strong> <span id="approveTotalBalance" class="text-gray-800"></span></p>
-                <p><strong>Daily Payment:</strong> <span id="approveDailyPayment" class="text-gray-800"></span></p>
-            </div>
-            <form id="approveLoanForm" class="space-y-4">
-                <input type="hidden" id="loanIdToApprove">
-                <div id="approvalMessage" class="hidden p-3 text-center rounded-lg text-sm font-medium"></div>
-                <div class="flex justify-end space-x-3 pt-4 border-t mt-6">
-                    <button type="button" id="closeApproveModal" class="bg-gray-200 text-gray-700 py-2.5 px-5 rounded-lg hover:bg-gray-300 transition-colors font-medium">
-                        Cancel
-                    </button>
-                    <button type="submit" id="approveLoanSubmitBtn" class="bg-primary text-white py-2.5 px-5 rounded-lg hover:bg-primary-dark transition-colors font-semibold shadow-lg shadow-primary/30">
-                        <i class="fas fa-circle-check mr-2"></i> Final Approve
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- New Loan Modal -->
     <div id="newLoanModal" class="hidden fixed inset-0 modal-overlay overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-        <div class="relative p-6 border w-full max-w-md shadow-2xl rounded-2xl bg-white transform modal-content">
+        <div class="relative p-6 border w-full max-w-md shadow-2xl rounded-2xl bg-white transform modal-content  fade-in">
             <div class="flex justify-between items-center border-b pb-4 mb-6">
-                <h2 class="text-2xl font-bold text-gray-800">
-                    <i class="fa-solid fa-hand-holding-dollar text-green-600 mr-2"></i>
-                    New Loan Application
+                <h2 class="text-2xl font-bold text-gray-800"> 
+                    <i class="fa-solid fa-hand-holding-dollar text-emerald-600 mr-2"></i> New Loan Application 
                 </h2>
-                <button id="closeNewLoanModal" class="text-gray-400 hover:text-gray-600 transition">
-                    <i class="fas fa-times text-xl"></i>
-                </button>
             </div>
-            <div class="space-y-4 text-gray-800">
-                <div class="flex justify-between border-b pb-2">
-                    <span class="font-semibold text-gray-600 flex items-center gap-2">
-                        <i class="fa-solid fa-id-card"></i> Member ID:
-                    </span>
-                    <span id="newLoanMemberId" class="font-bold text-primary">M001</span>
+            <form id="newLoanForm" class="space-y-4">
+                <input type="hidden" name="client_id" id="newLoanClientId">
+                <input type="hidden" name="member_id" id="newLoanMemberId">
+                <p class="text-sm text-gray-600 mb-4">Client: <strong id="newLoanClientNameDisplay" class="text-primary"></strong></p>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Loan Amount (Principal)</label>
+                    <input type="number" step="100" min="1000" id="newLoanAmount" name="loan_amount" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent input-focus-style" placeholder="e.g., 5000">
                 </div>
 
-                <div class="flex justify-between border-b pb-2">
-                    <span class="font-semibold text-gray-600 flex items-center gap-2">
-                        <i class="fa-solid fa-user"></i> Name:
-                    </span>
-                    <span id="newLoanClientName">Juan Dela Cruz</span>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Loan Amount (₱)</label>
-                    <input type="number" id="newLoanAmount" name="loan_amount" value="10000.00" step="0.01" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition">
-                </div>
-                <div class="bg-blue-50 p-3 rounded-lg border border-blue-200">
-                    <h4 class="font-semibold text-blue-800 mb-2">Loan Calculation (100 Days, 15% Interest)</h4>
-                    <div class="text-sm text-blue-700 space-y-1">
-                        <div class="flex justify-between">
-                            <span>Processing Fee (₱200):</span>
-                            <span id="calcProcessingFee">₱200.00</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span>Amount Received:</span>
-                            <span id="calcAmountReceived">₱0.00</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span>Interest (15%):</span>
-                            <span id="calcInterest">₱0.00</span>
-                        </div>
-                        <div class="flex justify-between font-semibold">
-                            <span>Total Balance:</span>
-                            <span id="calcTotalBalance">₱0.00</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span>Daily Payment:</span>
-                            <span id="calcDailyPayment">₱0.00</span>
-                        </div>
+                <div class="bg-gray-50 p-4 rounded-lg space-y-2 text-sm">
+                    <p class="font-semibold text-gray-700 border-b pb-2 mb-2"><i class="fas fa-calculator mr-2 text-primary"></i> Estimated Loan Calculation (100 days)</p>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Processing Fee (- ₱200):</span>
+                        <span id="calcProcessingFee" class="font-bold text-red-500">₱0.00</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Interest (15%):</span>
+                        <span id="calcInterest" class="font-bold text-orange-500">₱0.00</span>
+                    </div>
+                    <div class="flex justify-between font-bold text-base border-t pt-2">
+                        <span class="text-gray-800">Total Balance Due:</span>
+                        <span id="calcTotalBalance" class="text-primary">₱0.00</span>
+                    </div>
+                    <div class="flex justify-between font-bold text-base">
+                        <span class="text-gray-800">Estimated Daily Payment:</span>
+                        <span id="calcDailyPayment" class="text-emerald-600">₱0.00</span>
                     </div>
                 </div>
-                <div id="newLoanMessage" class="hidden p-3 text-center rounded-lg text-sm font-medium"></div>
-            </div>
 
-            <div class="mt-8 flex justify-end space-x-3">
-                <button id="closeNewLoanModal" class="bg-gray-200 text-gray-700 py-2.5 px-5 rounded-lg hover:bg-gray-300 transition-colors font-medium">
-                    Cancel
-                </button>
-                <button id="submitNewLoanBtn" class="bg-primary text-white py-2.5 px-5 rounded-lg hover:bg-primary-dark transition-colors font-semibold shadow-lg shadow-primary/30">
-                    <i class="fas fa-paper-plane mr-2"></i> Submit Application
-                </button>
-            </div>
+                <div id="newLoanMessage" class="hidden p-3 text-center rounded-lg text-sm font-medium"></div>
+
+                <div class="flex justify-end space-x-3 pt-4 border-t mt-6">
+                    <button type="button" id="cancelNewLoanBtn" class="bg-gray-200 text-gray-700 py-2.5 px-5 rounded-lg hover:bg-gray-300 transition-colors font-semibold"> Cancel </button>
+                    <button type="submit" id="submitNewLoanBtn" class="bg-primary text-white py-2.5 px-5 rounded-lg hover:bg-primary-dark transition-colors font-semibold shadow-lg shadow-primary/30">
+                        <i class="fas fa-paper-plane mr-2"></i> Submit for Approval
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 
-    <!-- Client Details Modal -->
     <div id="clientDetailsModal" class="hidden fixed inset-0 modal-overlay overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-        <div class="relative p-6 border w-full max-w-md shadow-2xl rounded-2xl bg-white transform modal-content">
+        <div class="relative p-6 border w-full max-w-md shadow-2xl rounded-2xl bg-white transform modal-content  fade-in">
             <div class="flex justify-between items-center border-b pb-4 mb-6">
-                <h2 class="text-2xl font-bold text-gray-800">
-                    <i class="fa-solid fa-user-circle text-primary mr-2"></i>
-                    Client Details
+                <h2 class="text-2xl font-bold text-gray-800"> 
+                    <i class="fa-solid fa-user-circle text-primary mr-2"></i> Client Details 
                 </h2>
-                <button id="closeClientDetailsModal" class="text-gray-400 hover:text-gray-600 transition">
-                    <i class="fas fa-times text-xl"></i>
-                </button>
             </div>
             <div class="space-y-4 text-gray-800 mb-6">
                 <div class="flex justify-between border-b pb-2">
-                    <span class="font-semibold text-gray-600 flex items-center gap-2">
-                        <i class="fa-solid fa-id-card"></i> Member ID:
-                    </span>
+                    <span class="font-semibold text-gray-600 flex items-center gap-2"> <i class="fa-solid fa-id-card"></i> Member ID: </span>
                     <span id="clientMemberID" class="font-bold text-primary">M001</span>
                 </div>
-
                 <div class="flex justify-between border-b pb-2">
-                    <span class="font-semibold text-gray-600 flex items-center gap-2">
-                        <i class="fa-solid fa-user"></i> Name:
-                    </span>
+                    <span class="font-semibold text-gray-600 flex items-center gap-2"> <i class="fa-solid fa-user"></i> Name: </span>
                     <span id="clientName">Juan Dela Cruz</span>
                 </div>
-
                 <div class="flex justify-between border-b pb-2">
-                    <span class="font-semibold text-gray-600 flex items-center gap-2">
-                        <i class="fa-solid fa-envelope"></i> Email:
-                    </span>
+                    <span class="font-semibold text-gray-600 flex items-center gap-2"> <i class="fa-solid fa-envelope"></i> Email: </span>
                     <span id="clientEmail">email@example.com</span>
                 </div>
-
                 <div class="flex justify-between border-b pb-2">
-                    <span class="font-semibold text-gray-600 flex items-center gap-2">
-                        <i class="fa-solid fa-phone"></i> Phone:
-                    </span>
+                    <span class="font-semibold text-gray-600 flex items-center gap-2"> <i class="fa-solid fa-phone"></i> Phone: </span>
                     <span id="clientPhone">+63 912 345 6789</span>
                 </div>
-
                 <div class="flex justify-between border-b pb-2">
-                    <span class="font-semibold text-gray-600 flex items-center gap-2">
-                        <i class="fa-solid fa-location-dot"></i> Address:
-                    </span>
+                    <span class="font-semibold text-gray-600 flex items-center gap-2"> <i class="fa-solid fa-location-dot"></i> Address: </span>
                     <span id="clientAddress">123 Purok 1 Malolos</span>
                 </div>
-
                 <div class="flex justify-between border-b pb-2">
-                    <span class="font-semibold text-gray-600 flex items-center gap-2">
-                        <i class="fa-solid fa-building"></i> Branch:
-                    </span>
-                    <span id="clientBranch">Bulacan</span>
+                    <span class="font-semibold text-gray-600 flex items-center gap-2"> <i class="fa-solid fa-building"></i> Branch: </span>
+                    <span id="clientBranch">Malolos</span>
                 </div>
-
                 <div class="flex justify-between border-b pb-2">
-                    <span class="font-semibold text-gray-600 flex items-center gap-2">
-                        <i class="fa-solid fa-calendar-day"></i> Date Joined:
-                    </span>
-                    <span id="clientDateJoined">October 21, 2025</span>
+                    <span class="font-semibold text-gray-600 flex items-center gap-2"> <i class="fa-solid fa-calendar-alt"></i> Date Joined: </span>
+                    <span id="clientDateJoined">2023-01-01</span>
                 </div>
             </div>
-
-            <div class="flex justify-end space-x-3 pt-4 border-t">
-                <button id="deactivateClientBtn" class="bg-red-600 text-white py-2.5 px-5 rounded-lg hover:bg-red-700 transition-colors font-semibold">
-                    <i class="fas fa-user-slash mr-2"></i> Deactivate Client
+            <div class="flex justify-between space-x-3 pt-4 border-t">
+                <button id="deactivateClientBtn" class="w-1/2 bg-red-600 text-white py-2.5 px-3 rounded-lg hover:bg-red-700 transition-colors font-semibold shadow-md shadow-red-600/20">
+                    <i class="fas fa-trash-alt mr-2"></i> Deactivate
                 </button>
-                <button id="closeClientDetailsModal" class="bg-gray-200 text-gray-700 py-2.5 px-5 rounded-lg hover:bg-gray-300 transition-colors font-medium">
-                    Close
+                <button id="viewClientLoansBtn" class="w-1/2 bg-yellow-600 text-white py-2.5 px-3 rounded-lg hover:bg-yellow-700 transition-colors font-semibold shadow-md shadow-yellow-600/20">
+                    <i class="fas fa-list-alt mr-2"></i> View Loans
                 </button>
             </div>
         </div>
     </div>
-    
-    <!-- Loan Details Modal -->
+
     <div id="loanDetailsModal" class="hidden fixed inset-0 modal-overlay overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-        <div class="relative p-6 border w-full max-w-md shadow-2xl rounded-2xl bg-white transform modal-content">
+        <div class="relative p-6 border w-full max-w-md shadow-2xl rounded-2xl bg-white transform modal-content  fade-in">
             <div class="flex justify-between items-center border-b pb-4 mb-6">
-                <h2 class="text-2xl font-bold text-gray-800">
-                    <i class="fa-solid fa-money-bill-wave text-orange-600 mr-2"></i>
-                    Loan Details
+                <h2 class="text-2xl font-bold text-gray-800"> 
+                    <i class="fa-solid fa-magnifying-glass-chart text-primary mr-2"></i> Loan Details 
                 </h2>
-                <button id="closeLoanDetailsModal" class="text-gray-400 hover:text-gray-600 transition">
-                    <i class="fas fa-times text-xl"></i>
-                </button>
             </div>
             <div class="space-y-4 text-gray-800 mb-6">
                 <div class="flex justify-between border-b pb-2">
-                    <span class="font-semibold text-gray-600 flex items-center gap-2">
-                        <i class="fa-solid fa-id-card"></i> Loan ID:
-                    </span>
-                    <span id="loanId" class="font-bold text-primary">L0</span>
+                    <span class="font-semibold text-gray-600 flex items-center gap-2"> <i class="fa-solid fa-hashtag"></i> Loan ID: </span>
+                    <span id="loanId" class="font-bold text-primary">L001</span>
                 </div>
-
                 <div class="flex justify-between border-b pb-2">
-                    <span class="font-semibold text-gray-600 flex items-center gap-2">
-                        <i class="fa-solid fa-circle-exclamation"></i> Status:
-                    </span>
-                    <span id="loanStatus">Loan Status</span>
-                </div>
-
-                <div class="flex justify-between border-b pb-2">
-                    <span class="font-semibold text-gray-600 flex items-center gap-2">
-                        <i class="fa-solid fa-hand-holding-dollar"></i> Loan Amount:
-                    </span>
-                    <span id="loanAmount">₱0</span>
-                </div>
-
-                <div class="flex justify-between border-b pb-2">
-                    <span class="font-semibold text-gray-600 flex items-center gap-2">
-                        <i class="fa-solid fa-money-bill"></i> Loan Balance:
-                    </span>
-                    <span id="loanBalance">₱0</span>
-                </div>
-
-                <div class="flex justify-between border-b pb-2">
-                    <span class="font-semibold text-gray-600 flex items-center gap-2">
-                        <i class="fa-solid fa-calendar"></i> Daily Payment:
-                    </span>
-                    <span id="loanDaily">₱0</span>
-                </div>
-
-                <div class="flex justify-between border-b pb-2">
-                    <span class="font-semibold text-gray-600 flex items-center gap-2">
-                        <i class="fa-solid fa-user"></i> Loan Client Name:
-                    </span>
+                    <span class="font-semibold text-gray-600 flex items-center gap-2"> <i class="fa-solid fa-user"></i> Client Name: </span>
                     <span id="loanClientName">Juan DelaCruz</span>
                 </div>
-
                 <div class="flex justify-between border-b pb-2">
-                    <span class="font-semibold text-gray-600 flex items-center gap-2">
-                        <i class="fa-solid fa-chart-line"></i> Days Paid/Total:
-                    </span>
-                    <span id="loanDaysPaid">0/100</span>
+                    <span class="font-semibold text-gray-600 flex items-center gap-2"> <i class="fa-solid fa-info-circle"></i> Status: </span>
+                    <span id="loanStatus" class="status-badge bg-green-100 text-green-800">Active</span>
+                </div>
+                <div class="flex justify-between border-b pb-2">
+                    <span class="font-semibold text-gray-600 flex items-center gap-2"> <i class="fa-solid fa-money-bill-transfer"></i> Loan Amount: </span>
+                    <span id="loanAmount" class="font-bold">₱10,000.00</span>
+                </div>
+                <div class="flex justify-between border-b pb-2">
+                    <span class="font-semibold text-gray-600 flex items-center gap-2"> <i class="fa-solid fa-sack-xmark"></i> Loan Balance: </span>
+                    <span id="loanBalance" class="font-bold text-red-600">₱0</span>
+                </div>
+                <div class="flex justify-between border-b pb-2">
+                    <span class="font-semibold text-gray-600 flex items-center gap-2"> <i class="fa-solid fa-calendar-day"></i> Daily Payment: </span>
+                    <span id="loanDaily" class="font-bold text-emerald-600">₱0</span>
+                </div>
+                <div class="flex justify-between border-b pb-2">
+                    <span class="font-semibold text-gray-600 flex items-center gap-2"> <i class="fa-solid fa-chart-line"></i> Days Paid/Total: </span>
+                    <span id="loanDaysPaid" class="font-bold">0/100</span>
                 </div>
             </div>
-
             <div class="flex justify-end space-x-3 pt-4 border-t">
-                <button id="closeLoanDetailsModal" class="bg-gray-200 text-gray-700 py-2.5 px-5 rounded-lg hover:bg-gray-300 transition-colors font-medium">
-                    Close
-                </button>
+                <button id="closeLoanDetailsModal" class="bg-gray-200 text-gray-700 py-2.5 px-5 rounded-lg hover:bg-gray-300 transition-colors font-semibold"> Close </button>
             </div>
         </div>
     </div>
 
-    <!-- Admin Message Modal -->
     <div id="adminMessageModal" class="hidden fixed inset-0 modal-overlay overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-        <div class="relative p-8 border w-96 shadow-2xl rounded-2xl bg-white transform modal-content">
+        <div class="relative p-8 border w-96 shadow-2xl rounded-2xl bg-white transform modal-content  fade-in">
             <div class="text-center">
                 <div id="adminModalIcon" class="mx-auto flex items-center justify-center h-16 w-16 rounded-full mb-4"></div>
                 <h3 id="adminModalTitle" class="text-xl font-bold text-gray-900 mb-2"></h3>
                 <p id="adminModalMessage" class="text-gray-600 mb-6"></p>
-                <button id="closeAdminMessageModal" class="w-full bg-primary text-white py-2.5 rounded-lg hover:bg-primary-dark transition-colors font-semibold">
-                    Close
-                </button>
+                <button id="closeAdminMessageModal" class="w-full bg-primary text-white py-2.5 rounded-lg hover:bg-primary-dark transition-colors font-semibold"> Close </button>
             </div>
         </div>
-    </div>
+    </div> 
 
-    <!-- Confirm Decline Modal -->
-    <div id="confirmDeclineModal" class="hidden fixed inset-0 modal-overlay overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-        <div class="relative p-8 border w-96 shadow-2xl rounded-2xl bg-white transform modal-content">
+    <div id="logoutConfirmationModal" class="hidden fixed inset-0 modal-overlay overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+        <div class="relative p-8 border w-96 shadow-2xl rounded-2xl bg-white transform modal-content  fade-in">
             <div class="text-center">
-                <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full mb-4 bg-red-100"><i class="fas fa-x text-red-600 text-2xl"></i></div>
-                <h3 class="text-xl font-bold text-gray-900 mb-2">Confirm Decline</h3>
-                <p class="text-gray-600 mb-6">Do you want to decline this Loan Request?</p>
-                <div class="flex space-x-2">
-                    <button id="closeConfirmDeclineModal" class="w-full bg-primary text-white py-2.5 rounded-lg hover:bg-primary-dark transition-colors font-semibold">
-                        Close
-                    </button>
-                    <button id="confirmConfirmDeclineModal" class="w-full bg-red-600 text-white py-2.5 rounded-lg hover:bg-red-700 transition-colors font-semibold">
-                        Confirm
+                <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-4">
+                    <i class="fas fa-sign-out-alt text-red-600 text-2xl"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 mb-2">Confirm Logout</h3>
+                <p class="text-gray-600 mb-6">Are you sure you want to log out of the admin dashboard?</p>
+                <div class="flex space-x-3">
+                    <button id="cancelLogoutBtn" class="w-1/2 bg-gray-200 text-gray-700 py-2.5 rounded-lg hover:bg-gray-300 transition-colors font-semibold"> Cancel </button>
+                    <button id="confirmLogoutBtn" class="w-1/2 bg-red-600 text-white py-2.5 rounded-lg hover:bg-red-700 transition-colors font-semibold"> 
+                        <i class="fas fa-sign-out-alt mr-2"></i> Logout 
                     </button>
                 </div>
-                
             </div>
         </div>
     </div>
 
-    <!-- Change Password Modal -->
     <div id="changePasswordModal" class="hidden fixed inset-0 modal-overlay overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-        <div class="relative w-full max-w-md shadow-2xl rounded-2xl bg-white p-6 sm:p-8 space-y-6 transform modal-content">
+        <div class="relative w-full max-w-md shadow-2xl rounded-2xl bg-white p-6 sm:p-8 space-y-6 transform modal-content  fade-in">
             <div class="flex justify-between items-center border-b pb-4">
-                <h3 class="text-2xl font-bold text-gray-900"><i class="fas fa-key text-primary mr-2"></i> Change Password</h3>
-                <button id="closeChangePasswordModal" class="text-gray-400 hover:text-gray-600 transition">
-                    <i class="fas fa-times text-xl"></i>
-                </button>
+                <h3 class="text-2xl font-bold text-gray-900"><i class="fas fa-key text-primary mr-2"></i> Change Admin Password</h3>
             </div>
             <form id="changePasswordForm" class="space-y-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
-                    <input type="password" name="current_password" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition">
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Current Password</label>
+                    <input type="password" name="current_password" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent input-focus-style">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">New Password</label>
-                    <input type="password" name="new_password" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition">
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">New Password</label>
+                    <input type="password" name="new_password" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent input-focus-style">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
-                    <input type="password" name="confirm_password" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition">
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Confirm New Password</label>
+                    <input type="password" name="confirm_password" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent input-focus-style">
                 </div>
                 <div id="changePasswordMessage" class="hidden p-3 text-center rounded-lg text-sm font-medium"></div>
                 <div class="flex justify-end space-x-3 pt-4 border-t mt-6">
-                    <button type="button" id="closeChangePasswordModal" class="bg-gray-200 text-gray-700 py-2.5 px-5 rounded-lg hover:bg-gray-300 transition-colors font-medium">
-                        Cancel
-                    </button>
+                    <button type="button" id="closeChangePasswordModal" class="bg-gray-200 text-gray-700 py-2.5 px-5 rounded-lg hover:bg-gray-300 transition-colors font-semibold"> Cancel </button>
                     <button type="submit" id="changePasswordSubmitBtn" class="bg-primary text-white py-2.5 px-5 rounded-lg hover:bg-primary-dark transition-colors font-semibold shadow-lg shadow-primary/30">
                         <i class="fas fa-key mr-2"></i> Change Password
                     </button>
@@ -1118,42 +946,54 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
         </div>
     </div>
 
-    <!-- Logout Confirmation Modal -->
-    <div id="logoutConfirmationModal" class="hidden fixed inset-0 modal-overlay overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-        <div class="relative p-8 border w-96 shadow-2xl rounded-2xl bg-white transform modal-content">
+    <div id="confirmDeclineModal" class="hidden fixed inset-0 modal-overlay overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+        <div class="relative p-8 border w-96 shadow-2xl rounded-2xl bg-white transform modal-content  fade-in">
             <div class="text-center">
                 <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-4">
-                    <i class="fas fa-sign-out-alt text-red-600 text-2xl"></i>
+                    <i class="fas fa-ban text-red-600 text-2xl"></i>
                 </div>
-                <h3 class="text-xl font-bold text-gray-900 mb-2">Confirm Logout</h3>
-                <p class="text-gray-600 mb-6">Are you sure you want to log out of the admin dashboard?</p>
+                <h3 class="text-xl font-bold text-gray-900 mb-2">Confirm Loan Decline</h3>
+                <p id="declineLoanMessage" class="text-gray-600 mb-6">Are you sure you want to decline this loan application? This action cannot be undone.</p>
                 <div class="flex space-x-3">
-                    <button id="cancelLogoutBtn" class="w-1/2 bg-gray-200 text-gray-700 py-2.5 rounded-lg hover:bg-gray-300 transition-colors font-medium">
-                        Cancel
-                    </button>
-                    <button id="confirmLogoutBtn" class="w-1/2 bg-red-600 text-white py-2.5 rounded-lg hover:bg-red-700 transition-colors font-semibold">
-                        <i class="fas fa-sign-out-alt mr-2"></i> Logout
+                    <button id="closeConfirmDeclineModal" class="w-1/2 bg-gray-200 text-gray-700 py-2.5 rounded-lg hover:bg-gray-300 transition-colors font-semibold"> Cancel </button>
+                    <button id="confirmDeclineBtn" class="w-1/2 bg-red-600 text-white py-2.5 rounded-lg hover:bg-red-700 transition-colors font-semibold"> 
+                        <i class="fas fa-ban mr-2"></i> Decline 
                     </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Deactivate Client Confirmation Modal -->
     <div id="deactivateClientConfirmationModal" class="hidden fixed inset-0 modal-overlay overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-        <div class="relative p-8 border w-96 shadow-2xl rounded-2xl bg-white transform modal-content">
+        <div class="relative p-8 border w-full max-w-sm shadow-2xl rounded-2xl bg-white transform modal-content  fade-in">
             <div class="text-center">
-                <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-yellow-100 mb-4">
-                    <i class="fas fa-user-slash text-yellow-600 text-2xl"></i>
+                <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-4">
+                    <i class="fas fa-user-slash text-red-600 text-2xl"></i>
                 </div>
-                <h3 class="text-xl font-bold text-gray-900 mb-2">Confirm Deactivation</h3>
-                <p id="deactivateClientMessage" class="text-gray-600 mb-6">Are you sure you want to deactivate this client?</p>
+                <h3 class="text-xl font-bold text-gray-900 mb-2">Deactivate Client Account</h3>
+                <p id="deactivateClientMessage" class="text-gray-600 mb-6"></p>
                 <div class="flex space-x-3">
-                    <button id="cancelDeactivateClientBtn" class="w-1/2 bg-gray-200 text-gray-700 py-2.5 rounded-lg hover:bg-gray-300 transition-colors font-medium">
-                        Cancel
-                    </button>
-                    <button id="confirmDeactivateClientBtn" class="w-1/2 bg-yellow-600 text-white py-2.5 rounded-lg hover:bg-yellow-700 transition-colors font-semibold">
+                    <button id="cancelDeactivateClientBtn" class="w-1/2 bg-gray-200 text-gray-700 py-2.5 rounded-lg hover:bg-gray-300 transition-colors font-semibold"> Cancel </button>
+                    <button id="confirmDeactivateClientBtn" class="w-1/2 bg-red-600 text-white py-2.5 rounded-lg hover:bg-red-700 transition-colors font-semibold"> 
                         <i class="fas fa-user-slash mr-2"></i> Deactivate
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="deleteCollectorConfirmationModal" class="hidden fixed inset-0 modal-overlay overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+        <div class="relative p-8 border w-96 shadow-2xl rounded-2xl bg-white transform modal-content  fade-in">
+            <div class="text-center">
+                <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-4">
+                    <i class="fas fa-user-times text-red-600 text-2xl"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 mb-2">Delete Collector</h3>
+                <p id="deleteCollectorMessage" class="text-gray-600 mb-6"></p>
+                <div class="flex space-x-3">
+                    <button id="cancelDeleteCollectorBtn" class="w-1/2 bg-gray-200 text-gray-700 py-2.5 rounded-lg hover:bg-gray-300 transition-colors font-semibold"> Cancel </button>
+                    <button id="confirmDeleteCollectorBtn" class="w-1/2 bg-red-600 text-white py-2.5 rounded-lg hover:bg-red-700 transition-colors font-semibold"> 
+                        <i class="fas fa-trash-alt mr-2"></i> Delete 
                     </button>
                 </div>
             </div>
@@ -1162,29 +1002,12 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const sidebar = document.getElementById('sidebar');
-            const sidebarOverlay = document.getElementById('sidebarOverlay');
-            const sidebarToggle = document.getElementById('sidebarToggle');
-            const closeSidebar = document.getElementById('closeSidebar');
             const pageTitle = document.getElementById('page-title');
             const allTabs = document.querySelectorAll('.tab-content');
             const allLinks = document.querySelectorAll('.sidebar-nav-item');
             const logoutBtn = document.getElementById('logoutBtn');
             const cancelLogoutBtn = document.getElementById('cancelLogoutBtn');
             const confirmLogoutBtn = document.getElementById('confirmLogoutBtn');
-            
-            function openSidebar() {
-                sidebar.classList.remove('-translate-x-full');
-                sidebarOverlay.classList.remove('hidden');
-            }
-            function closeSidebarFn() {
-                sidebar.classList.add('-translate-x-full');
-                sidebarOverlay.classList.add('hidden');
-            }
-
-            sidebarToggle.addEventListener('click', openSidebar);
-            closeSidebar.addEventListener('click', closeSidebarFn);
-            sidebarOverlay.addEventListener('click', closeSidebarFn);
 
             logoutBtn.addEventListener('click', () => {
                 document.getElementById('logoutConfirmationModal').classList.remove('hidden');
@@ -1219,9 +1042,6 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                     pageTitle.textContent = title;
                 }
                 
-                if (window.innerWidth < 1024) {
-                    closeSidebarFn();
-                }
             }
         
             const initialTab = window.location.hash.substring(1) || 'overview';
@@ -1235,6 +1055,13 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                     switchTab(targetId);
                 });
             });
+
+            document.getElementById("totalClients").addEventListener('click', function(e){
+                e.preventDefault();
+                const targetId = this.getAttribute('data-tab');
+                window.location.hash = targetId;
+                switchTab(targetId);
+            })
 
             function showMessageModal(title, message, type = 'success') {
                 const modal = document.getElementById('adminMessageModal');
@@ -1578,6 +1405,7 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                     e.target.classList.add('hidden');
                 }
             });
+
         });
 
         function downloadReport(type, format) {
@@ -1585,6 +1413,8 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
             window.location.href = `api.php?action=download_report&type=${type}&format=${format}&branch=${branch}`;
         }
         window.downloadReport = downloadReport;
+
+        
     </script>
 </body>
 </html>

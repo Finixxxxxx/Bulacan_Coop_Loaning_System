@@ -1,5 +1,4 @@
 <?php
-// Database configuration
 define('DB_SERVER', 'localhost');
 define('DB_USERNAME', 'root');
 define('DB_PASSWORD', '');
@@ -28,7 +27,6 @@ function generate_member_id($branch, $mysqli) {
 }
 
 function generate_client_password($lastname, $member_id, $phone) {
-    // Use last 4 digits of phone number + first 3 letters of lastname + last 3 of member ID
     $phone_part = substr($phone, -4);
     $name_part = strtoupper(substr($lastname, 0, 3));
     $id_part = substr($member_id, -3);
