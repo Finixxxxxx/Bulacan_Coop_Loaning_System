@@ -84,7 +84,7 @@ $client_id = $_SESSION["client_id"];
                             <span id="loanStatusBadge" class="status-badge bg-gray-100 text-gray-600">Loading...</span>
                         </div>
                     </div>
-                    <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                    <div id="loanInfo" class="bg-blue-50 p-4 rounded-lg border border-blue-200 hidden">
                         <h4 class="font-semibold text-blue-800 mb-2">Loan Information</h4>
                         <div class="grid grid-cols-2 gap-2 text-sm text-blue-700">
                             <div>
@@ -108,7 +108,7 @@ $client_id = $_SESSION["client_id"];
                                 <span id="processingFee" class="font-semibold">₱0.00</span>
                             </div>
                             <div>
-                                <span>Total Recieved:</span>
+                                <span>Total Received:</span>
                                 <span id="netAmount" class="font-semibold">₱0.00</span>
                             </div>
                         </div>
@@ -125,20 +125,22 @@ $client_id = $_SESSION["client_id"];
                 <h2 class="text-2xl font-semibold text-gray-800 mb-4 flex items-center">
                     <i class="fas fa-history text-primary mr-3"></i> Payment History
                 </h2>
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount Paid</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Method</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                            </tr>
-                        </thead>
-                        <tbody id="paymentHistoryBody" class="bg-white divide-y divide-gray-200">
-                            <tr><td colspan="4" class="text-center py-4 text-gray-500">No payment history found.</td></tr>
-                        </tbody>
-                    </table>
+                <div id="paymentHistoryContainer">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount Paid</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Method</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                                </tr>
+                            </thead>
+                            <tbody id="paymentHistoryBody" class="bg-white divide-y divide-gray-200">
+                                <tr><td colspan="4" class="text-center py-4 text-gray-500">No payment history found.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </section>
         </div>
@@ -224,7 +226,28 @@ $client_id = $_SESSION["client_id"];
                     Close
                 </button>
             </div>
-        </div>F
+        </div>
+    </div>
+
+    <!-- Logout Confirmation Modal -->
+    <div id="logoutConfirmationModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-75 overflow-y-auto h-full w-full z-50 flex items-center justify-center fade-in">
+        <div class="relative p-8 border w-96 shadow-2xl rounded-2xl bg-white transform modal-content">
+            <div class="text-center">
+                <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-4">
+                    <i class="fas fa-sign-out-alt text-red-600 text-2xl"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 mb-2">Confirm Logout</h3>
+                <p class="text-gray-600 mb-6">Are you sure you want to log out of the client portal?</p>
+                <div class="flex space-x-3">
+                    <button id="cancelLogoutBtn" class="w-1/2 bg-gray-200 text-gray-700 py-2.5 rounded-lg hover:bg-gray-300 transition-colors font-medium">
+                        Cancel
+                    </button>
+                    <button id="confirmLogoutBtn" class="w-1/2 bg-red-600 text-white py-2.5 rounded-lg hover:bg-red-700 transition-colors font-semibold">
+                        <i class="fas fa-sign-out-alt mr-2"></i> Logout
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -242,13 +265,13 @@ $client_id = $_SESSION["client_id"];
                 return;
             }
 
-            if (!CURRENT_LOAN_ID) {
+            if (!window.CURRENT_LOAN_ID) {
                 showMessage('No Active Loan', 'You do not have an active loan to make payments for.', 'error');
                 return;
             }
             const qrData = {
                 clientId: CLIENT_ID,
-                loanId: CURRENT_LOAN_ID,
+                loanId: window.CURRENT_LOAN_ID,
                 paymentAmount: parseFloat(paymentAmount),
                 timestamp: new Date().toISOString()
             };
@@ -319,6 +342,7 @@ $client_id = $_SESSION["client_id"];
 
             modal.classList.remove('hidden');
         }
+
         document.getElementById('generatePaymentQR').addEventListener('click', generateQRCode);
         document.getElementById('downloadQR').addEventListener('click', downloadQRCode);
         document.getElementById('shareQR').addEventListener('click', shareQRCode);
@@ -328,10 +352,18 @@ $client_id = $_SESSION["client_id"];
         document.getElementById('closeMessageModal').addEventListener('click', function() {
             document.getElementById('messageModal').classList.add('hidden');
         });
+
+        // Logout functionality
         document.getElementById('logoutBtn').addEventListener('click', function() {
-            if (confirm('Are you sure you want to logout?')) {
-                window.location.href = 'logout.php';
-            }
+            document.getElementById('logoutConfirmationModal').classList.remove('hidden');
+        });
+
+        document.getElementById('cancelLogoutBtn').addEventListener('click', function() {
+            document.getElementById('logoutConfirmationModal').classList.add('hidden');
+        });
+
+        document.getElementById('confirmLogoutBtn').addEventListener('click', function() {
+            window.location.href = 'logout.php';
         });
     </script>
 </body>

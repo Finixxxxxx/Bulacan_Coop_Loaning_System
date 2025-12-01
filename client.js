@@ -54,7 +54,9 @@ function formatDate(dateString) {
     return date.toLocaleDateString('en-US', { 
         year: 'numeric', 
         month: 'short', 
-        day: 'numeric' 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
     });
 }
 
@@ -85,7 +87,7 @@ async function fetchClientData() {
         }
 
         updateLoanInformation(data);
-        updatePaymentHistory(data.payment_history);
+        fetchPaymentHistory()
 
     } catch (error) {
         console.error('Fetch error:', error);
@@ -93,27 +95,52 @@ async function fetchClientData() {
     }
 }
 
+async function fetchPaymentHistory() {
+    try {
+        const response = await fetch(API_URL + '?action=get_payment_history_client');
+        if (!response.ok) throw new Error('Network error');
+
+        const data = await response.json();
+
+        if (data.error) {
+            showNotification(data.error, 'error');
+            return;
+        }
+
+        updatePaymentHistory(data.payments);
+
+    } catch (error) {
+        console.error('Payment history fetch error:', error);
+        showNotification('Unable to load payment history.', 'error');
+    }
+}
+
+
 function updateLoanInformation(data) {
     const loan = data.active_loan;
     const loanContainer = document.getElementById('loanDetailsContainer');
+    const loanInfo = document.getElementById('loanInfo');
     const noLoanMessage = document.getElementById('noActiveLoanMessage');
 
     if (!loan) {
         // No active loan
         loanContainer.classList.add('hidden');
+        loanInfo.classList.add('hidden');
         noLoanMessage.classList.remove('hidden');
+        window.CURRENT_LOAN_ID = null;
         return;
     }
 
     // Show loan details and hide no loan message
     loanContainer.classList.remove('hidden');
+    loanInfo.classList.remove('hidden');
     noLoanMessage.classList.add('hidden');
 
     // Update basic loan information
     document.getElementById('currentBalance').textContent = formatCurrency(loan.current_balance);
     document.getElementById('dailyPayment').textContent = formatCurrency(loan.daily_payment);
     document.getElementById('totalAmount').textContent = formatCurrency(loan.total_balance);
-    document.getElementById('processingFee').textContent = formatCurrency(200.00); // Fixed processing fee
+    document.getElementById('processingFee').textContent = formatCurrency(200.00);
     document.getElementById('netAmount').textContent = formatCurrency(loan.net_amount || (loan.loan_amount - 200));
     document.getElementById('daysPaid').textContent = `${loan.days_paid || 0}/100`;
 
@@ -211,14 +238,10 @@ function updatePaymentHistory(payments) {
     `).join('');
 }
 
-// Initialize when page loads
 document.addEventListener('DOMContentLoaded', function() {
     fetchClientData();
-    
-    // Refresh data every 30 seconds
     setInterval(fetchClientData, 30000);
 });
 
-// Make functions available globally
 window.setQuickAmount = setQuickAmount;
 window.showMessageModal = showMessageModal;

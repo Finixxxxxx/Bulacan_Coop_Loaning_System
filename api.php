@@ -68,6 +68,43 @@ switch ($action) {
         }
         echo json_encode($response);
         break;
+    // ==================
+    // Get Payment History - Client Portal
+    // ==================
+    case 'get_payment_history_client':
+        if ($role !== 'client') json_error('Access denied.');
+
+        $client_id = $_SESSION['client_id'] ?? null;
+        if (!$client_id) json_error("Client not logged in.");
+
+        $sql = "SELECT 
+                    p.payment_id,
+                    p.payment_amount,
+                    p.payment_date,
+                    p.payment_method,
+                    p.loan_id
+                FROM payments p
+                WHERE p.client_id = ?
+                ORDER BY p.payment_date DESC";
+
+        $response = ['payments' => []];
+
+        if ($stmt = $mysqli->prepare($sql)) {
+            $stmt->bind_param("i", $client_id);
+            $stmt->execute();
+            $result = $stmt->get_result();
+
+            while ($row = $result->fetch_assoc()) {
+                $response['payments'][] = $row;
+            }
+
+            $stmt->close();
+        } else {
+            json_error("Database prepare error: " . $mysqli->error);
+        }
+
+        echo json_encode($response);
+        break;
 
     // ==================
     // Get Admin Data - Admin Dashboard
@@ -865,7 +902,12 @@ switch ($action) {
         $date_filter = $_REQUEST['date'] ?? date('Y-m-d');
         $report_type = $_REQUEST['report_type'] ?? 'clients';
 
-        $response = ['labels' => [], 'data' => []];
+        $response = [
+            'amount_labels' => [], 
+            'amount_values' => [],
+            'client_labels' => [],
+            'client_values' => []
+        ];
 
         $sql = "SELECT c.col_fullname, 
                 COUNT(DISTINCT p.client_id) as client_count,
@@ -891,12 +933,11 @@ switch ($action) {
             $result = $stmt->get_result();
             
             while ($row = $result->fetch_assoc()) {
-                $response['labels'][] = $row['col_fullname'];
-                if ($report_type === 'clients') {
-                    $response['data'][] = (int)$row['client_count'];
-                } else {
-                    $response['data'][] = (float)$row['total_collected'];
-                }
+                $response['amount_labels'][] = $row['col_fullname'];
+                $response['amount_values'][] = (float)$row['total_collected'];
+                
+                $response['client_labels'][] = $row['col_fullname'];
+                $response['client_values'][] = (int)$row['client_count'];
             }
             $stmt->close();
         }
@@ -910,12 +951,30 @@ switch ($action) {
     case 'export_clients_csv':
         if ($role !== 'admin') json_error('Access denied.');
         
-        $sql = "SELECT member_id, c_firstname, c_lastname, c_email, c_phone, c_address, c_branch, c_status FROM clients ORDER BY client_id ASC";
+        $branch_filter = $_REQUEST['branch'] ?? 'all';
         
-        $result = $mysqli->query($sql);
+        $sql = "SELECT member_id, c_firstname, c_lastname, c_email, c_phone, c_address, c_branch, c_status FROM clients";
+        
+        if ($branch_filter !== 'all') {
+            $sql .= " WHERE c_branch = ?";
+            $params = [$branch_filter];
+        } else {
+            $params = [];
+        }
+        
+        $sql .= " ORDER BY client_id ASC";
+        
+        $stmt = $mysqli->prepare($sql);
+        if (!$stmt) json_error('Database error.');
+        
+        if ($branch_filter !== 'all') {
+            $stmt->bind_param("s", $branch_filter);
+        }
+        
+        $stmt->execute();
+        $result = $stmt->get_result();
         
         if ($result && $result->num_rows > 0) {
-            
             header('Content-Type: text/csv');
             header('Content-Disposition: attachment; filename="clients_export_' . date('Ymd_His') . '.csv"');
             
@@ -928,6 +987,7 @@ switch ($action) {
             }
             
             fclose($output);
+            $stmt->close();
             $mysqli->close();
             exit;
         } else {
@@ -1027,6 +1087,8 @@ switch ($action) {
         
         header('Content-Disposition: attachment; filename="' . $filename . '"');
         
+        ob_start();
+        
         switch ($type) {
             case 'performance':
                 $sql = "SELECT 
@@ -1103,21 +1165,60 @@ switch ($action) {
                     }
                     fputcsv($output, $row);
                 }
+            } else {
+                fputcsv($output, ['No data available']);
             }
             fclose($output);
-        } else {
-            echo "Report data for {$type} report in {$format} format\n\n";
+        } else if ($format === 'excel') {
+            header("Content-Type: application/vnd.ms-excel");
+            header("Content-Disposition: attachment; filename=\"$filename\"");
+
+            echo "Bulacan Cooperative Reporting System\n";
+            echo ucfirst($type) . " Report\n";
+            echo "Branch:\t" . ($branch === 'all' ? 'All Branches' : ucfirst($branch)) . "\n";
+            echo "Generated:\t" . date('Y-m-d H:i:s') . "\n\n";
+
             if ($result && $result->num_rows > 0) {
+                // Print headers
+                $firstRow = $result->fetch_assoc();
+                $headers = array_keys($firstRow);
+                echo implode("\t", $headers) . "\n";
+
+                // Print first row
+                echo implode("\t", array_values($firstRow)) . "\n";
+
+                // Continue remaining rows
+                while ($row = $result->fetch_assoc()) {
+                    echo implode("\t", array_values($row)) . "\n";
+                }
+            } else {
+                echo "No data available\n";
+            }
+        } else {
+            // PDF output (simplified - in production use a PDF library like TCPDF or FPDF)
+            echo "Bulacan Coop - " . ucfirst($type) . " Report\n";
+            echo "===============================\n\n";
+            echo "Branch: " . ($branch === 'all' ? 'All Branches' : ucfirst($branch)) . "\n";
+            echo "Date: " . date('F j, Y') . "\n";
+            echo "Time: " . date('h:i A') . "\n\n";
+            echo "Report Data:\n";
+            echo "------------\n\n";
+            
+            if ($result && $result->num_rows > 0) {
+                $total = 0;
                 while ($row = $result->fetch_assoc()) {
                     foreach ($row as $key => $value) {
-                        echo "{$key}: {$value}\n";
+                        echo str_pad($key . ": ", 20) . $value . "\n";
                     }
-                    echo "---\n";
+                    echo str_repeat("-", 40) . "\n";
                 }
+            } else {
+                echo "No data available for this report.\n";
             }
         }
         
         $mysqli->close();
+        exit;
         break;
 
     // ==================
@@ -1225,6 +1326,8 @@ switch ($action) {
                 echo ";\n\n";
             }
         }
+        $mysqli->close();
+        exit;
         break;
 
     // ==================
@@ -1274,28 +1377,57 @@ switch ($action) {
     case 'get_loans_payments_data':
         if ($role !== 'admin') json_error('Access denied.');
         
+        $branch_filter = $_REQUEST['branch'] ?? 'all';
+        
         $response = ['labels' => [], 'loans_issued' => [], 'payments' => []];
         
+        // Loans issued with branch filter
         $sql_loans = "SELECT 
-            DATE_FORMAT(application_date, '%Y-%m') as month,
+            DATE_FORMAT(l.application_date, '%Y-%m') as month,
             COUNT(*) as loans_count,
-            SUM(loan_amount) as total_issued
-            FROM loans 
-            WHERE loan_status = 'Active' 
-            AND application_date >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH)
-            GROUP BY YEAR(application_date), MONTH(application_date) 
-            ORDER BY YEAR(application_date), MONTH(application_date)";
+            SUM(l.loan_amount) as total_issued
+            FROM loans l
+            JOIN clients c ON l.client_id = c.client_id
+            WHERE l.loan_status = 'Active' 
+            AND l.application_date >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH)";
             
-        $sql_payments = "SELECT 
-            DATE_FORMAT(payment_date, '%Y-%m') as month,
-            SUM(payment_amount) as total_payments
-            FROM payments 
-            WHERE payment_date >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH)
-            GROUP BY YEAR(payment_date), MONTH(payment_date) 
-            ORDER BY YEAR(payment_date), MONTH(payment_date)";
+        if ($branch_filter !== 'all') {
+            $sql_loans .= " AND c.c_branch = ?";
+        }
         
-        $result_loans = $mysqli->query($sql_loans);
-        $result_payments = $mysqli->query($sql_payments);
+        $sql_loans .= " GROUP BY YEAR(l.application_date), MONTH(l.application_date) 
+            ORDER BY YEAR(l.application_date), MONTH(l.application_date)";
+            
+        // Payments with branch filter
+        $sql_payments = "SELECT 
+            DATE_FORMAT(p.payment_date, '%Y-%m') as month,
+            SUM(p.payment_amount) as total_payments
+            FROM payments p
+            JOIN clients c ON p.client_id = c.client_id
+            WHERE p.payment_date >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH)";
+        
+        if ($branch_filter !== 'all') {
+            $sql_payments .= " AND c.c_branch = ?";
+        }
+        
+        $sql_payments .= " GROUP BY YEAR(p.payment_date), MONTH(p.payment_date) 
+            ORDER BY YEAR(p.payment_date), MONTH(p.payment_date)";
+        
+        // Prepare and execute loans query
+        $stmt_loans = $mysqli->prepare($sql_loans);
+        if ($branch_filter !== 'all') {
+            $stmt_loans->bind_param("s", $branch_filter);
+        }
+        $stmt_loans->execute();
+        $result_loans = $stmt_loans->get_result();
+        
+        // Prepare and execute payments query
+        $stmt_payments = $mysqli->prepare($sql_payments);
+        if ($branch_filter !== 'all') {
+            $stmt_payments->bind_param("s", $branch_filter);
+        }
+        $stmt_payments->execute();
+        $result_payments = $stmt_payments->get_result();
         
         $loans_data = [];
         $payments_data = [];
@@ -1308,6 +1440,7 @@ switch ($action) {
                     $response['labels'][] = $month;
                 }
             }
+            $stmt_loans->close();
         }
         
         if ($result_payments) {
@@ -1318,6 +1451,7 @@ switch ($action) {
                     $response['labels'][] = $month;
                 }
             }
+            $stmt_payments->close();
         }
         
         sort($response['labels']);

@@ -181,19 +181,19 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                 </nav>
 
                 <div class="p-4 border-t border-gray-200">
-                    <div class="flex items-center">
-                        <div class="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center mr-3">
-                            <i class="fas fa-user text-gray-600 text-sm"></i>
-                        </div>
+                    <div class="flex items-center justify-between">
                         <div class="flex items-center">
+                            <div class="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center mr-3">
+                                <i class="fas fa-user text-gray-600 text-sm"></i>
+                            </div>
                             <div>
                                 <p class="text-sm font-medium text-gray-900"><?php echo htmlspecialchars($admin_name); ?></p>
                                 <p class="text-xs text-gray-500">System Administrator</p>
                             </div>
-                            <div class="ml-8">
-                                <i id="logoutBtn" class="fas fa-right-from-bracket rounded-lg text-rose-500 hover:text-rose-700 text-xl cursor-pointer"></i>
-                            </div>
                         </div>
+                        <button id="logoutBtn" class="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                            <i class="fas fa-right-from-bracket"></i>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -585,13 +585,6 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                                 <i class="fas fa-bell mr-2 text-yellow-600"></i>Notifications
                             </h3>
                             <div class="space-y-4">
-                                <div class="flex items-center justify-between">
-                                    <span class="text-sm font-medium text-gray-700">New Pending Loan</span>
-                                    <label class="relative inline-flex items-center cursor-pointer">
-                                        <input type="checkbox" checked class="sr-only peer" id="notifPendingLoan">
-                                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-light rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                                    </label>
-                                </div>
                                 <div class="flex items-center justify-between">
                                     <span class="text-sm font-medium text-gray-700">Overdue Loan Alerts</span>
                                     <label class="relative inline-flex items-center cursor-pointer">
@@ -1176,6 +1169,9 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
             const pageTitle = document.getElementById('page-title');
             const allTabs = document.querySelectorAll('.tab-content');
             const allLinks = document.querySelectorAll('.sidebar-nav-item');
+            const logoutBtn = document.getElementById('logoutBtn');
+            const cancelLogoutBtn = document.getElementById('cancelLogoutBtn');
+            const confirmLogoutBtn = document.getElementById('confirmLogoutBtn');
             
             function openSidebar() {
                 sidebar.classList.remove('-translate-x-full');
@@ -1189,6 +1185,18 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
             sidebarToggle.addEventListener('click', openSidebar);
             closeSidebar.addEventListener('click', closeSidebarFn);
             sidebarOverlay.addEventListener('click', closeSidebarFn);
+
+            logoutBtn.addEventListener('click', () => {
+                document.getElementById('logoutConfirmationModal').classList.remove('hidden');
+            });
+
+            cancelLogoutBtn.addEventListener('click', () => {
+                document.getElementById('logoutConfirmationModal').classList.add('hidden');
+            });
+
+            confirmLogoutBtn.addEventListener('click', () => {
+                window.location.href = "logout.php";
+            });
 
             function switchTab(targetId) {
                 allTabs.forEach(tab => tab.classList.add('hidden'));
@@ -1434,18 +1442,6 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                     showMessageModal('Network Error', 'Could not connect to the server.', 'error');
                 }
             }
-
-            document.getElementById('logoutBtn').addEventListener('click', function() {
-                document.getElementById('logoutConfirmationModal').classList.remove('hidden');
-            });
-
-            document.getElementById('cancelLogoutBtn').addEventListener('click', function() {
-                document.getElementById('logoutConfirmationModal').classList.add('hidden');
-            });
-
-            document.getElementById('confirmLogoutBtn').addEventListener('click', function() {
-                window.location.href = "logout.php";
-            });
 
             function showDeactivateClientConfirmation(clientId, clientName, memberId) {
                 const modal = document.getElementById('deactivateClientConfirmationModal');

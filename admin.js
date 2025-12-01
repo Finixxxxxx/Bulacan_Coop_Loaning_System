@@ -460,7 +460,9 @@ async function updateUpcomingPayments() {
 
 async function updateLoansAndPaymentsChart() {
     try {
-        const response = await fetch(API_URL + '?action=get_loans_payments_data')
+        const branch = $('#branchSelector').val() || 'all'
+        const url = `${API_URL}?action=get_loans_payments_data&branch=${encodeURIComponent(branch)}`
+        const response = await fetch(url)
         const data = await response.json()
         
         if (data.error) {
@@ -910,6 +912,7 @@ async function handleChangePassword(e) {
     submitBtn.html('<i class="fas fa-spinner fa-spin mr-2"></i> Changing...').prop('disabled', true)
 
     const formData = new FormData(this)
+    formData.append('action', 'change_admin_password')
 
     try {
         const response = await fetch(API_URL, { method: 'POST', body: formData })

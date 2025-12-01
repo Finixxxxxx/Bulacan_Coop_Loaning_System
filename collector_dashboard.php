@@ -52,7 +52,7 @@ $collector_username = $_SESSION["collector_username"] ?? "";
 <body class="min-h-screen">
     <div class="flex min-h-screen">
         
-        <div class="w-64 bg-white shadow-lg">
+        <div class="w-64 bg-white shadow-lg flex flex-col h-screen">
             <div class="p-4 border-b">
                 <div class="flex items-center">
                     <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center mr-3">
@@ -74,14 +74,19 @@ $collector_username = $_SESSION["collector_username"] ?? "";
                 </div>
             </nav>
             <div class="p-4 border-t mt-auto">
-                <div class="flex items-center">
-                    <div class="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center mr-3">
-                        <i class="fas fa-user text-gray-600 text-sm"></i>
+                <div class="flex items-center justify-between">
+                    <div class="flex">
+                        <div class="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center mr-3">
+                            <i class="fas fa-user text-gray-600 text-sm"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-gray-900"><?php echo htmlspecialchars($collector_name); ?></p>
+                            <p class="text-xs text-gray-500">Collector • <?php echo htmlspecialchars($collector_branch); ?></p>
+                        </div>
                     </div>
-                    <div>
-                        <p class="text-sm font-medium text-gray-900"><?php echo htmlspecialchars($collector_name); ?></p>
-                        <p class="text-xs text-gray-500">Collector • <?php echo htmlspecialchars($collector_branch); ?></p>
-                    </div>
+                    <button type="button" id="logoutBtn" class="text-red-600 rounded-lg text-lg hover:text-red-700 transition-colors font-semibold">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
                 </div>
             </div>
         </div>
@@ -190,51 +195,51 @@ $collector_username = $_SESSION["collector_username"] ?? "";
 
             
             <div id="profile" class="tab-content hidden">
-                <div class="bg-white rounded-xl shadow-md p-6 card-hover max-w-2xl">
-                    <h2 class="text-2xl font-bold text-gray-900 mb-6">Collector Profile</h2>
+                <div class="bg-white rounded-xl shadow-md p-6 card-hover">
                     
                     <form id="profileForm" class="space-y-6">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
-                                <input type="text" id="profileFullname" name="col_fullname" value="<?php echo htmlspecialchars($collector_name); ?>" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Username</label>
-                                <input type="text" id="profileUsername" name="col_username" value="<?php echo htmlspecialchars($collector_username); ?>" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition">
-                            </div>
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Branch</label>
-                            <input type="text" value="<?php echo htmlspecialchars($collector_branch); ?>" disabled class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500">
-                            <p class="text-xs text-gray-500 mt-1">Branch cannot be changed</p>
-                        </div>
-
-                        <div class="border-t pt-6">
-                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Change Password</h3>
-                            <div class="space-y-4">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Current Password</label>
-                                    <input type="password" name="current_password" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition" placeholder="Enter current password">
+                        <div class="flex justify-between space-x-3">
+                            <div class="p-4 rounded-lg w-full">
+                                <h2 class="text-2xl font-bold text-gray-900 pb-2 mb-4 border-b border-gray-200"><i class="fas fa-circle-user text-green-600 mr-2"></i>Account Information</h2>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+                                        <input type="text" id="profileFullname" name="col_fullname" value="<?php echo htmlspecialchars($collector_name); ?>" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Username</label>
+                                        <input type="text" id="profileUsername" name="col_username" value="<?php echo htmlspecialchars($collector_username); ?>" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition">
+                                    </div>
                                 </div>
+                                
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">New Password</label>
-                                    <input type="password" name="new_password" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition" placeholder="Enter new password">
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Confirm New Password</label>
-                                    <input type="password" name="confirm_password" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition" placeholder="Confirm new password">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Branch</label>
+                                    <input type="text" value="<?php echo htmlspecialchars($collector_branch); ?>" disabled class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500">
+                                    <p class="text-xs text-gray-500 mt-1">Branch cannot be changed</p>
                                 </div>
                             </div>
+                            
+                            <div class="p-4 rounded-lg bg-white w-full">
+                                <h3 class="text-2xl font-semibold text-gray-900 pb-2 mb-4 border-b border-gray-200"><i class="fas fa-key text-sky-600 mr-2"></i>Change Password</h3>
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Current Password</label>
+                                        <input type="password" name="current_password" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition" placeholder="Enter current password">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">New Password</label>
+                                        <input type="password" name="new_password" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition" placeholder="Enter new password">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Confirm New Password</label>
+                                        <input type="password" name="confirm_password" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition" placeholder="Confirm new password">
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-
                         <div id="profileMessage" class="hidden p-3 text-center rounded-lg text-sm font-medium"></div>
 
                         <div class="flex justify-end space-x-3 pt-4 border-t">
-                            <button type="button" id="logoutBtn" class="bg-red-600 text-white py-2.5 px-6 rounded-lg hover:bg-red-700 transition-colors font-semibold">
-                                <i class="fas fa-sign-out-alt mr-2"></i> Logout
-                            </button>
                             <button type="submit" id="profileSubmitBtn" class="bg-primary text-white py-2.5 px-6 rounded-lg hover:bg-primary-dark transition-colors font-semibold">
                                 <i class="fas fa-save mr-2"></i> Update Profile
                             </button>
@@ -317,6 +322,26 @@ $collector_username = $_SESSION["collector_username"] ?? "";
         </div>
     </div>
 
+    <div id="logoutConfirmationModal" class="hidden bg-black/50 fixed inset-0 modal-overlay overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+        <div class="relative p-8 border w-96 shadow-2xl rounded-2xl bg-white transform modal-content fade-in">
+            <div class="text-center">
+                <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-4">
+                    <i class="fas fa-sign-out-alt text-red-600 text-2xl"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 mb-2">Confirm Logout</h3>
+                <p class="text-gray-600 mb-6">Are you sure you want to log out of the admin dashboard?</p>
+                <div class="flex space-x-3">
+                    <button id="cancelLogoutBtn" class="w-1/2 bg-gray-200 text-gray-700 py-2.5 rounded-lg hover:bg-gray-300 transition-colors font-medium">
+                        Cancel
+                    </button>
+                    <button id="confirmLogoutBtn" class="w-1/2 bg-red-600 text-white py-2.5 rounded-lg hover:bg-red-700 transition-colors font-semibold">
+                        <i class="fas fa-sign-out-alt mr-2"></i> Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         let html5QrcodeScanner = null;
         document.querySelectorAll('.sidebar-nav-item').forEach(button => {
@@ -376,10 +401,17 @@ $collector_username = $_SESSION["collector_username"] ?? "";
         });
 
         document.getElementById('logoutBtn').addEventListener('click', function() {
-            if (confirm('Are you sure you want to logout?')) {
-                window.location.href = 'logout.php';
-            }
+            const modal = document.getElementById("logoutConfirmationModal")
+            modal.classList.remove('hidden')
         });
+        document.getElementById('cancelLogoutBtn').addEventListener('click', function(){
+            const modal = document.getElementById("logoutConfirmationModal")
+            modal.classList.add('hidden')
+        })
+        document.getElementById('confirmLogoutBtn').addEventListener('click', function(){
+            window.location.href = 'logout.php';
+        })
+        
 
         function initializeQRScanner() {
             if (html5QrcodeScanner) {
