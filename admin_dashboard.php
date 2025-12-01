@@ -17,79 +17,9 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="admin.css">
-    <script type="module" src="admin.js"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-        
-        :root {
-            --primary-color: #1E40AF;
-            --primary-light: #EFF6FF;
-            --primary-dark: #1E3A8A;
-            --background-soft: #F9FAFB;
-            --text-base: #1F2937;
-        }
-        body { 
-            font-family: 'Inter', sans-serif; 
-            background-color: var(--background-soft); 
-            color: var(--text-base);
-        }
-        .bg-primary { background-color: var(--primary-color); } 
-        .hover\:bg-primary-dark:hover { background-color: var(--primary-dark); }
-        .text-primary { color: var(--primary-color); }
-
-        .sidebar-nav-item {
-            transition: all 0.2s;
-            color: #4B5563;
-            background-color: transparent;
-            padding: 10px 12px;
-        }
-        .sidebar-nav-item:hover {
-            color: var(--primary-dark); 
-            background-color: #F3F4F6;
-        }
-        .sidebar-nav-item.active {
-            color: var(--primary-color) !important; 
-            background-color: var(--primary-light) !important; 
-            font-weight: 600;
-            border-left: 4px solid var(--primary-color);
-            padding-left: 14px !important;
-        }
-
-        .card-flat { 
-            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-            border-radius: 0.75rem;
-            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.08);
-            border: 1px solid #E5E7EB;
-        }
-        .card-flat:hover { 
-            transform: translateY(-1px); 
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-        }
-        .input-focus-style:focus {
-            border-color: var(--primary-color) !important;
-            box-shadow: 0 0 0 1px var(--primary-color) !important;
-        }
-        .status-badge {
-            padding: 0.35rem 1rem;
-            border-radius: 9999px;
-            font-size: 0.7rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-        .modal-overlay {
-            background: rgba(0, 0, 0, 0.4);
-            backdrop-filter: blur(3px);
-        }
-        .fade-in {
-            animation: fadeIn 0.4s ease-out;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-    </style>
+    <link rel="stylesheet" href="./css/admin.css">
+    <link rel="stylesheet" href="./css/global.css">
+    <script type="module" src="./js/admin.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -209,7 +139,7 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                 <section id="overview" class="tab-content fade-in">
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                        <div id="totalClients" class="stat-card bg-gradient-to-r from-sky-500 to-sky-600 p-6 rounded-xl shadow-xl shadow-sky-500/30 text-white cursor-pointer hover:shadow-sky-500/50 transition-all duration-300" data-tab="clients">
+                        <div id="totalClients" class="stat-card bg-gradient-to-r from-sky-500 to-sky-600 p-6 rounded-xl shadow-xl shadow-sky-500/30 text-white cursor-pointer hover:shadow-sky-500/50 transition-all duration-300" go-to-tab="clients">
                             <div class="flex items-center justify-between">
                                 <div>
                                     <p class="text-sky-100 text-sm font-medium uppercase tracking-wider">Total Clients</p>
@@ -226,7 +156,7 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                                 <div>
                                     <p class="text-rose-100 text-sm font-medium uppercase tracking-wider">Total Outstanding</p>
                                     <p id="totalOutstandingAmount" class="text-4xl font-extrabold mt-1">₱0</p>
-                                    <p class="text-rose-100 text-xs mt-2 font-light">Active Loans: <strong class="ml-1 font-semibold" id="activeLoansCount">0</strong></p>
+                                    <p class="text-rose-100 text-xs mt-2 font-light">Active Loans: <strong class="ml-1 font-semibold bg-white/30 rounded-full px-2 py-1" id="activeLoansCount">0</strong></p>
                                 </div>
                                 <div class="p-4 bg-black bg-opacity-10 rounded-lg">
                                     <i class="fas fa-hand-holding-usd text-3xl"></i>
@@ -240,7 +170,7 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                                     <p id="totalPaymentsToday" class="text-4xl font-extrabold mt-1">₱0</p>
                                     <p class="text-emerald-100 text-xs mt-2 font-light">
                                         <i id="payRateFromYesterdayIcon" class="fas fa-arrow-up text-white mr-1"></i>
-                                        Rate from yesterday <strong id="payRateFromYesterday" class="ml-1 font-semibold">0%</strong></p>
+                                        Rate from yesterday <strong id="payRateFromYesterday" class="ml-1 font-semibold bg-white/30 rounded-full px-2 py-1">0%</strong></p>
                                 </div>
                                 <div class="p-4 bg-black bg-opacity-10 rounded-lg">
                                     <i class="fas fa-money-bill-wave text-3xl"></i>
@@ -1057,14 +987,16 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                     const targetId = link.dataset.tab;
                     window.location.hash = targetId;
                     switchTab(targetId);
+                    window.scrollTo({ top: 0 });
                 });
             });
 
             document.getElementById("totalClients").addEventListener('click', function(e){
                 e.preventDefault();
-                const targetId = this.getAttribute('data-tab');
+                const targetId = this.getAttribute('go-to-tab');
                 window.location.hash = targetId;
                 switchTab(targetId);
+                window.scrollTo({ top: 0 });
             })
 
             function showMessageModal(title, message, type = 'success') {

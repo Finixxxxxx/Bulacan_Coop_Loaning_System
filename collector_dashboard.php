@@ -20,64 +20,9 @@ $collector_username = $_SESSION["collector_username"] ?? "";
     <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script type="module" src="collector.js"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        :root {
-            --primary-color: #1E40AF;
-            --primary-light: #EFF6FF;
-            --primary-dark: #1E3A8A;
-            --background-soft: #F9FAFB;
-            --text-base: #1F2937;
-        }
-        body { 
-            font-family: 'Inter', sans-serif; 
-            background-color: #f8fafc;
-        }
-        .card-hover { transition: all 0.3s ease; }
-        .card-hover:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
-        .bg-primary { background-color: #0369A1; } 
-        .hover\:bg-primary-dark:hover { background-color: #075985; }
-        .status-badge {
-            display: inline-block;
-            padding: 0.25rem 0.75rem;
-            border-radius: 9999px;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-        .fade-in { animation: fadeIn 0.3s ease-in; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        #qrReader {
-            width: 100%;
-            height: 300px;
-        }
-        #qrReader__dashboard_section{
-            display: none;
-        }
-        #sidebar {
-            width: 16rem;
-            z-index: 50;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-        }
-        .sidebar-nav-item {
-            transition: all 0.2s;
-            color: #4B5563;
-            background-color: transparent;
-            padding: 10px 12px;
-        }
-        .sidebar-nav-item:hover {
-            color: var(--primary-dark); 
-            background-color: #F3F4F6;
-        }
-        .sidebar-nav-item.active {
-            color: var(--primary-color) !important; 
-            background-color: var(--primary-light) !important; 
-            font-weight: 600;
-            border-left: 4px solid var(--primary-color);
-            padding-left: 14px !important;
-        }
-
-    </style>
+    <link rel="stylesheet" href="./css/collector.css">
+    <link rel="stylesheet" href="./css/global.css">
+    <script type="module" src="./js/collector.js"></script>
 </head>
 <body class="min-h-screen">
     <div class="flex min-h-screen">
@@ -504,7 +449,7 @@ $collector_username = $_SESSION["collector_username"] ?? "";
                 formData.append('loan_id', loanId);
                 formData.append('payment_amount', paymentAmount);
 
-                const response = await fetch('api.php', {
+                const response = await fetch('/api.php', {
                     method: 'POST',
                     body: formData
                 });
@@ -542,7 +487,7 @@ $collector_username = $_SESSION["collector_username"] ?? "";
                 formData.append('loan_id', loanId);
                 formData.append('payment_amount', paymentAmount);
 
-                const response = await fetch('api.php', {
+                const response = await fetch('/api.php', {
                     method: 'POST',
                     body: formData
                 });
@@ -586,7 +531,7 @@ $collector_username = $_SESSION["collector_username"] ?? "";
             formData.append('action', 'update_collector_profile');
 
             try {
-                const response = await fetch('api.php', {
+                const response = await fetch('/api.php', {
                     method: 'POST',
                     body: formData
                 });

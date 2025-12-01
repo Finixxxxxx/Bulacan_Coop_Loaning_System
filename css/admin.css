@@ -1,0 +1,55 @@
+.bg-primary { background-color: var(--primary-color); } 
+.hover\:bg-primary-dark:hover { background-color: var(--primary-dark); }
+.text-primary { color: var(--primary-color); }
+
+.sidebar-nav-item {
+    transition: all 0.2s;
+    color: #4B5563;
+    background-color: transparent;
+    padding: 10px 12px;
+}
+.sidebar-nav-item:hover {
+    color: var(--primary-dark); 
+    background-color: #F3F4F6;
+}
+.sidebar-nav-item.active {
+    color: var(--primary-color) !important; 
+    background-color: var(--primary-light) !important; 
+    font-weight: 600;
+    border-left: 4px solid var(--primary-color);
+    padding-left: 14px !important;
+}
+
+.card-flat { 
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    border-radius: 0.75rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.08);
+    border: 1px solid #E5E7EB;
+}
+.card-flat:hover { 
+    transform: translateY(-1px); 
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+.input-focus-style:focus {
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 0 0 1px var(--primary-color) !important;
+}
+.status-badge {
+    padding: 0.35rem 1rem;
+    border-radius: 9999px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.modal-overlay {
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(3px);
+}
+.fade-in {
+    animation: fadeIn 0.4s ease-out;
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
