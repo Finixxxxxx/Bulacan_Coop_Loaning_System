@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Nov 23, 2024 at 10:48 AM
+-- Generation Time: Dec 01, 2025 at 06:49 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -63,6 +63,7 @@ CREATE TABLE `clients` (
   `date_joined` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+
 -- --------------------------------------------------------
 
 --
@@ -79,6 +80,7 @@ CREATE TABLE `collectors` (
   `date_registered` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+
 -- --------------------------------------------------------
 
 --
@@ -89,13 +91,14 @@ CREATE TABLE `loans` (
   `loan_id` int(11) NOT NULL,
   `client_id` int(11) NOT NULL,
   `loan_amount` decimal(10,2) NOT NULL,
-  `interest_rate` decimal(5,2) NOT NULL DEFAULT 4.50,
+  `processing_fee` decimal(10,2) DEFAULT 200.00,
+  `net_amount` decimal(10,2) DEFAULT 0.00,
+  `interest_rate` decimal(5,2) NOT NULL DEFAULT 15.00,
   `term_days` int(11) NOT NULL DEFAULT 100,
   `daily_payment` decimal(10,2) NOT NULL,
   `total_balance` decimal(10,2) NOT NULL,
   `current_balance` decimal(10,2) NOT NULL,
   `application_date` timestamp NOT NULL DEFAULT current_timestamp(),
-  `approval_date` datetime DEFAULT NULL,
   `next_payment_date` date DEFAULT NULL,
   `loan_status` enum('Pending','Active','Paid','Declined','Overdue') DEFAULT 'Pending',
   `days_paid` int(11) NOT NULL DEFAULT 0
@@ -117,6 +120,7 @@ CREATE TABLE `payments` (
   `payment_method` varchar(50) DEFAULT 'Cash',
   `payment_type` enum('daily','partial','full') DEFAULT 'daily'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 
 --
 -- Indexes for dumped tables
@@ -174,25 +178,25 @@ ALTER TABLE `admins`
 -- AUTO_INCREMENT for table `clients`
 --
 ALTER TABLE `clients`
-  MODIFY `client_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `client_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `collectors`
 --
 ALTER TABLE `collectors`
-  MODIFY `collector_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `collector_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `loans`
 --
 ALTER TABLE `loans`
-  MODIFY `loan_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `loan_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT for table `payments`
 --
 ALTER TABLE `payments`
-  MODIFY `payment_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `payment_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- Constraints for dumped tables

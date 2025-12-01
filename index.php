@@ -32,7 +32,6 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     }
 
     if(empty($username_err) && empty($password_err)){
-        // Check clients first (using email)
         $sql = "SELECT client_id, member_id, c_firstname, c_lastname, c_email, c_phone, c_password_hash, c_status FROM clients WHERE c_email = ?";
         
         if($stmt = $mysqli->prepare($sql)){
@@ -45,7 +44,6 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                 if($stmt->num_rows == 1){
                     $stmt->bind_result($client_id, $member_id, $firstname, $lastname, $email, $phone, $hashed_password, $status);
                     if($stmt->fetch()){
-                        // Check if account is deactivated
                         if (str_ends_with($member_id, '-D') || $status === 'Deactivated') {
                             $login_err = "Your account is deactivated. Please contact administrator.";
                         } else if(password_verify($password, $hashed_password)){
@@ -62,7 +60,6 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                         }
                     }
                 } else{
-                    // Check admins
                     $sql_admin = "SELECT admin_id, a_username, a_fullname, a_password_hash FROM admins WHERE a_username = ?";
                     if($stmt_admin = $mysqli->prepare($sql_admin)){
                         $stmt_admin->bind_param("s", $param_admin_username);
@@ -85,7 +82,6 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                                     }
                                 }
                             } else {
-                                // Check collectors
                                 $sql_collector = "SELECT collector_id, col_username, col_fullname, col_branch, col_password_hash FROM collectors WHERE col_username = ? AND col_status = 'Active'";
                                 if($stmt_collector = $mysqli->prepare($sql_collector)){
                                     $stmt_collector->bind_param("s", $param_collector_username);

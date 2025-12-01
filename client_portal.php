@@ -7,6 +7,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true || $_SESSION[
 
 $client_name = $_SESSION["client_name"];
 $member_id = $_SESSION["member_id"];
+$client_id = $_SESSION["client_id"];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -15,7 +16,7 @@ $member_id = $_SESSION["member_id"];
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bulacan Coop - Client Portal</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script type="module" src="client.js"></script>
     <style>
@@ -42,7 +43,6 @@ $member_id = $_SESSION["member_id"];
 </head>
 <body class="p-4 sm:p-6 lg:p-8 min-h-screen">
 
-    <!-- Header / Nav -->
     <header class="mb-8 p-4 bg-white shadow-md rounded-xl flex justify-between items-center fade-in">
         <h1 class="text-xl sm:text-2xl font-bold text-gray-900">
             Welcome, <span id="clientNameDisplay" class="text-primary"><?php echo htmlspecialchars($client_name); ?></span>
@@ -55,12 +55,10 @@ $member_id = $_SESSION["member_id"];
         </div>
     </header>
 
-    <!-- Main Content Grid -->
     <main class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         <div class="lg:col-span-2 space-y-6">
 
-            <!-- Active Loan Status Card -->
             <section class="bg-white p-6 rounded-2xl shadow-lg border-t-4 border-primary card-hover fade-in" id="loanStatusSection">
                 <h2 class="text-2xl font-semibold text-gray-800 mb-4 flex items-center">
                     <i class="fas fa-money-check-alt text-primary mr-3"></i> Current Loan Status
@@ -95,7 +93,7 @@ $member_id = $_SESSION["member_id"];
                             </div>
                             <div>
                                 <span>Interest Rate:</span>
-                                <span id="interestRate" class="font-semibold">4.5%</span>
+                                <span id="interestRate" class="font-semibold">15%</span>
                             </div>
                             <div>
                                 <span>Days Paid:</span>
@@ -115,7 +113,6 @@ $member_id = $_SESSION["member_id"];
                 </div>
             </section>
 
-            <!-- Loan History Table -->
             <section class="bg-white p-6 rounded-2xl shadow-lg card-hover fade-in">
                 <h2 class="text-2xl font-semibold text-gray-800 mb-4 flex items-center">
                     <i class="fas fa-history text-primary mr-3"></i> Payment History
@@ -139,7 +136,6 @@ $member_id = $_SESSION["member_id"];
         </div>
 
         <div class="lg:col-span-1 space-y-6">
-            <!-- Quick Payment Card -->
             <section class="bg-white p-6 rounded-2xl shadow-lg border-l-4 border-green-500 card-hover fade-in">
                 <h2 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
                     <i class="fas fa-qrcode text-green-500 mr-3"></i> Quick Payment QR
@@ -162,7 +158,6 @@ $member_id = $_SESSION["member_id"];
                 </button>
             </section>
 
-            <!-- Account Information Card -->
             <section class="bg-white p-6 rounded-2xl shadow-lg border-l-4 border-purple-500 card-hover fade-in">
                 <h2 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
                     <i class="fas fa-user-circle text-purple-500 mr-3"></i> Account Information
@@ -185,7 +180,6 @@ $member_id = $_SESSION["member_id"];
         </div>
     </main>
 
-    <!-- QR Modal -->
     <div id="qrModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-75 overflow-y-auto h-full w-full z-50 flex items-center justify-center fade-in">
         <div class="relative p-8 border w-full max-w-sm shadow-2xl rounded-2xl bg-white space-y-4 transform scale-100 transition-transform">
             <button id="closeQRModal" class="absolute top-3 right-3 text-gray-400 hover:text-gray-600 transition">
@@ -211,7 +205,6 @@ $member_id = $_SESSION["member_id"];
         </div>
     </div>
 
-    <!-- Success/Message Modal -->
     <div id="messageModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-75 overflow-y-auto h-full w-full z-50 flex items-center justify-center fade-in">
         <div class="relative p-6 border w-96 shadow-2xl rounded-xl bg-white transform scale-100 transition-transform">
             <div class="text-center">
@@ -226,5 +219,112 @@ $member_id = $_SESSION["member_id"];
         </div>
     </div>
 
+    <script>
+        const CLIENT_ID = <?php echo $client_id; ?>;
+
+        function setQuickAmount(amount) {
+            document.getElementById('paymentAmount').value = parseFloat(amount).toFixed(2);
+        }
+
+        function generateQRCode() {
+            const paymentAmount = document.getElementById('paymentAmount').value;
+            
+            if (!paymentAmount || paymentAmount < 100) {
+                showMessage('Invalid Amount', 'Please enter a valid payment amount (minimum ₱100).', 'error');
+                return;
+            }
+
+            if (!CURRENT_LOAN_ID) {
+                showMessage('No Active Loan', 'You do not have an active loan to make payments for.', 'error');
+                return;
+            }
+            const qrData = {
+                clientId: CLIENT_ID,
+                loanId: CURRENT_LOAN_ID,
+                paymentAmount: parseFloat(paymentAmount),
+                timestamp: new Date().toISOString()
+            };
+            const qrString = JSON.stringify(qrData);
+            const canvas = document.getElementById('qrCanvas');
+            QRCode.toCanvas(canvas, qrString, {
+                width: 200,
+                margin: 1,
+                color: {
+                    dark: '#000000',
+                    light: '#FFFFFF'
+                }
+            }, function(error) {
+                if (error) {
+                    console.error('QR Code generation error:', error);
+                    showMessage('QR Error', 'Failed to generate QR code. Please try again.', 'error');
+                    return;
+                }
+                document.getElementById('qrAmountDisplay').textContent = `₱${parseFloat(paymentAmount).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+                document.getElementById('qrModal').classList.remove('hidden');
+            });
+        }
+
+        function downloadQRCode() {
+            const canvas = document.getElementById('qrCanvas');
+            const link = document.createElement('a');
+            link.download = `payment_qr_${new Date().getTime()}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        function shareQRCode() {
+            if (navigator.share) {
+                const canvas = document.getElementById('qrCanvas');
+                canvas.toBlob(function(blob) {
+                    const file = new File([blob], 'payment_qr.png', { type: 'image/png' });
+                    navigator.share({
+                        files: [file],
+                        title: 'Payment QR Code',
+                        text: `Payment QR Code for ₱${document.getElementById('paymentAmount').value}`
+                    });
+                });
+            } else {
+                showMessage('Sharing Not Supported', 'Your browser does not support sharing files.', 'info');
+            }
+        }
+
+        function showMessage(title, message, type = 'info') {
+            const modal = document.getElementById('messageModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalMessage = document.getElementById('modalMessage');
+            const modalIcon = document.getElementById('modalIcon');
+
+            modalTitle.textContent = title;
+            modalMessage.textContent = message;
+            
+            modalIcon.className = 'mx-auto flex items-center justify-center h-12 w-12 rounded-full mb-4';
+            if (type === 'success') {
+                modalIcon.classList.add('bg-green-100');
+                modalIcon.innerHTML = '<i class="fas fa-check text-green-600 text-xl"></i>';
+            } else if (type === 'error') {
+                modalIcon.classList.add('bg-red-100');
+                modalIcon.innerHTML = '<i class="fas fa-times text-red-600 text-xl"></i>';
+            } else {
+                modalIcon.classList.add('bg-blue-100');
+                modalIcon.innerHTML = '<i class="fas fa-info text-blue-600 text-xl"></i>';
+            }
+
+            modal.classList.remove('hidden');
+        }
+        document.getElementById('generatePaymentQR').addEventListener('click', generateQRCode);
+        document.getElementById('downloadQR').addEventListener('click', downloadQRCode);
+        document.getElementById('shareQR').addEventListener('click', shareQRCode);
+        document.getElementById('closeQRModal').addEventListener('click', function() {
+            document.getElementById('qrModal').classList.add('hidden');
+        });
+        document.getElementById('closeMessageModal').addEventListener('click', function() {
+            document.getElementById('messageModal').classList.add('hidden');
+        });
+        document.getElementById('logoutBtn').addEventListener('click', function() {
+            if (confirm('Are you sure you want to logout?')) {
+                window.location.href = 'logout.php';
+            }
+        });
+    </script>
 </body>
 </html>

@@ -90,8 +90,6 @@ switch ($action) {
             'active_loans_count' => 0,
             'monthly_stats' => [] 
         ];
-
-        // Get collectors
         $sql_collectors = "SELECT * FROM collectors WHERE col_status = 'Active'";
         if ($branch_filter !== 'all') {
             $sql_collectors .= " AND col_branch = ?";
@@ -139,7 +137,6 @@ switch ($action) {
         }
         $response['payments_rate_from_yesterday'] = round($rate, 2);
 
-        // Get clients
         $sql_clients = "SELECT client_id, member_id, c_firstname, c_lastname, c_email, c_phone, c_address, c_branch, c_status FROM clients WHERE 1=1";
         $params = [];
         $types = "";
@@ -162,7 +159,6 @@ switch ($action) {
             $stmt->close();
         }
 
-        // Get loans with updated 100-day logic
         $sql_loans = "SELECT l.*, c.c_firstname, c.c_lastname, c.c_branch FROM loans l JOIN clients c ON l.client_id = c.client_id WHERE 1=1";
         $params = [];
         $types = "";
@@ -193,7 +189,6 @@ switch ($action) {
             $stmt->close();
         }
 
-        // Get pending loans
         $sql_pending = "SELECT l.*, c.c_firstname, c.c_lastname, c.c_branch FROM loans l JOIN clients c ON l.client_id = c.client_id WHERE l.loan_status = 'Pending'";
         $params = [];
         $types = "";
@@ -227,7 +222,6 @@ switch ($action) {
     // ==================
     // Add Client - Admin Dashboard | Client Management
     // ==================
-
     case 'add_client':
         if ($role !== 'admin' || $_SERVER['REQUEST_METHOD'] !== 'POST') json_error('Access denied.');
         
@@ -242,7 +236,6 @@ switch ($action) {
             json_error('All required fields must be filled.');
         }
 
-        // Check if email already exists
         $sql_check = "SELECT client_id FROM clients WHERE c_email = ?";
         if ($stmt = $mysqli->prepare($sql_check)) {
             $stmt->bind_param("s", $email);
@@ -292,7 +285,6 @@ switch ($action) {
             json_error('All required fields must be filled.');
         }
 
-        // Check if username already exists
         $sql_check = "SELECT collector_id FROM collectors WHERE col_username = ?";
         if ($stmt = $mysqli->prepare($sql_check)) {
             $stmt->bind_param("s", $username);
@@ -324,6 +316,99 @@ switch ($action) {
         }
         break;
 
+    case 'delete_collector':
+        if ($role !== 'admin' || $_SERVER['REQUEST_METHOD'] !== 'POST') json_error('Access denied.');
+        $collector_id = $_POST['collector_id'] ?? '';
+
+        if (empty($collector_id)) {
+            json_error('Collector ID is required.');
+        }
+
+        $sql_check = "SELECT payment_id FROM payments WHERE collector_id = ? LIMIT 1";
+        if ($stmt = $mysqli->prepare($sql_check)) {
+            $stmt->bind_param("i", $collector_id);
+            $stmt->execute();
+            $stmt->store_result();
+            if ($stmt->num_rows > 0) {
+                $stmt->close();
+                json_error('Cannot delete collector. They have recorded payments.');
+            }
+            $stmt->close();
+        }
+
+        $sql_delete = "DELETE FROM collectors WHERE collector_id = ?";
+        if ($stmt = $mysqli->prepare($sql_delete)) {
+            $stmt->bind_param("i", $collector_id);
+            if ($stmt->execute()) {
+                echo json_encode([
+                    'success' => true, 
+                    'message' => "Collector deleted successfully!"
+                ]);
+            } else {
+                json_error('Failed to delete collector: ' . $stmt->error);
+            }
+            $stmt->close();
+        } else {
+            json_error('Database prepare error: ' . $mysqli->error);
+        }
+        break;
+
+    case 'edit_collector':
+        if ($role !== 'admin' || $_SERVER['REQUEST_METHOD'] !== 'POST') json_error('Access denied.');
+        $collector_id = $_POST['collector_id'] ?? '';
+        $fullname = $_POST['col_fullname'] ?? '';
+        $username = $_POST['col_username'] ?? '';
+        $password = $_POST['col_password'] ?? '';
+        $branch = $_POST['col_branch'] ?? '';
+        $status = $_POST['col_status'] ?? 'Active';
+        if (empty($collector_id) || empty($fullname) || empty($username) || empty($branch)) {
+            json_error('All required fields must be filled.');
+        }
+
+        $sql_check = "SELECT collector_id FROM collectors WHERE col_username = ? AND collector_id != ?";
+        if ($stmt = $mysqli->prepare($sql_check)) {
+            $stmt->bind_param("si", $username, $collector_id);
+            $stmt->execute();
+            $stmt->store_result();
+            if ($stmt->num_rows > 0) {
+                $stmt->close();
+                json_error('Username already exists.');
+            }
+            $stmt->close();
+        }
+
+        if (!empty($password)) {
+            $password_hash = password_hash($password, PASSWORD_DEFAULT);
+            $sql_update = "UPDATE collectors SET col_username = ?, col_password_hash = ?, col_fullname = ?, col_branch = ?, col_status = ? WHERE collector_id = ?";
+            if ($stmt = $mysqli->prepare($sql_update)) {
+                $stmt->bind_param("sssssi", $username, $password_hash, $fullname, $branch, $status, $collector_id);
+                if ($stmt->execute()) {
+                    echo json_encode([
+                        'success' => true, 
+                        'message' => "Collector updated successfully!"
+                    ]);
+                } else {
+                    json_error('Failed to update collector: ' . $stmt->error);
+                }
+                $stmt->close();
+            }
+        } else {
+            $sql_update = "UPDATE collectors SET col_username = ?, col_fullname = ?, col_branch = ?, col_status = ? WHERE collector_id = ?";
+            if ($stmt = $mysqli->prepare($sql_update)) {
+                $stmt->bind_param("ssssi", $username, $fullname, $branch, $status, $collector_id);
+                if ($stmt->execute()) {
+                    echo json_encode([
+                        'success' => true, 
+                        'message' => "Collector updated successfully!"
+                    ]);
+                } else {
+                    json_error('Failed to update collector: ' . $stmt->error);
+                }
+                $stmt->close();
+            }
+        }
+        break;
+
     // ==================
     // Submit Loan - Admin Dashboard
     // ==================
@@ -336,14 +421,14 @@ switch ($action) {
             json_error('Invalid loan details provided.');
         }
 
-        $sql_check = "SELECT loan_id FROM loans WHERE client_id = ? AND loan_status IN ('Active', 'Pending') LIMIT 1";
+        $sql_check = "SELECT loan_id FROM loans WHERE client_id = ? AND loan_status IN ('Active') LIMIT 1";
         if ($stmt = $mysqli->prepare($sql_check)) {
             $stmt->bind_param("i", $client_id);
             $stmt->execute();
             $stmt->store_result();
             if ($stmt->num_rows > 0) {
                 $stmt->close();
-                json_error('Client already has an active or pending loan application.');
+                json_error('Client already has an active loan.');
             }
             $stmt->close();
         }
@@ -353,20 +438,33 @@ switch ($action) {
         $daily_payment = $loan_totals['daily_payment'];
         $total_balance = $loan_totals['total_balance'];
 
-        $sql_insert = "INSERT INTO loans (client_id, loan_amount, term_days, daily_payment, total_balance, current_balance, loan_status) VALUES (?, ?, ?, ?, ?, ?, 'Pending')";
+        $next_payment_date = date('Y-m-d', strtotime('+1 day'));
+
+        $sql_insert = "INSERT INTO loans (client_id, loan_amount, processing_fee, net_amount, interest_rate, term_days, daily_payment, total_balance, current_balance, loan_status, next_payment_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'Active', ?)";
         if ($stmt = $mysqli->prepare($sql_insert)) {
-            $stmt->bind_param("iidddd", $client_id, $amount, $term_days, $daily_payment, $total_balance, $total_balance);
+            $stmt->bind_param("iddddddddds", 
+                $client_id, 
+                $amount, 
+                $loan_totals['processing_fee'], 
+                $loan_totals['net_amount'], 
+                15.00,
+                $term_days, 
+                $daily_payment, 
+                $total_balance, 
+                $total_balance, 
+                $next_payment_date
+            );
             if ($stmt->execute()) {
-                echo json_encode(['success' => true, 'message' => 'Loan application submitted for review.']);
+                echo json_encode(['success' => true, 'message' => 'Loan successfully created.']);
             } else {
-                json_error('Failed to submit loan application: ' . $stmt->error);
+                json_error('Failed to submit loan: ' . $stmt->error);
             }
             $stmt->close();
         } else {
             json_error('Database prepare error for loan submission: ' . $mysqli->error);
         }
         break;
-    
+
     // ==================
     // Deactivate Client - Admin Dashboard | Client Management
     // ==================
@@ -382,6 +480,7 @@ switch ($action) {
             json_error('Cannot deactivate client. They may have active or pending loans.');
         }
         break;
+
     // ==================
     // Re-Activate Client - Admin Dashboard | Client Management
     // ==================
@@ -455,89 +554,7 @@ switch ($action) {
             json_error("Deletion failed: " . $e->getMessage());
         }
         break;
-    // ==================
-    // Approve Loan - Admin Dashboard
-    // ==================
-    case 'approve_loan':
-        if ($role !== 'admin') json_error('Access denied for this action.');
 
-        $loan_id = $_POST['loan_id'] ?? '';
-
-        if (empty($loan_id)) {
-            json_error('Invalid approval details.');
-        }
-
-        $sql_fetch = "SELECT client_id FROM loans WHERE loan_id = ? AND loan_status = 'Pending'";
-        if ($stmt = $mysqli->prepare($sql_fetch)) {
-            $stmt->bind_param("i", $loan_id);
-            $stmt->execute();
-            $result = $stmt->get_result();
-            if ($loan = $result->fetch_assoc()) {
-                $client_id = $loan['client_id'];
-                
-                $sql_check_client = "SELECT c_status FROM clients WHERE client_id = ?";
-                if ($stmt_client = $mysqli->prepare($sql_check_client)) {
-                    $stmt_client->bind_param("i", $client_id);
-                    $stmt_client->execute();
-                    $result_client = $stmt_client->get_result();
-                    if ($client = $result_client->fetch_assoc()) {
-                        if ($client['c_status'] === 'Deactivated') {
-                            reactivate_client_member_id($client_id, $mysqli);
-                        }
-                    }
-                    $stmt_client->close();
-                }
-
-                $next_payment_date = date('Y-m-d');
-
-                $sql_update = "UPDATE loans SET loan_status = 'Active', approval_date = NOW(), next_payment_date = ? WHERE loan_id = ?";
-                if ($stmt_update = $mysqli->prepare($sql_update)) {
-                    $stmt_update->bind_param("si", $next_payment_date, $loan_id);
-                    if ($stmt_update->execute()) {
-                        echo json_encode([
-                            'success' => true, 
-                            'message' => 'Loan approved successfully.'
-                        ]);
-                    } else {
-                        json_error("Database update error: " . $mysqli->error);
-                    }
-                    $stmt_update->close();
-                } else {
-                    json_error("Database prepare error: " . $mysqli->error);
-                }
-
-            } else {
-                json_error('Pending loan not found or already processed.');
-            }
-            $stmt->close();
-        } else {
-            json_error("Database prepare error: " . $mysqli->error);
-        }
-        break;
-    // ==================
-    // Decline Loan - Admin Dashboard | Loans & Payments
-    // ==================
-    case 'decline_loan':
-        if ($role !== 'admin') json_error('Access denied for this action.');
-        
-        $loan_id = $_POST['loan_id'] ?? '';
-        
-        if (empty($loan_id)) json_error('Loan ID is required.');
-
-        $sql_update = "UPDATE loans SET loan_status = 'Declined', approval_date = NOW() WHERE loan_id = ? AND loan_status = 'Pending'";
-        if ($stmt = $mysqli->prepare($sql_update)) {
-            $stmt->bind_param("i", $loan_id);
-            if ($stmt->execute()) {
-                echo json_encode(['success' => true, 'message' => 'Loan application has been declined.']);
-            } else {
-                json_error("Database update error: " . $mysqli->error);
-            }
-            $stmt->close();
-        } else {
-            json_error("Database prepare error: " . $mysqli->error);
-        }
-        break;
-    
     // ==================
     // Record Payment - Collector Dashboard
     // ==================
@@ -568,7 +585,6 @@ switch ($action) {
                     $days_paid = (int)$loan['days_paid'];
                     $term_days = (int)$loan['term_days'];
 
-                    // Determine payment type
                     $payment_type = 'daily';
                     if ($payment_amount >= $current_balance) {
                         $payment_type = 'full';
@@ -648,13 +664,12 @@ switch ($action) {
             'paid_clients' => []
         ];
 
-        // Get today's payments by this collector
         $sql_today_payments = "SELECT p.payment_id, p.payment_amount, p.payment_date, c.member_id, c.c_firstname, c.c_lastname, l.loan_id 
-                              FROM payments p 
-                              JOIN clients c ON p.client_id = c.client_id 
-                              JOIN loans l ON p.loan_id = l.loan_id 
-                              WHERE p.collector_id = ? AND DATE(p.payment_date) = ? 
-                              ORDER BY p.payment_date DESC";
+                            FROM payments p 
+                            JOIN clients c ON p.client_id = c.client_id 
+                            JOIN loans l ON p.loan_id = l.loan_id 
+                            WHERE p.collector_id = ? AND DATE(p.payment_date) = ? 
+                            ORDER BY p.payment_date DESC";
         
         if ($stmt = $mysqli->prepare($sql_today_payments)) {
             $stmt->bind_param("is", $collector_id, $today);
@@ -666,16 +681,15 @@ switch ($action) {
             $stmt->close();
         }
 
-        // Get unpaid clients for today (active loans in collector's branch)
         $sql_unpaid = "SELECT l.loan_id, c.member_id, c.c_firstname, c.c_lastname, l.daily_payment, l.current_balance 
-                      FROM loans l 
-                      JOIN clients c ON l.client_id = c.client_id 
-                      WHERE l.loan_status = 'Active' 
-                      AND c.c_branch = ? 
-                      AND l.loan_id NOT IN (
-                          SELECT loan_id FROM payments 
-                          WHERE DATE(payment_date) = ? AND collector_id = ?
-                      )";
+                    FROM loans l 
+                    JOIN clients c ON l.client_id = c.client_id 
+                    WHERE l.loan_status = 'Active' 
+                    AND c.c_branch = ? 
+                    AND l.loan_id NOT IN (
+                        SELECT loan_id FROM payments 
+                        WHERE DATE(payment_date) = ? AND collector_id = ?
+                    )";
         
         if ($stmt = $mysqli->prepare($sql_unpaid)) {
             $stmt->bind_param("ssi", $branch, $today, $collector_id);
@@ -687,7 +701,6 @@ switch ($action) {
             $stmt->close();
         }
 
-        // Get paid clients for today
         $sql_paid = "SELECT DISTINCT l.loan_id, c.member_id, c.c_firstname, c.c_lastname, l.daily_payment, 
                     (SELECT SUM(payment_amount) FROM payments WHERE loan_id = l.loan_id AND DATE(payment_date) = ?) as paid_today
                     FROM loans l 
@@ -719,7 +732,7 @@ switch ($action) {
         
         $branch_filter = $_REQUEST['branch'] ?? 'all';
         $date_filter = $_REQUEST['date'] ?? date('Y-m-d');
-        $report_type = $_REQUEST['report_type'] ?? 'clients'; // 'clients' or 'value'
+        $report_type = $_REQUEST['report_type'] ?? 'clients';
 
         $response = ['labels' => [], 'data' => []];
 
@@ -760,7 +773,6 @@ switch ($action) {
         echo json_encode($response);
         break;
 
-        
     // ==================
     // Export Clients as CSV - Admin Dashboard | Client Management
     // ==================
@@ -791,7 +803,7 @@ switch ($action) {
             json_error('No client data to export.');
         }
         break;
-    
+
     // ==================
     // Get Payment History - Admin Dashboard | Loans & Payments
     // ==================
@@ -849,7 +861,7 @@ switch ($action) {
 
         echo json_encode($response);
         break;
-    
+
     // ==================
     // Download Reports - Admin Dashboard | Reports
     // ==================
@@ -887,14 +899,14 @@ switch ($action) {
         switch ($type) {
             case 'performance':
                 $sql = "SELECT 
-                    DATE_FORMAT(l.approval_date, '%Y-%m') as month,
+                    DATE_FORMAT(l.application_date, '%Y-%m') as month,
                     COUNT(*) as loans_issued,
                     SUM(l.loan_amount) as total_issued,
                     SUM(p.payment_amount) as total_collected,
                     AVG(p.payment_amount) as avg_collection
                 FROM loans l
                 LEFT JOIN payments p ON l.loan_id = p.loan_id
-                WHERE l.approval_date IS NOT NULL";
+                WHERE l.loan_status = 'Active'";
                 
                 if ($branch !== 'all') {
                     $sql .= " AND l.client_id IN (SELECT client_id FROM clients WHERE c_branch = '$branch')";
@@ -975,10 +987,8 @@ switch ($action) {
         }
         
         $mysqli->close();
-        exit;
         break;
 
-    
     // ==================
     // Change the Admin Password - Admin Dashboard | Settings
     // ==================
@@ -1038,7 +1048,6 @@ switch ($action) {
         }
         break;
 
-            
     // ==================
     // Backup Database - Admin Dashboard | Settings
     // ==================
@@ -1050,7 +1059,7 @@ switch ($action) {
         header('Content-Type: application/octet-stream');
         header('Content-Disposition: attachment; filename="' . $backup_file . '"');
         
-        $tables = ['admins', 'clients', 'loans', 'payments'];
+        $tables = ['admins', 'clients', 'collectors', 'loans', 'payments'];
         
         foreach ($tables as $table) {
             echo "--\n";
@@ -1085,51 +1094,49 @@ switch ($action) {
                 echo ";\n\n";
             }
         }
-        
         break;
 
-        // ==================
-        // Upcoming Payments - Admin Dashboard | Overview
-        // ==================
-        case 'get_upcoming_payments':
-            if ($role !== 'admin') json_error('Access denied.');
+    // ==================
+    // Upcoming Payments - Admin Dashboard | Overview
+    // ==================
+    case 'get_upcoming_payments':
+        if ($role !== 'admin') json_error('Access denied.');
 
-            header('Content-Type: application/json; charset=utf-8');
-            $response = ['payments' => []];
+        header('Content-Type: application/json; charset=utf-8');
+        $response = ['payments' => []];
 
-            $sql = "
-                SELECT 
-                    l.loan_id,
-                    (l.loan_amount * 1.045) / 100 AS daily_payment,
-                    l.next_payment_date,
-                    CONCAT(c.c_firstname, ' ', c.c_lastname) AS client_name,
-                    DATEDIFF(l.next_payment_date, CURDATE()) AS days_until_due
-                FROM loans l
-                JOIN clients c ON l.client_id = c.client_id
-                WHERE l.loan_status IN ('Active', 'Overdue')
-                AND l.next_payment_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
-                ORDER BY l.next_payment_date ASC
-                LIMIT 10
-            ";
+        $sql = "
+            SELECT 
+                l.loan_id,
+                l.daily_payment,
+                l.next_payment_date,
+                CONCAT(c.c_firstname, ' ', c.c_lastname) AS client_name,
+                DATEDIFF(l.next_payment_date, CURDATE()) AS days_until_due
+            FROM loans l
+            JOIN clients c ON l.client_id = c.client_id
+            WHERE l.loan_status IN ('Active', 'Overdue')
+            AND l.next_payment_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
+            ORDER BY l.next_payment_date ASC
+            LIMIT 10
+        ";
 
-            $result = $mysqli->query($sql);
+        $result = $mysqli->query($sql);
 
-            if ($result) {
-                while ($row = $result->fetch_assoc()) {
-                    $response['payments'][] = [
-                        'loan_id'        => (int)$row['loan_id'],
-                        'daily_payment'  => (float)$row['daily_payment'],
-                        'next_payment_date' => $row['next_payment_date'],
-                        'client_name'    => $row['client_name'],
-                        'days_until_due' => (int)$row['days_until_due']
-                    ];
-                }
+        if ($result) {
+            while ($row = $result->fetch_assoc()) {
+                $response['payments'][] = [
+                    'loan_id'        => (int)$row['loan_id'],
+                    'daily_payment'  => (float)$row['daily_payment'],
+                    'next_payment_date' => $row['next_payment_date'],
+                    'client_name'    => $row['client_name'],
+                    'days_until_due' => (int)$row['days_until_due']
+                ];
             }
+        }
 
-            echo json_encode($response);
-            break;
+        echo json_encode($response);
+        break;
 
-    
     // ==================
     // Monthly Trends Data - Admin Dashboard | Reports
     // ==================
@@ -1139,14 +1146,14 @@ switch ($action) {
         $response = ['labels' => [], 'loans_issued' => [], 'payments' => []];
         
         $sql_loans = "SELECT 
-            DATE_FORMAT(approval_date, '%Y-%m') as month,
+            DATE_FORMAT(application_date, '%Y-%m') as month,
             COUNT(*) as loans_count,
             SUM(loan_amount) as total_issued
             FROM loans 
-            WHERE approval_date IS NOT NULL 
-            AND approval_date >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH)
-            GROUP BY YEAR(approval_date), MONTH(approval_date) 
-            ORDER BY YEAR(approval_date), MONTH(approval_date)";
+            WHERE loan_status = 'Active' 
+            AND application_date >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH)
+            GROUP BY YEAR(application_date), MONTH(application_date) 
+            ORDER BY YEAR(application_date), MONTH(application_date)";
             
         $sql_payments = "SELECT 
             DATE_FORMAT(payment_date, '%Y-%m') as month,
@@ -1191,39 +1198,97 @@ switch ($action) {
         
         echo json_encode($response);
         break;
-    
+
     // ==================
-    // Loans Payments Data - Admin Dashboard | Loans & Payments
+    // Update Collector Profile - Collector Dashboard
     // ==================
-    case 'get_loans_payments_data':
-        if ($role !== 'admin') json_error('Access denied.');
+    case 'update_collector_profile':
+        if ($role !== 'collector' || $_SERVER['REQUEST_METHOD'] !== 'POST') json_error('Access denied.');
         
-        $response = ['labels' => ['Active', 'Paid', 'Overdue', 'Pending'], 'data' => []];
-        
-        $sql = "SELECT 
-            loan_status,
-            COUNT(*) as status_count
-            FROM loans 
-            GROUP BY loan_status";
-            
-        $result = $mysqli->query($sql);
-        if ($result) {
-            $status_data = [];
-            while ($row = $result->fetch_assoc()) {
-                $status_data[$row['loan_status']] = (int)$row['status_count'];
+        $collector_id = $_SESSION['collector_id'];
+        $fullname = $_POST['col_fullname'] ?? '';
+        $username = $_POST['col_username'] ?? '';
+        $current_password = $_POST['current_password'] ?? '';
+        $new_password = $_POST['new_password'] ?? '';
+        $confirm_password = $_POST['confirm_password'] ?? '';
+
+        if (empty($fullname) || empty($username)) {
+            json_error('Full name and username are required.');
+        }
+
+        $sql_check = "SELECT collector_id FROM collectors WHERE col_username = ? AND collector_id != ?";
+        if ($stmt = $mysqli->prepare($sql_check)) {
+            $stmt->bind_param("si", $username, $collector_id);
+            $stmt->execute();
+            $stmt->store_result();
+            if ($stmt->num_rows > 0) {
+                $stmt->close();
+                json_error('Username already exists.');
+            }
+            $stmt->close();
+        }
+
+        if (!empty($new_password)) {
+            if (empty($current_password)) {
+                json_error('Current password is required to set a new password.');
             }
             
-            $response['data'] = [
-                $status_data['Active'] ?? 0,
-                $status_data['Paid'] ?? 0,
-                $status_data['Overdue'] ?? 0,
-                $status_data['Pending'] ?? 0
-            ];
+            if ($new_password !== $confirm_password) {
+                json_error('New passwords do not match.');
+            }
+            
+            if (strlen($new_password) < 6) {
+                json_error('New password must be at least 6 characters long.');
+            }
+
+            $sql_verify = "SELECT col_password_hash FROM collectors WHERE collector_id = ?";
+            if ($stmt = $mysqli->prepare($sql_verify)) {
+                $stmt->bind_param("i", $collector_id);
+                $stmt->execute();
+                $stmt->bind_result($hashed_password);
+                $stmt->fetch();
+                $stmt->close();
+                
+                if (!password_verify($current_password, $hashed_password)) {
+                    json_error('Current password is incorrect.');
+                }
+            }
+
+            $password_hash = password_hash($new_password, PASSWORD_DEFAULT);
+            $sql_update = "UPDATE collectors SET col_username = ?, col_password_hash = ?, col_fullname = ? WHERE collector_id = ?";
+            if ($stmt = $mysqli->prepare($sql_update)) {
+                $stmt->bind_param("sssi", $username, $password_hash, $fullname, $collector_id);
+                if ($stmt->execute()) {
+                    $_SESSION['collector_username'] = $username;
+                    $_SESSION['collector_name'] = $fullname;
+                    
+                    echo json_encode([
+                        'success' => true, 
+                        'message' => "Profile updated successfully!"
+                    ]);
+                } else {
+                    json_error('Failed to update profile: ' . $stmt->error);
+                }
+                $stmt->close();
+            }
+        } else {
+            $sql_update = "UPDATE collectors SET col_username = ?, col_fullname = ? WHERE collector_id = ?";
+            if ($stmt = $mysqli->prepare($sql_update)) {
+                $stmt->bind_param("ssi", $username, $fullname, $collector_id);
+                if ($stmt->execute()) {
+                    $_SESSION['collector_username'] = $username;
+                    $_SESSION['collector_name'] = $fullname;
+                    
+                    echo json_encode([
+                        'success' => true, 
+                        'message' => "Profile updated successfully!"
+                    ]);
+                } else {
+                    json_error('Failed to update profile: ' . $stmt->error);
+                }
+                $stmt->close();
+            }
         }
-        
-        echo json_encode($response);
-        $mysqli->close();
-        exit;
         break;
 
     default:

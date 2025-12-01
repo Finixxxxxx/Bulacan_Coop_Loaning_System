@@ -1,426 +1,305 @@
-import './jquery-3.7.1.js';
+import './jquery-3.7.1.js'
 
-const API_URL = 'api.php';
-let clientsData = [];
-let loansData = [];
-let pendingLoans = [];
-let collectorsData = [];
-let branchChartInstance = null;
-let monthlyTrendsChartInstance = null;
-let riskAnalysisChartInstance = null;
-let loansAndPaymentsChartInstance = null;
-let collectorReportChartInstance = null;
-const branches = ['malolos','hagonoy','calumpit','balagtas', 'marilao', 'stamaria', 'plaridel'];
-let adminStats = {};
+const API_URL = 'api.php'
+let clientsData = []
+let loansData = []
+let pendingLoans = []
+let collectorsData = []
+let branchChartInstance = null
+let monthlyTrendsChartInstance = null
+let riskAnalysisChartInstance = null
+let loansAndPaymentsChartInstance = null
+let collectorReportChartInstance = null
+const branches = ['malolos','hagonoy','calumpit','balagtas', 'marilao', 'stamaria', 'plaridel']
+let adminStats = {}
 
-// Initialize when document is ready
 $(document).ready(function() {
-    initializeAdminDashboard();
-});
+    initializeAdminDashboard()
+})
 
 function initializeAdminDashboard() {
-    initializeModals();
-    initializeEventListeners();
-    fetchAdminData($('#branchSelector').val() || 'all');
+    initializeModals()
+    initializeEventListeners()
+    fetchAdminData($('#branchSelector').val() || 'all')
 }
 
 function initializeModals() {
     if (typeof window.showMessageModal === 'undefined') {
         window.showMessageModal = function(title, message, type = 'success') {
-            const modal = $('#adminMessageModal');
-            const modalTitle = $('#adminModalTitle');
-            const modalMessage = $('#adminModalMessage');
-            const modalIcon = $('#adminModalIcon');
+            const modal = $('#adminMessageModal')
+            const modalTitle = $('#adminModalTitle')
+            const modalMessage = $('#adminModalMessage')
+            const modalIcon = $('#adminModalIcon')
 
-            modalTitle.text(title);
-            modalMessage.text(message);
+            modalTitle.text(title)
+            modalMessage.text(message)
             
-            modalIcon.attr('class', 'mx-auto flex items-center justify-center h-12 w-12 rounded-full mb-4');
+            modalIcon.attr('class', 'mx-auto flex items-center justify-center h-12 w-12 rounded-full mb-4')
             if (type === 'success') {
-                modalIcon.addClass('bg-green-100').html('<i class="fas fa-check text-green-600 text-xl"></i>');
+                modalIcon.addClass('bg-green-100').html('<i class="fas fa-check text-green-600 text-xl"></i>')
             } else if (type === 'error') {
-                modalIcon.addClass('bg-red-100').html('<i class="fas fa-times text-red-600 text-xl"></i>');
+                modalIcon.addClass('bg-red-100').html('<i class="fas fa-times text-red-600 text-xl"></i>')
             } else {
-                modalIcon.addClass('bg-blue-100').html('<i class="fas fa-info text-blue-600 text-xl"></i>');
+                modalIcon.addClass('bg-blue-100').html('<i class="fas fa-info text-blue-600 text-xl"></i>')
             }
 
-            modal.removeClass('hidden');
-        };
+            modal.removeClass('hidden')
+        }
     }
 }
 
 function initializeEventListeners() {
-    // Modal events
+
     $('#closeAdminMessageModal').on('click', function() {
-        $('#adminMessageModal').addClass('hidden');
-    });
+        $('#adminMessageModal').addClass('hidden')
+    })
 
     $('#closeAddClientModal').on('click', function() {
-        $('#addClientModal').addClass('hidden');
-    });
+        $('#addClientModal').addClass('hidden')
+    })
 
     $('#closeAddCollectorModal').on('click', function() {
-        $('#addCollectorModal').addClass('hidden');
-    });
+        $('#addCollectorModal').addClass('hidden')
+    })
+
+    $('#closeEditCollectorModal').on('click', function() {
+        $('#editCollectorModal').addClass('hidden')
+    })
 
     $('#closeApproveModal').on('click', function() {
-        $('#approveLoanModal').addClass('hidden');
-    });
+        $('#approveLoanModal').addClass('hidden')
+    })
 
     $('#closeChangePasswordModal').on('click', function() {
-        $('#changePasswordModal').addClass('hidden');
-    });
+        $('#changePasswordModal').addClass('hidden')
+    })
 
     $('#closeNewLoanModal').on('click', function() {
-        $('#newLoanModal').addClass('hidden');
-    });
+        $('#newLoanModal').addClass('hidden')
+    })
 
     $('#closeClientDetailsModal').on('click', function() {
-        $('#clientDetailsModal').addClass('hidden');
-    });
+        $('#clientDetailsModal').addClass('hidden')
+    })
 
     $('#closeLoanDetailsModal').on('click', function() {
-        $('#loanDetailsModal').addClass('hidden');
-    });
+        $('#loanDetailsModal').addClass('hidden')
+    })
 
-    // Form submissions
-    $('#addClientForm').on('submit', handleAddClient);
-    $('#addCollectorForm').on('submit', handleAddCollector);
-    $('#approveLoanForm').on('submit', handleApproveLoan);
-    $('#changePasswordForm').on('submit', handleChangePassword);
 
-    // Search and filter events
+    $('#addClientForm').on('submit', handleAddClient)
+    $('#addCollectorForm').on('submit', handleAddCollector)
+    $('#editCollectorForm').on('submit', handleEditCollector)
+    $('#approveLoanForm').on('submit', handleApproveLoan)
+    $('#changePasswordForm').on('submit', handleChangePassword)
+
+
     $('#clientSearch').on('input', function(e) {
-        populateClientsTable($(this).val());
-    });
+        populateClientsTable($(this).val())
+    })
 
     $('#loanSearch').on('input', function(e) {
-        populateLoansTable($(this).val());
-    });
+        populateLoansTable($(this).val())
+    })
 
     $('#branchSelector').on('change', function() {
-        const branch = $(this).val() || 'all';
-        fetchAdminData(branch);
-        fetchPaymentHistory(branch);
-        fetchUnpaidPaidClients();
-    });
+        const branch = $(this).val() || 'all'
+        fetchAdminData(branch)
+        fetchPaymentHistory(branch)
+    })
 
-    // Button events
+
     $('#showAddClientModal').on('click', function() {
-        $('#addClientModal').removeClass('hidden');
-    });
+        $('#addClientModal').removeClass('hidden')
+    })
 
     $('#showAddCollectorModal').on('click', function() {
-        $('#addCollectorModal').removeClass('hidden');
-    });
+        $('#addCollectorModal').removeClass('hidden')
+    })
 
     $('#changePasswordBtn').on('click', function() {
-        $('#changePasswordModal').removeClass('hidden');
-    });
+        $('#changePasswordModal').removeClass('hidden')
+    })
 
     $('#exportClientsBtn').on('click', function() {
-        const branch = $('#branchSelector').val() || 'all';
-        window.location = API_URL + '?action=export_clients_csv&branch=' + encodeURIComponent(branch);
-    });
+        const branch = $('#branchSelector').val() || 'all'
+        window.location = API_URL + '?action=export_clients_csv&branch=' + encodeURIComponent(branch)
+    })
 
     $('#viewAllLoansBtn').on('click', function() {
-        window.location.hash = 'loans';
-        switchTab('loans');
-    });
+        window.location.hash = 'loans'
+        switchTab('loans')
+    })
 
-    // Logout
+
     $('#logoutBtn').on('click', function(e) {
-        e.preventDefault();
-        $('#logoutConfirmationModal').removeClass('hidden');
-    });
+        e.preventDefault()
+        $('#logoutConfirmationModal').removeClass('hidden')
+    })
 
     $('#cancelLogoutBtn').on('click', function() {
-        $('#logoutConfirmationModal').addClass('hidden');
-    });
+        $('#logoutConfirmationModal').addClass('hidden')
+    })
 
     $('#confirmLogoutBtn').on('click', function() {
-        window.location.href = "logout.php";
-    });
+        window.location.href = "logout.php"
+    })
 
-    // Sidebar and navigation
-    $('#sidebarToggle, #closeSidebar, #sidebarOverlay').on('click', toggleSidebar);
+
+    $('#sidebarToggle, #closeSidebar, #sidebarOverlay').on('click', toggleSidebar)
     
     $('.sidebar-nav-item').on('click', function(e) {
-        e.preventDefault();
-        const targetId = $(this).data('tab');
-        window.location.hash = targetId;
-        switchTab(targetId);
-    });
+        e.preventDefault()
+        const targetId = $(this).data('tab')
+        window.location.hash = targetId
+        switchTab(targetId)
+    })
 
-    // Quick navigation from cards
+
     $('#totalClientsCard, #pendingLoanCard').on('click', function(e) {
-        e.preventDefault();
-        const targetTab = $(this).data('tab');
-        window.location.hash = targetTab;
-        switchTab(targetTab);
-    });
+        e.preventDefault()
+        const targetTab = $(this).data('tab')
+        window.location.hash = targetTab
+        switchTab(targetTab)
+    })
 
-    // Close modals when clicking outside
+
     $(document).on('click', function(e) {
         if ($(e.target).hasClass('modal-overlay')) {
-            $(e.target).addClass('hidden');
+            $(e.target).addClass('hidden')
         }
-    });
+    })
 }
 
 function toggleSidebar() {
-    $('#sidebar').toggleClass('-translate-x-full');
-    $('#sidebarOverlay').toggleClass('hidden');
+    $('#sidebar').toggleClass('-translate-x-full')
+    $('#sidebarOverlay').toggleClass('hidden')
 }
 
 function switchTab(targetId) {
-    $('.tab-content').addClass('hidden');
-    $(`#${targetId}`).removeClass('hidden');
+    $('.tab-content').addClass('hidden')
+    $(`#${targetId}`).removeClass('hidden')
     
-    $('.sidebar-nav-item').removeClass('active');
-    $(`[data-tab="${targetId}"]`).addClass('active');
+    $('.sidebar-nav-item').removeClass('active')
+    $(`[data-tab="${targetId}"]`).addClass('active')
     
-    let title = $(`[data-tab="${targetId}"]`).text().trim();
-    if (title.includes('Loans & Pending')) {
-        title = 'Loans & Pending Management';
-    } else if (title === 'Overview') {
-        title = 'Dashboard Overview';
+    let title = $(`[data-tab="${targetId}"]`).text().trim()
+    if (title === 'Overview') {
+        title = 'Dashboard Overview'
     } else {
-        title = title + ' Management';
+        title = title + ' Management'
     }
-    $('#page-title').text(title);
+    $('#page-title').text(title)
     
     if (window.innerWidth < 1024) {
-        toggleSidebar();
+        toggleSidebar()
     }
 }
 
 function formatCurrency(amount) {
-    return `₱${parseFloat(amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    return `₱${parseFloat(amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
 async function fetchAdminData(branch = 'all') {
     try {
-        const url = API_URL + '?action=get_admin_data&branch=' + encodeURIComponent(branch);
-        const response = await fetch(url);
-        if (!response.ok) throw new Error('Network response was not ok');
+        const url = API_URL + '?action=get_admin_data&branch=' + encodeURIComponent(branch)
+        const response = await fetch(url)
         
-        const data = await response.json();
+        if (!response.ok) throw new Error('Network response was not ok')
+        
+        const data = await response.json()
 
         if (data.error) {
-            console.error('API Error:', data.error);
-            showMessageModal('Data Error', data.error, 'error');
-            return;
+            console.error('API Error:', data.error)
+            showMessageModal('Data Error', data.error, 'error')
+            return
         }
     
-        clientsData = data.clients || [];
-        loansData = data.loans || [];
-        pendingLoans = data.pending_loans || [];
-        collectorsData = data.collectors || [];
-        adminStats = data || {};
+        clientsData = data.clients || []
+        loansData = data.loans || []
+        pendingLoans = data.pending_loans || []
+        collectorsData = data.collectors || []
+        adminStats = data || {}
 
-        updateDashboardStats();
-        populatePendingLoans();
-        populateClientsTable();
-        populateLoansTable();
-        populateCollectorsTable();
-        updateBranchChart();
-        updateUpcomingPayments();
-        updateMonthlyTrendsChart();
-        updateLoansAndPaymentsChart();
-        fetchPaymentHistory(branch);
-        fetchUnpaidPaidClients();
-        generateCollectorReport();
-        checkNotifications();
-
-    } catch (error) {
-        console.error('Fetch error:', error);
-        showMessageModal('Connection Error', 'Failed to load data. Please check your PHP server and database connection.', 'error');
-    }
-}
-
-async function fetchUnpaidPaidClients() {
-    try {
-        const today = new Date().toISOString().split('T')[0];
-        const branch = $('#branchSelector').val() || 'all';
-        
-        // This would typically call an API endpoint to get unpaid/paid clients
-        // For now, we'll filter from existing data
-        const unpaidClients = loansData.filter(loan => 
-            loan.loan_status === 'Active' && 
-            (!loan.last_payment_date || loan.last_payment_date.split('T')[0] !== today)
-        );
-        
-        const paidClients = loansData.filter(loan => 
-            loan.loan_status === 'Active' && 
-            loan.last_payment_date && 
-            loan.last_payment_date.split('T')[0] === today
-        );
-
-        updateUnpaidClientsDisplay(unpaidClients);
-        updatePaidClientsDisplay(paidClients);
+        updateDashboardStats()
+        populatePendingLoans()
+        populateClientsTable()
+        populateLoansTable()
+        populateCollectorsTable()
+        updateBranchChart()
+        updateUpcomingPayments()
+        updateMonthlyTrendsChart()
+        updateLoansAndPaymentsChart()
+        fetchPaymentHistory(branch)
+        generateCollectorReport()
+        checkNotifications()
 
     } catch (error) {
-        console.error('Error fetching unpaid/paid clients:', error);
+        console.error('Fetch error:', error)
+        showMessageModal('Connection Error', 'Failed to load data. Please check your PHP server and database connection.', 'error')
     }
-}
-
-function updateUnpaidClientsDisplay(unpaidClients) {
-    const container = $('#unpaidClientsContainer');
-    const countElement = $('#unpaidCount');
-    
-    container.empty();
-    countElement.text(`${unpaidClients.length} clients`);
-
-    if (unpaidClients.length === 0) {
-        container.html(`
-            <div class="text-center py-8 text-gray-500">
-                <i class="fas fa-check-circle text-2xl mb-2"></i>
-                <p>All clients paid today!</p>
-            </div>
-        `);
-        return;
-    }
-
-    unpaidClients.forEach(loan => {
-        const client = clientsData.find(c => c.client_id == loan.client_id);
-        if (!client) return;
-
-        const clientCard = `
-            <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                <div class="flex items-center space-x-3">
-                    <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-                        <i class="fas fa-user text-red-600"></i>
-                    </div>
-                    <div>
-                        <h4 class="font-semibold text-gray-900 text-sm">${client.c_firstname} ${client.c_lastname}</h4>
-                        <p class="text-xs text-gray-600">${client.member_id} • Loan L${loan.loan_id}</p>
-                    </div>
-                </div>
-                <div class="text-right">
-                    <p class="font-semibold text-gray-900">${formatCurrency(loan.daily_payment)}</p>
-                    <p class="text-xs text-gray-500">Due Today</p>
-                </div>
-            </div>
-        `;
-        container.append(clientCard);
-    });
-}
-
-function updatePaidClientsDisplay(paidClients) {
-    const container = $('#paidClientsContainer');
-    const countElement = $('#paidCount');
-    
-    container.empty();
-    countElement.text(`${paidClients.length} clients`);
-
-    if (paidClients.length === 0) {
-        container.html(`
-            <div class="text-center py-8 text-gray-500">
-                <i class="fas fa-clock text-2xl mb-2"></i>
-                <p>No payments collected today</p>
-            </div>
-        `);
-        return;
-    }
-
-    paidClients.forEach(loan => {
-        const client = clientsData.find(c => c.client_id == loan.client_id);
-        if (!client) return;
-
-        const clientCard = `
-            <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                <div class="flex items-center space-x-3">
-                    <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                        <i class="fas fa-user text-green-600"></i>
-                    </div>
-                    <div>
-                        <h4 class="font-semibold text-gray-900 text-sm">${client.c_firstname} ${client.c_lastname}</h4>
-                        <p class="text-xs text-gray-600">${client.member_id} • Loan L${loan.loan_id}</p>
-                    </div>
-                </div>
-                <div class="text-right">
-                    <p class="font-semibold text-green-600">${formatCurrency(loan.daily_payment)}</p>
-                    <p class="text-xs text-gray-500">Paid Today</p>
-                </div>
-            </div>
-        `;
-        container.append(clientCard);
-    });
 }
 
 function checkNotifications() {
-    const notifPending = $('#notifPendingLoan').is(':checked');
-    const notifOverdue = $('#notifOverdueLoan').is(':checked');
-    const notifPayment = $('#notifNewPayment').is(':checked');
+    const notifPending = $('#notifPendingLoan').is(':checked')
+    const notifOverdue = $('#notifOverdueLoan').is(':checked')
+    const notifPayment = $('#notifNewPayment').is(':checked')
 
-    if (notifPending && pendingLoans.length > 0) {
-        showNotification(`You have ${pendingLoans.length} pending loan applications`, 'warning');
-    }
-
-    const overdueLoans = loansData.filter(l => l.loan_status === 'Overdue');
+    const overdueLoans = loansData.filter(l => l.loan_status === 'Overdue')
     if (notifOverdue && overdueLoans.length > 0) {
-        showNotification(`You have ${overdueLoans.length} overdue loans`, 'error');
+        showNotification(`You have ${overdueLoans.length} overdue loans`, 'error')
     }
 
-    const todayPayments = adminStats.payments_today || 0;
+    const todayPayments = adminStats.payments_today || 0
     if (notifPayment && todayPayments > 0) {
-        showNotification(`₱${todayPayments.toLocaleString()} collected today`, 'success');
+        showNotification(`₱${todayPayments.toLocaleString()} collected today`, 'success')
     }
 }
 
 function updateDashboardStats() {
-    const totalClients = clientsData.length;
-    const totalOutstanding = adminStats.total_outstanding ?? loansData.reduce((sum, l) => sum + parseFloat(l.current_balance || 0), 0);
-    const activeLoansCount = adminStats.active_loans_count ?? loansData.filter(l => l.loan_status === 'Active' || l.loan_status === 'Overdue').length;
-    const pendingCount = pendingLoans.length;
+    const totalClients = clientsData.length
+    const totalOutstanding = adminStats.total_outstanding ?? loansData.reduce((sum, l) => sum + parseFloat(l.current_balance || 0), 0)
+    const activeLoansCount = adminStats.active_loans_count ?? loansData.filter(l => l.loan_status === 'Active' || l.loan_status === 'Overdue').length
 
-    $('#totalClientsCount').text(totalClients);
-    $('#activeLoansCount').text(activeLoansCount);
-    $('#pendingLoansCount').text(pendingCount);
-    $('#totalOutstandingAmount').text(formatCurrency(totalOutstanding));
+    $('#totalClientsCount').text(totalClients)
+    $('#activeLoansCount').text(activeLoansCount)
+    $('#totalOutstandingAmount').text(formatCurrency(totalOutstanding))
 
-    const paymentsToday = adminStats.payments_today ?? 0;
-    const paymentsRate = adminStats.payments_rate_from_yesterday ?? 0;
-    $('#totalPaymentsToday').text(formatCurrency(paymentsToday));
-    $('#totalCollectionsToday').text(formatCurrency(paymentsToday));
-    $('#payRateFromYesterday').text(`${paymentsRate}%`);
+    const paymentsToday = adminStats.payments_today ?? 0
+    const paymentsRate = adminStats.payments_rate_from_yesterday ?? 0
+    $('#totalPaymentsToday').text(formatCurrency(paymentsToday))
+    $('#totalCollectionsToday').text(formatCurrency(paymentsToday))
+    $('#payRateFromYesterday').text(`${paymentsRate}%`)
 
-    const icon = $('#payRateFromYesterdayIcon');
-    icon.removeClass('fa-arrow-up fa-arrow-down text-red-600 text-emerald-600');
+    const icon = $('#payRateFromYesterdayIcon')
+    icon.removeClass('fa-arrow-up fa-arrow-down text-red-600 text-emerald-600')
     if (paymentsRate < 0) {
-        icon.addClass('fa-arrow-down text-red-600');
+        icon.addClass('fa-arrow-down text-red-600')
     } else {
-        icon.addClass('fa-arrow-up text-emerald-600');
+        icon.addClass('fa-arrow-up text-emerald-600')
     }
-
-    const today = new Date().toISOString().slice(0,10);
-    const pendingSum = loansData
-        .filter(l => l.loan_status === 'Active')
-        .reduce((s, l) => s + parseFloat(l.daily_payment || 0), 0);
-    $('#totalPendingPaymentsTodal').text(formatCurrency(pendingSum));
 
     const overdueSum = loansData
         .filter(l => l.loan_status === 'Overdue')
-        .reduce((s, l) => s + parseFloat(l.current_balance || 0), 0);
-    $('#totalOverduePayments').text(formatCurrency(overdueSum));
+        .reduce((s, l) => s + parseFloat(l.current_balance || 0), 0)
+    $('#totalOverduePayments').text(formatCurrency(overdueSum))
 }
 
 function updateBranchChart() {
-    const branchSet = new Set(clientsData.map(c => c.c_branch).filter(Boolean));
-    const branches = Array.from(branchSet.length ? branchSet : ['malolos','hagonoy','calumpit','balagtas', 'marilao', 'stamaria', 'plaridel']);
+    const branchSet = new Set(clientsData.map(c => c.c_branch).filter(Boolean))
+    const branches = Array.from(branchSet.length ? branchSet : ['malolos','hagonoy','calumpit','balagtas', 'marilao', 'stamaria', 'plaridel'])
     const loanCounts = branches.map(branch => 
         loansData.filter(loan => {
-            const client = clientsData.find(c => c.client_id == loan.client_id);
-            if (!client) return false;
-            return client.c_branch === branch && loan.loan_status !== 'Pending' && loan.loan_status !== 'Declined';
+            const client = clientsData.find(c => c.client_id == loan.client_id)
+            if (!client) return false
+            return client.c_branch === branch && loan.loan_status !== 'Pending' && loan.loan_status !== 'Declined'
         }).length
-    );
+    )
 
-    const ctx = $('#branchChart')[0].getContext('2d');
+    const ctx = $('#branchChart')[0].getContext('2d')
     
     if (branchChartInstance) {
-        branchChartInstance.destroy();
+        branchChartInstance.destroy()
     }
 
     branchChartInstance = new Chart(ctx, {
@@ -447,34 +326,34 @@ function updateBranchChart() {
                 }
             }
         }
-    });
+    })
 }
 
-let collectorAmountChartInstance = null;
-let collectorClientsChartInstance = null;
+let collectorAmountChartInstance = null
+let collectorClientsChartInstance = null
 $('#collectorReportDate').on('change', function () {
-    generateCollectorReport();
-});
+    generateCollectorReport()
+})
 $('#branchSelector').on('change', function () {
-    generateCollectorReport();
-});
+    generateCollectorReport()
+})
 async function generateCollectorReport() {
     try {
-        const reportDate = $('#collectorReportDate').val();
-        const branch = $('#branchSelector').val() || 'all';
+        const reportDate = $('#collectorReportDate').val()
+        const branch = $('#branchSelector').val() || 'all'
 
-        const url = `${API_URL}?action=get_collector_reports&report_type=all&date=${reportDate}&branch=${branch}`;
-        const response = await fetch(url);
-        const data = await response.json();
+        const url = `${API_URL}?action=get_collector_reports&report_type=all&date=${reportDate}&branch=${branch}`
+        const response = await fetch(url)
+        const data = await response.json()
 
         if (data.error) {
-            showMessageModal('Report Error', data.error, 'error');
-            return;
+            showMessageModal('Report Error', data.error, 'error')
+            return
         }
-        const amountCtx = $('#collectorAmountCollectedChart')[0].getContext('2d');
+        const amountCtx = $('#collectorAmountCollectedChart')[0].getContext('2d')
 
         if (collectorAmountChartInstance) {
-            collectorAmountChartInstance.destroy();
+            collectorAmountChartInstance.destroy()
         }
 
         collectorAmountChartInstance = new Chart(amountCtx, {
@@ -492,12 +371,12 @@ async function generateCollectorReport() {
                 responsive: true,
                 scales: { y: { beginAtZero: true } }
             }
-        });
+        })
 
-        const clientsCtx = $('#collectorClientsCollectedChart')[0].getContext('2d');
+        const clientsCtx = $('#collectorClientsCollectedChart')[0].getContext('2d')
 
         if (collectorClientsChartInstance) {
-            collectorClientsChartInstance.destroy();
+            collectorClientsChartInstance.destroy()
         }
 
         collectorClientsChartInstance = new Chart(clientsCtx, {
@@ -515,27 +394,27 @@ async function generateCollectorReport() {
                 responsive: true,
                 scales: { y: { beginAtZero: true } }
             }
-        });
+        })
 
     } catch (error) {
-        console.error('Error generating collector report:', error);
-        showMessageModal('Report Error', 'Failed to generate collector report.', 'error');
+        console.error('Error generating collector report:', error)
+        showMessageModal('Report Error', 'Failed to generate collector report.', 'error')
     }
 }
 
 
 async function updateUpcomingPayments() {
     try {
-        const response = await fetch(API_URL + '?action=get_upcoming_payments');
-        const data = await response.json();
+        const response = await fetch(API_URL + '?action=get_upcoming_payments')
+        const data = await response.json()
         
         if (data.error) {
-            console.error('Upcoming payments error:', data.error);
-            return;
+            console.error('Upcoming payments error:', data.error)
+            return
         }
 
-        const container = $('#upcomingPaymentsContainer');
-        container.empty();
+        const container = $('#upcomingPaymentsContainer')
+        container.empty()
 
         if (!data.payments || data.payments.length === 0) {
             container.html(`
@@ -543,8 +422,8 @@ async function updateUpcomingPayments() {
                     <i class="fas fa-calendar-check text-3xl mb-2"></i>
                     <p>No upcoming payments</p>
                 </div>
-            `);
-            return;
+            `)
+            return
         }
 
         data.payments.forEach(payment => {
@@ -566,36 +445,36 @@ async function updateUpcomingPayments() {
                         </p>
                     </div>
                 </div>
-            `;
+            `
             
-            container.append(paymentCard);
-        });
+            container.append(paymentCard)
+        })
 
     } catch (error) {
-        console.error('Error fetching upcoming payments:', error);
+        console.error('Error fetching upcoming payments:', error)
         $('#upcomingPaymentsContainer').html(`
             <div class="text-center py-8 text-gray-500">
                 <i class="fas fa-exclamation-triangle text-2xl mb-2"></i>
                 <p>Failed to load upcoming payments</p>
             </div>
-        `);
+        `)
     }
 }
 
 async function updateMonthlyTrendsChart() {
     try {
-        const response = await fetch(API_URL + '?action=get_monthly_trends_data');
-        const data = await response.json();
+        const response = await fetch(API_URL + '?action=get_monthly_trends_data')
+        const data = await response.json()
         
         if (data.error) {
-            console.error('Monthly trends error:', data.error);
-            return;
+            console.error('Monthly trends error:', data.error)
+            return
         }
 
-        const ctx = $('#monthlyTrendsChart')[0].getContext('2d');
+        const ctx = $('#monthlyTrendsChart')[0].getContext('2d')
         
         if (monthlyTrendsChartInstance) {
-            monthlyTrendsChartInstance.destroy();
+            monthlyTrendsChartInstance.destroy()
         }
 
         monthlyTrendsChartInstance = new Chart(ctx, {
@@ -627,26 +506,26 @@ async function updateMonthlyTrendsChart() {
                     }
                 }
             }
-        });
+        })
     } catch (error) {
-        console.error('Error fetching monthly trends:', error);
+        console.error('Error fetching monthly trends:', error)
     }
 }
 
 async function updateLoansAndPaymentsChart() {
     try {
-        const response = await fetch(API_URL + '?action=get_loans_payments_data');
-        const data = await response.json();
+        const response = await fetch(API_URL + '?action=get_loans_payments_data')
+        const data = await response.json()
         
         if (data.error) {
-            console.error('Loans payments error:', data.error);
-            return;
+            console.error('Loans payments error:', data.error)
+            return
         }
 
-        const ctx = $('#loanAndPaymentsChart')[0].getContext('2d');
+        const ctx = $('#loanAndPaymentsChart')[0].getContext('2d')
         
         if (loansAndPaymentsChartInstance) {
-            loansAndPaymentsChartInstance.destroy();
+            loansAndPaymentsChartInstance.destroy()
         }
 
         loansAndPaymentsChartInstance = new Chart(ctx, {
@@ -667,40 +546,40 @@ async function updateLoansAndPaymentsChart() {
                     }
                 }
             }
-        });
+        })
     } catch (error) {
-        console.error('Error fetching loans payments:', error);
+        console.error('Error fetching loans payments:', error)
     }
 }
 
 function populateClientsTable(searchTerm = '') {
-    const clientsBody = $('#clientsTableBody');
-    clientsBody.empty();
+    const clientsBody = $('#clientsTableBody')
+    clientsBody.empty()
     
     const filteredClients = clientsData.filter(c => 
         (c.c_firstname || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
         (c.c_lastname || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         (c.member_id || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         (c.c_email || '').toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    )
 
     if (filteredClients.length === 0) {
-        clientsBody.html('<tr><td colspan="6" class="text-center py-4 text-gray-500">No clients found.</td></tr>');
-        return;
+        clientsBody.html('<tr><td colspan="6" class="text-center py-4 text-gray-500">No clients found.</td></tr>')
+        return
     }
 
     filteredClients.forEach(client => {
         const outstanding = loansData
             .filter(l => l.client_id == client.client_id && l.loan_status === 'Active')
-            .reduce((sum, l) => sum + parseFloat(l.current_balance || 0), 0);
+            .reduce((sum, l) => sum + parseFloat(l.current_balance || 0), 0)
         
-        let statusBadge = '';
+        let statusBadge = ''
         if (client.c_status === 'Deactivated' || client.member_id.endsWith('-D')) {
-            statusBadge = `<span class="status-badge bg-red-100 text-red-800">Deactivated</span>`;
+            statusBadge = `<span class="status-badge bg-red-100 text-red-800">Deactivated</span>`
         } else if (outstanding > 0) {
-            statusBadge = `<span class="status-badge bg-blue-100 text-blue-800">Active Loan</span>`;
+            statusBadge = `<span class="status-badge bg-blue-100 text-blue-800">Active Loan</span>`
         } else {
-            statusBadge = `<span class="status-badge bg-green-100 text-green-800">No Loan</span>`;
+            statusBadge = `<span class="status-badge bg-green-100 text-green-800">No Loan</span>`
         }
 
         const row = `
@@ -728,19 +607,19 @@ function populateClientsTable(searchTerm = '') {
                     `}
                 </td>
             </tr>
-        `;
+        `
         
-        clientsBody.append(row);
-    });
+        clientsBody.append(row)
+    })
 }
 
 function populateCollectorsTable() {
-    const collectorsBody = $('#collectorsTableBody');
-    collectorsBody.empty();
+    const collectorsBody = $('#collectorsTableBody')
+    collectorsBody.empty()
 
     if (collectorsData.length === 0) {
-        collectorsBody.html('<tr><td colspan="5" class="text-center py-4 text-gray-500">No collectors found.</td></tr>');
-        return;
+        collectorsBody.html('<tr><td colspan="5" class="text-center py-4 text-gray-500">No collectors found.</td></tr>')
+        return
     }
 
     collectorsData.forEach(collector => {
@@ -755,52 +634,52 @@ function populateCollectorsTable() {
                     </span>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                    <button class="text-blue-600 hover:text-blue-900 mx-1 p-2 rounded-lg hover:bg-blue-50 transition-colors">
+                    <button onclick="showEditCollectorModal(${collector.collector_id}, '${collector.col_fullname}', '${collector.col_username}', '${collector.col_branch}', '${collector.col_status}')" class="text-blue-600 hover:text-blue-900 mx-1 p-2 rounded-lg hover:bg-blue-50 transition-colors">
                         <i class="fas fa-edit"></i>
                     </button>
-                    <button class="text-red-600 hover:text-red-900 mx-1 p-2 rounded-lg hover:bg-red-50 transition-colors">
+                    <button onclick="showDeleteCollectorModal(${collector.collector_id}, '${collector.col_fullname}')" class="text-red-600 hover:text-red-900 mx-1 p-2 rounded-lg hover:bg-red-50 transition-colors">
                         <i class="fas fa-trash"></i>
                     </button>
                 </td>
             </tr>
-        `;
+        `
         
-        collectorsBody.append(row);
-    });
+        collectorsBody.append(row)
+    })
 }
 
 
 function populateLoansTable(searchTerm = '') {
-    const loansBody = $('#loansTableBody');
-    loansBody.empty();
+    const loansBody = $('#loansTableBody')
+    loansBody.empty()
     
-    const activeAndPaidLoans = loansData.filter(l => l.loan_status !== 'Pending' && l.loan_status !== 'Declined');
+    const activeAndPaidLoans = loansData.filter(l => l.loan_status !== 'Pending' && l.loan_status !== 'Declined')
     
     const filteredLoans = activeAndPaidLoans.filter(loan => {
-        const client = clientsData.find(c => c.client_id == loan.client_id);
-        const name = client ? `${client.c_firstname} ${client.c_lastname}` : '';
+        const client = clientsData.find(c => c.client_id == loan.client_id)
+        const name = client ? `${client.c_firstname} ${client.c_lastname}` : ''
         return name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-            loan.loan_id.toString().includes(searchTerm);
-    });
+            loan.loan_id.toString().includes(searchTerm)
+    })
 
     if (filteredLoans.length === 0) {
-        loansBody.html('<tr><td colspan="6" class="text-center py-4 text-gray-500">No active or paid loans found.</td></tr>');
-        return;
+        loansBody.html('<tr><td colspan="6" class="text-center py-4 text-gray-500">No active or paid loans found.</td></tr>')
+        return
     }
 
     filteredLoans.forEach(loan => {
-        const client = clientsData.find(c => c.client_id == loan.client_id);
-        const clientName = client ? `${client.c_firstname} ${client.c_lastname}` : 'N/A';
+        const client = clientsData.find(c => c.client_id == loan.client_id)
+        const clientName = client ? `${client.c_firstname} ${client.c_lastname}` : 'N/A'
         
-        let statusBadge = '';
+        let statusBadge = ''
         if (loan.loan_status === 'Active') {
-            statusBadge = `<span class="status-badge bg-blue-100 text-blue-800">${loan.loan_status}</span>`;
+            statusBadge = `<span class="status-badge bg-blue-100 text-blue-800">${loan.loan_status}</span>`
         } else if (loan.loan_status === 'Paid') {
-            statusBadge = `<span class="status-badge bg-green-100 text-green-800">${loan.loan_status}</span>`;
+            statusBadge = `<span class="status-badge bg-green-100 text-green-800">${loan.loan_status}</span>`
         } else if (loan.loan_status === 'Overdue') {
-            statusBadge = `<span class="status-badge bg-red-100 text-red-800">${loan.loan_status}</span>`;
+            statusBadge = `<span class="status-badge bg-red-100 text-red-800">${loan.loan_status}</span>`
         } else {
-             statusBadge = `<span class="status-badge bg-gray-100 text-gray-800">${loan.loan_status}</span>`;
+             statusBadge = `<span class="status-badge bg-gray-100 text-gray-800">${loan.loan_status}</span>`
         }
         
         const row = `
@@ -815,19 +694,19 @@ function populateLoansTable(searchTerm = '') {
                             class="text-blue-600 hover:text-blue-900 mx-1 p-2 rounded-lg hover:bg-blue-50 transition-colors"><i class="fas fa-eye"></i></button>
                 </td>
             </tr>
-        `;
+        `
         
-        loansBody.append(row);
-    });
+        loansBody.append(row)
+    })
 }
 
 function populatePendingLoans() {
-    const pendingBody = $('#pendingLoansTableBody');
-    pendingBody.empty();
+    const pendingBody = $('#pendingLoansTableBody')
+    pendingBody.empty()
     
     if (pendingLoans.length === 0) {
-        pendingBody.html('<tr><td colspan="5" class="text-center py-4 text-gray-500">No pending applications.</td></tr>');
-        return;
+        pendingBody.html('<tr><td colspan="5" class="text-center py-4 text-gray-500">No pending applications.</td></tr>')
+        return
     }
 
     pendingLoans.forEach(loan => {
@@ -841,30 +720,30 @@ function populatePendingLoans() {
                     <button onclick="declineLoan(${loan.loan_id})" class="text-red-600 hover:text-red-900 mx-1 p-2 rounded-lg hover:bg-red-50 transition-colors"><i class="fas fa-times"></i> Decline</button>
                 </td>
             </tr>
-        `;
+        `
         
-        pendingBody.append(row);
-    });
+        pendingBody.append(row)
+    })
 }
 
 async function fetchPaymentHistory(branch = 'all', limit = 20) {
     try {
-        const url = API_URL + '?action=get_payment_history&branch=' + encodeURIComponent(branch) + '&limit=' + encodeURIComponent(limit);
-        const response = await fetch(url);
-        if (!response.ok) throw new Error('Network error');
-        const data = await response.json();
-        const payments = data.payments || [];
-        const container = $('#recentPayments');
-        container.empty();
+        const url = API_URL + '?action=get_payment_history&branch=' + encodeURIComponent(branch) + '&limit=' + encodeURIComponent(limit)
+        const response = await fetch(url)
+        if (!response.ok) throw new Error('Network error')
+        const data = await response.json()
+        const payments = data.payments || []
+        const container = $('#recentPayments')
+        container.empty()
 
         if (payments.length === 0) {
-            container.html('<div class="text-center py-4 text-gray-500">No recent payments found.</div>');
-            return;
+            container.html('<div class="text-center py-4 text-gray-500">No recent payments found.</div>')
+            return
         }
 
         payments.forEach(p => {
-            const d = new Date(p.payment_date);
-            const timeStr = isNaN(d.getTime()) ? p.payment_date : d.toLocaleString();
+            const d = new Date(p.payment_date)
+            const timeStr = isNaN(d.getTime()) ? p.payment_date : d.toLocaleString()
             const el = `
                 <div class="flex items-center justify-between py-2 border-b border-gray-100">
                     <div class="flex items-center">
@@ -875,257 +754,283 @@ async function fetchPaymentHistory(branch = 'all', limit = 20) {
                     </div>
                     <div class="text-xs text-gray-500">${timeStr}</div>
                 </div>
-            `;
-            container.append(el);
-        });
+            `
+            container.append(el)
+        })
     } catch (e) {
-        console.error(e);
+        console.error(e)
     }
 }
 
-// Used to deactivate/reactivate client accounts in the list
 async function deactivateClientAccount(clientId) {
-    const client = clientsData.find(c => c.client_id == clientId);
+    const client = clientsData.find(c => c.client_id == clientId)
     if (!client) {
-        showMessageModal('Error', 'Client not found.', 'error');
-        return;
+        showMessageModal('Error', 'Client not found.', 'error')
+        return
     }
     
-    $('#deactivateClientConfirmationModal').removeClass('hidden');
-    $('#deactivateClientMessage').text(`Are you sure you want to deactivate ${client.c_firstname} ${client.c_lastname} (${client.member_id})? This action cannot be undone if the client has active loans.`);
+    $('#deactivateClientConfirmationModal').removeClass('hidden')
+    $('#deactivateClientMessage').text(`Are you sure you want to deactivate ${client.c_firstname} ${client.c_lastname} (${client.member_id})? This action cannot be undone if the client has active loans.`)
     
     $('#confirmDeactivateClientBtn').off('click').on('click', async function() {
-        $('#deactivateClientConfirmationModal').addClass('hidden');
+        $('#deactivateClientConfirmationModal').addClass('hidden')
         
         try {
-            const formData = new FormData();
-            formData.append('action', 'deactivate_client');
-            formData.append('client_id', clientId);
+            const formData = new FormData()
+            formData.append('action', 'deactivate_client')
+            formData.append('client_id', clientId)
 
-            const response = await fetch(API_URL, { method: 'POST', body: formData });
-            const result = await response.json();
+            const response = await fetch(API_URL, { method: 'POST', body: formData })
+            const result = await response.json()
 
             if (result.success) {
-                showMessageModal('Account Deactivated!', result.message, 'success');
-                fetchAdminData();
+                showMessageModal('Account Deactivated!', result.message, 'success')
+                fetchAdminData()
             } else {
-                showMessageModal('Deactivation Failed', result.message || 'An unexpected error occurred.', 'error');
+                showMessageModal('Deactivation Failed', result.message || 'An unexpected error occurred.', 'error')
             }
         } catch (error) {
-            showMessageModal('Network Error', 'Could not connect to the server.', 'error');
+            showMessageModal('Network Error', 'Could not connect to the server.', 'error')
         }
-    });
+    })
 }
 
 async function reactivateClientAccount(clientId) {
-    const client = clientsData.find(c => c.client_id == clientId);
+    const client = clientsData.find(c => c.client_id == clientId)
     if (!client) {
-        showMessageModal('Error', 'Client not found.', 'error');
-        return;
+        showMessageModal('Error', 'Client not found.', 'error')
+        return
     }
     
-    showMessageModal('Confirm Reactivation', `Are you sure you want to reactivate ${client.c_firstname} ${client.c_lastname}?`, 'info');
+    showMessageModal('Confirm Reactivation', `Are you sure you want to reactivate ${client.c_firstname} ${client.c_lastname}?`, 'info')
     
     $('#closeAdminMessageModal').off('click').on('click', async function() {
-        $('#adminMessageModal').addClass('hidden');
+        $('#adminMessageModal').addClass('hidden')
         
         try {
-            const formData = new FormData();
-            formData.append('action', 'reactivate_client');
-            formData.append('client_id', clientId);
+            const formData = new FormData()
+            formData.append('action', 'reactivate_client')
+            formData.append('client_id', clientId)
 
-            const response = await fetch(API_URL, { method: 'POST', body: formData });
-            const result = await response.json();
+            const response = await fetch(API_URL, { method: 'POST', body: formData })
+            const result = await response.json()
 
             if (result.success) {
-                showMessageModal('Account Reactivated!', result.message, 'success');
-                fetchAdminData();
+                showMessageModal('Account Reactivated!', result.message, 'success')
+                fetchAdminData()
             } else {
-                showMessageModal('Reactivation Failed', result.message || 'An unexpected error occurred.', 'error');
+                showMessageModal('Reactivation Failed', result.message || 'An unexpected error occurred.', 'error')
             }
         } catch (error) {
-            showMessageModal('Network Error', 'Could not connect to the server.', 'error');
+            showMessageModal('Network Error', 'Could not connect to the server.', 'error')
         } finally {
             $('#closeAdminMessageModal').off('click').on('click', function() {
-                $('#adminMessageModal').addClass('hidden');
-            });
+                $('#adminMessageModal').addClass('hidden')
+            })
         }
-    });
+    })
 }
+window.reactivateClientAccount = reactivateClientAccount
 
 async function handleAddClient(e) {
-    e.preventDefault();
-    const submitBtn = $('#addClientSubmitBtn');
-    const initialBtnText = submitBtn.html();
-    submitBtn.html('<i class="fas fa-spinner fa-spin mr-2"></i> Saving...').prop('disabled', true);
+    e.preventDefault()
+    const submitBtn = $('#addClientSubmitBtn')
+    const initialBtnText = submitBtn.html()
+    submitBtn.html('<i class="fas fa-spinner fa-spin mr-2"></i> Saving...').prop('disabled', true)
 
-    const formData = new FormData(this);
-    formData.append('action', 'add_client');
+    const formData = new FormData(this)
+    formData.append('action', 'add_client')
 
     try {
-        const response = await fetch(API_URL, { method: 'POST', body: formData });
-        const result = await response.json();
+        const response = await fetch(API_URL, { method: 'POST', body: formData })
+        const result = await response.json()
 
         if (result.success) {
-            showMessageModal('Client Added!', result.message, 'success');
-            this.reset();
-            $('#addClientModal').addClass('hidden');
-            fetchAdminData($('#branchSelector').val());
+            showMessageModal('Client Added!', result.message, 'success')
+            this.reset()
+            $('#addClientModal').addClass('hidden')
+            fetchAdminData($('#branchSelector').val())
         } else {
-            showMessageModal('Failed to Add Client', result.message || 'An unexpected error occurred.', 'error');
+            showMessageModal('Failed to Add Client', result.message || 'An unexpected error occurred.', 'error')
         }
     } catch (error) {
-        showMessageModal('Network Error', 'Could not connect to the server.', 'error');
+        showMessageModal('Network Error', 'Could not connect to the server.', 'error')
     } finally {
-        submitBtn.html(initialBtnText).prop('disabled', false);
+        submitBtn.html(initialBtnText).prop('disabled', false)
     }
 }
 
 async function handleAddCollector(e) {
-    e.preventDefault();
-    const submitBtn = $('#addCollectorSubmitBtn');
-    const initialBtnText = submitBtn.html();
-    submitBtn.html('<i class="fas fa-spinner fa-spin mr-2"></i> Saving...').prop('disabled', true);
+    e.preventDefault()
+    const submitBtn = $('#addCollectorSubmitBtn')
+    const initialBtnText = submitBtn.html()
+    submitBtn.html('<i class="fas fa-spinner fa-spin mr-2"></i> Saving...').prop('disabled', true)
 
-    const formData = new FormData(this);
-    formData.append('action', 'add_collector');
+    const formData = new FormData(this)
+    formData.append('action', 'add_collector')
 
     try {
-        const response = await fetch(API_URL, { method: 'POST', body: formData });
-        const result = await response.json();
+        const response = await fetch(API_URL, { method: 'POST', body: formData })
+        const result = await response.json()
 
         if (result.success) {
-            showMessageModal('Collector Added!', result.message, 'success');
-            this.reset();
-            $('#addCollectorModal').addClass('hidden');
-            fetchAdminData($('#branchSelector').val());
+            showMessageModal('Collector Added!', result.message, 'success')
+            this.reset()
+            $('#addCollectorModal').addClass('hidden')
+            fetchAdminData($('#branchSelector').val())
         } else {
-            showMessageModal('Failed to Add Collector', result.message || 'An unexpected error occurred.', 'error');
+            showMessageModal('Failed to Add Collector', result.message || 'An unexpected error occurred.', 'error')
         }
     } catch (error) {
-        showMessageModal('Network Error', 'Could not connect to the server.', 'error');
+        showMessageModal('Network Error', 'Could not connect to the server.', 'error')
     } finally {
-        submitBtn.html(initialBtnText).prop('disabled', false);
+        submitBtn.html(initialBtnText).prop('disabled', false)
+    }
+}
+
+async function handleEditCollector(e) {
+    e.preventDefault()
+    const submitBtn = $('#editCollectorSubmitBtn')
+    const initialBtnText = submitBtn.html()
+    submitBtn.html('<i class="fas fa-spinner fa-spin mr-2"></i> Updating...').prop('disabled', true)
+
+    const formData = new FormData(this)
+    formData.append('action', 'edit_collector')
+
+    try {
+        const response = await fetch(API_URL, { method: 'POST', body: formData })
+        const result = await response.json()
+
+        if (result.success) {
+            showMessageModal('Collector Updated!', result.message, 'success')
+            this.reset()
+            $('#editCollectorModal').addClass('hidden')
+            fetchAdminData($('#branchSelector').val())
+        } else {
+            showMessageModal('Failed to Update Collector', result.message || 'An unexpected error occurred.', 'error')
+        }
+    } catch (error) {
+        showMessageModal('Network Error', 'Could not connect to the server.', 'error')
+    } finally {
+        submitBtn.html(initialBtnText).prop('disabled', false)
     }
 }
 
 async function handleApproveLoan(e) {
-    e.preventDefault();
-    const submitBtn = $('#approveLoanSubmitBtn');
-    const initialBtnText = submitBtn.html();
-    submitBtn.html('<i class="fas fa-spinner fa-spin mr-2"></i> Approving...').prop('disabled', true);
+    e.preventDefault()
+    const submitBtn = $('#approveLoanSubmitBtn')
+    const initialBtnText = submitBtn.html()
+    submitBtn.html('<i class="fas fa-spinner fa-spin mr-2"></i> Approving...').prop('disabled', true)
 
-    const loanId = $('#loanIdToApprove').val();
+    const loanId = $('#loanIdToApprove').val()
 
-    const formData = new FormData();
-    formData.append('action', 'approve_loan');
-    formData.append('loan_id', loanId);
+    const formData = new FormData()
+    formData.append('action', 'approve_loan')
+    formData.append('loan_id', loanId)
 
     try {
-        const response = await fetch(API_URL, { method: 'POST', body: formData });
-        const result = await response.json();
+        const response = await fetch(API_URL, { method: 'POST', body: formData })
+        const result = await response.json()
 
         if (result.success) {
-            showMessageModal('Loan Approved!', result.message, 'success');
-            $('#approveLoanModal').addClass('hidden');
-            fetchAdminData();
+            showMessageModal('Loan Approved!', result.message, 'success')
+            $('#approveLoanModal').addClass('hidden')
+            fetchAdminData()
         } else {
-            showMessageModal('Approval Failed', result.message || 'An unexpected error occurred.', 'error');
+            showMessageModal('Approval Failed', result.message || 'An unexpected error occurred.', 'error')
         }
     } catch (error) {
-        showMessageModal('Network Error', 'Could not connect to the server.', 'error');
+        showMessageModal('Network Error', 'Could not connect to the server.', 'error')
     } finally {
-        submitBtn.html(initialBtnText).prop('disabled', false);
+        submitBtn.html(initialBtnText).prop('disabled', false)
     }
 }
 
 async function handleChangePassword(e) {
-    e.preventDefault();
-    const submitBtn = $('#changePasswordSubmitBtn');
-    const initialBtnText = submitBtn.html();
-    submitBtn.html('<i class="fas fa-spinner fa-spin mr-2"></i> Changing...').prop('disabled', true);
+    e.preventDefault()
+    const submitBtn = $('#changePasswordSubmitBtn')
+    const initialBtnText = submitBtn.html()
+    submitBtn.html('<i class="fas fa-spinner fa-spin mr-2"></i> Changing...').prop('disabled', true)
 
-    const formData = new FormData(this);
+    const formData = new FormData(this)
 
     try {
-        const response = await fetch(API_URL, { method: 'POST', body: formData });
-        const result = await response.json();
+        const response = await fetch(API_URL, { method: 'POST', body: formData })
+        const result = await response.json()
 
         if (result.success) {
-            showMessageModal('Password Changed!', result.message, 'success');
-            this.reset();
-            $('#changePasswordModal').addClass('hidden');
+            showMessageModal('Password Changed!', result.message, 'success')
+            this.reset()
+            $('#changePasswordModal').addClass('hidden')
         } else {
-            showMessageModal('Password Change Failed', result.message || 'An unexpected error occurred.', 'error');
+            showMessageModal('Password Change Failed', result.message || 'An unexpected error occurred.', 'error')
         }
     } catch (error) {
-        showMessageModal('Network Error', 'Could not connect to the server.', 'error');
+        showMessageModal('Network Error', 'Could not connect to the server.', 'error')
     } finally {
-        submitBtn.html(initialBtnText).prop('disabled', false);
+        submitBtn.html(initialBtnText).prop('disabled', false)
     }
 }
 
-// Global functions for modal handling
 window.showApproveLoanModal = function(loanId) {
-    const loan = pendingLoans.find(l => l.loan_id == loanId);
+    const loan = pendingLoans.find(l => l.loan_id == loanId)
     if (!loan) {
-        showMessageModal('Error', 'Loan not found.', 'error');
-        return;
+        showMessageModal('Error', 'Loan not found.', 'error')
+        return
     }
 
-    $('#loanIdToApprove').val(loanId);
-    $('#approveClientName').text(loan.client_name);
-    $('#approveLoanAmount').text(formatCurrency(loan.loan_amount));
-    $('#approveLoanTerm').text(`${loan.term_days || 100} Days`);
+    $('#loanIdToApprove').val(loanId)
+    $('#approveClientName').text(loan.client_name)
+    $('#approveLoanAmount').text(formatCurrency(loan.loan_amount))
+    $('#approveLoanTerm').text(`${loan.term_days || 100} Days`)
     
-    // Calculate totals based on 100-day, 4.5% interest logic
-    const principal = parseFloat(loan.loan_amount);
-    const interest = principal * 0.045;
-    const totalBalance = principal + interest;
-    const dailyPayment = totalBalance / 100;
-    
-    $('#approveTotalBalance').text(formatCurrency(totalBalance));
-    $('#approveDailyPayment').text(formatCurrency(dailyPayment));
 
-    $('#approveLoanModal').removeClass('hidden');
+    const principal = parseFloat(loan.loan_amount)
+    const interest = principal * 0.15
+    const totalBalance = principal + interest
+    const dailyPayment = totalBalance / 100
+    
+    $('#approveTotalBalance').text(formatCurrency(totalBalance))
+    $('#approveDailyPayment').text(formatCurrency(dailyPayment))
+
+    $('#approveLoanModal').removeClass('hidden')
 }
 
 window.declineLoan = async function(loanId) {
-    const loan = pendingLoans.find(l => l.loan_id == loanId);
+    const loan = pendingLoans.find(l => l.loan_id == loanId)
     if (!loan) {
-        showMessageModal('Error', 'Loan not found.', 'error');
-        return;
+        showMessageModal('Error', 'Loan not found.', 'error')
+        return
     }
     
     showDeclineLoanModal()
     
     $('#confirmConfirmDeclineModal').off('click').on('click', async function() {
-        $('#confirmDeclineModal').addClass('hidden');
+        $('#confirmDeclineModal').addClass('hidden')
         
         try {
-            const formData = new FormData();
-            formData.append('action', 'decline_loan');
-            formData.append('loan_id', loanId);
+            const formData = new FormData()
+            formData.append('action', 'decline_loan')
+            formData.append('loan_id', loanId)
 
-            const response = await fetch(API_URL, { method: 'POST', body: formData });
-            const result = await response.json();
+            const response = await fetch(API_URL, { method: 'POST', body: formData })
+            const result = await response.json()
 
             if (result.success) {
-                showMessageModal('Loan Declined!', result.message, 'success');
-                fetchAdminData();
+                showMessageModal('Loan Declined!', result.message, 'success')
+                fetchAdminData()
             } else {
-                showMessageModal('Decline Failed', result.message || 'An unexpected error occurred.', 'error');
+                showMessageModal('Decline Failed', result.message || 'An unexpected error occurred.', 'error')
             }
         } catch (error) {
-            showMessageModal('Network Error', 'Could not connect to the server.', 'error');
+            showMessageModal('Network Error', 'Could not connect to the server.', 'error')
         } finally {
             $('#closeAdminMessageModal').off('click').on('click', function() {
-                $('#adminMessageModal').addClass('hidden');
-            });
+                $('#adminMessageModal').addClass('hidden')
+            })
         }
-    });
+    })
 }
 
-// Initialize with current hash or default to overview
-const initialTab = window.location.hash.substring(1) || 'overview';
-switchTab(initialTab);
+const initialTab = window.location.hash.substring(1) || 'overview'
+switchTab(initialTab)

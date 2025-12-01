@@ -15,7 +15,6 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bulacan Coop - Admin Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="admin.css">
@@ -164,7 +163,7 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                         </button>
                         <button class="sidebar-nav-item w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg" data-tab="loans">
                             <i class="fas fa-list-alt mr-3 w-5"></i>
-                            Loans & Pending
+                            Loans
                         </button>
                         <button class="sidebar-nav-item w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg" data-tab="payments">
                             <i class="fas fa-credit-card mr-3 w-5"></i>
@@ -173,10 +172,6 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                         <button class="sidebar-nav-item w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg" data-tab="collectors">
                             <i class="fas fa-user-friends mr-3 w-5"></i>
                             Collectors
-                        </button>
-                        <button class="sidebar-nav-item w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg" data-tab="reports">
-                            <i class="fas fa-chart-bar mr-3 w-5"></i>
-                            Reports
                         </button>
                         <button class="sidebar-nav-item w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg" data-tab="settings">
                             <i class="fas fa-cog mr-3 w-5"></i>
@@ -229,7 +224,7 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
             <div id="mainContent" class="space-y-10">
                 <section id="overview" class="tab-content fade-in">
                     
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
                         <div id="totalClients" class="stat-card bg-gradient-to-r from-sky-500 to-sky-600 p-6 rounded-xl shadow-lg text-white cursor-pointer" data-tab="clients">
                             <div class="flex items-center justify-between">
                                 <div>
@@ -268,18 +263,6 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                                 </div>
                             </div>
                         </div>
-                        <div id="pendingLoanCard" class="stat-card bg-gradient-to-r from-yellow-500 to-yellow-600 p-6 rounded-xl shadow-lg text-white cursor-pointer" data-tab="loans">
-                            <div class="flex items-center justify-between">
-                                <div>
-                                    <p class="text-yellow-100 text-sm font-medium">Pending Loan Applications</p>
-                                    <p id="pendingLoansCount" class="text-3xl font-bold">0</p>
-                                    <p class="text-yellow-100 text-xs mt-1">Click to view applications</p>
-                                </div>
-                                <div class="p-3 bg-white bg-opacity-20 rounded-lg">
-                                    <i class="fas fa-clock text-2xl"></i>
-                                </div>
-                            </div>
-                        </div>
                     </div>
                     
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6"> 
@@ -290,16 +273,10 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                             </div>
                         </div>
 
-                        <div class="bg-white p-6 rounded-xl shadow-md card-flat mt-6">
-                            <div class="flex justify-between items-center mb-4">
-                                <h3 class="text-xl font-bold text-gray-800 border-b pb-3">Upcoming Payments</h3>
-                                <span class="text-sm text-gray-500">Next 7 days</span>
-                            </div>
-                            <div id="upcomingPaymentsContainer" class="space-y-3">
-                                <div class="text-center py-8 text-gray-500">
-                                    <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
-                                    <p>Loading upcoming payments...</p>
-                                </div>
+                        <div class="bg-white p-6 rounded-xl shadow-md card-flat">
+                            <h3 class="text-xl font-bold text-gray-800 mb-4 border-b pb-3">Loans Issued and Payments</h3>
+                            <div style="height: 350px;">
+                                <canvas id="monthlyTrendsChart" style="max-height: 350px;"></canvas>
                             </div>
                         </div>
                     </div>
@@ -369,41 +346,19 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                     
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                         <div>
-                            <h2 class="text-2xl font-bold text-gray-900">Pending Loan Applications</h2>
-                            <p class="text-gray-600 text-sm mt-1">Review and approve new loan applications.</p>
+                            <h2 class="text-2xl font-bold text-gray-900">Loan Management</h2>
+                            <p class="text-gray-600 text-sm mt-1">View all loan applications and transactions.</p>
                         </div>
-                        <button id="newLoanBtn" class="bg-primary text-white px-4 py-2.5 rounded-lg font-medium hover:bg-primary-dark transition-colors">
-                            <i class="fas fa-plus mr-2"></i>New Loan
-                        </button>
-                    </div>
-                    
-                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-10 card-flat">
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full divide-y divide-gray-200">
-                                <thead class="bg-gray-50">
-                                    <tr>
-                                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"><i class="fas fa-user mr-2"></i>Client</th>
-                                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"><i class="fas fa-dollar-sign mr-2"></i>Amount</th>
-                                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"><i class="fas fa-calendar mr-2"></i>Term</th>
-                                        <th class="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider"><i class="fas fa-cogs mr-2"></i>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="pendingLoansTableBody" class="bg-white divide-y divide-gray-100 text-sm">
-                                    <tr><td colspan="5" class="text-center py-8 text-gray-500">No pending applications.</td></tr>
-                                </tbody>
-                            </table>
+                        <div class="flex space-x-2 items-center">
+                            <div class="flex flex-wrap justify-between items-center space-y-3 sm:space-y-0 sm:space-x-4">
+                                <input type="text" id="loanSearch" placeholder="Search by Loan ID or Client..." class="w-full sm:max-w-sm px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition shadow-sm">
+                            </div>
+                            <button id="newLoanBtn" class="bg-primary text-white px-4 py-2.5 rounded-lg font-medium hover:bg-primary-dark transition-colors">
+                                <i class="fas fa-plus mr-2"></i>New Loan
+                            </button>
                         </div>
                     </div>
 
-                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-                        <div>
-                            <h2 class="text-2xl font-bold text-gray-900">Active & Paid Loan History</h2>
-                            <p class="text-gray-600 text-sm mt-1">Track all active and completed loan transactions.</p>
-                        </div>
-                        <div class="flex flex-wrap justify-between items-center space-y-3 sm:space-y-0 sm:space-x-4">
-                            <input type="text" id="loanSearch" placeholder="Search by Loan ID or Client..." class="w-full sm:max-w-sm px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition shadow-sm">
-                        </div>
-                    </div>
                     
                     <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden card-flat">
                         <div class="overflow-x-auto">
@@ -424,6 +379,7 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                             </table>
                         </div>
                     </div>
+
                 </section>
 
                 <section id="payments" class="tab-content hidden fade-in">
@@ -467,34 +423,6 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                                 </div>
                                 <div class="p-3 bg-red-100 rounded-lg">
                                     <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 card-flat">
-                            <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center justify-between">
-                                <span><i class="fas fa-times-circle text-red-500 mr-2"></i>Unpaid Today</span>
-                                <span class="text-sm text-gray-500" id="unpaidCount">0 clients</span>
-                            </h3>
-                            <div id="unpaidClientsContainer" class="space-y-3 max-h-96 overflow-y-auto">
-                                <div class="text-center py-8 text-gray-500">
-                                    <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
-                                    <p>Loading unpaid clients...</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 card-flat">
-                            <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center justify-between">
-                                <span><i class="fas fa-check-circle text-green-500 mr-2"></i>Paid Today</span>
-                                <span class="text-sm text-gray-500" id="paidCount">0 clients</span>
-                            </h3>
-                            <div id="paidClientsContainer" class="space-y-3 max-h-96 overflow-y-auto">
-                                <div class="text-center py-8 text-gray-500">
-                                    <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
-                                    <p>Loading paid clients...</p>
                                 </div>
                             </div>
                         </div>
@@ -554,9 +482,29 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                             </table>
                         </div>
                     </div>
+
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 card-flat mt-4">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                            <i class="fas fa-chart-bar mr-2 text-indigo-600"></i>Collector Performance Reports
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Filter by Date</label>
+                                <input type="date" id="collectorReportDate" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" value="<?php echo date('Y-m-d'); ?>">
+                            </div>
+                        </div>
+                        <div class="flex justify-between mt-6 gap-6 flex-col md:flex-row">
+                            <div class="mt-6 w-full" style="height: 300px;">
+                                <canvas id="collectorAmountCollectedChart"></canvas>
+                            </div>
+                            <div class="mt-6 w-full" style="height: 300px;">
+                                <canvas id="collectorClientsCollectedChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
                 </section>
-                
-                <section id="reports" class="tab-content hidden fade-in">
+
+                <section id="settings" class="tab-content hidden fade-in">
                     <div class="mb-6">
                         <h2 class="text-2xl font-bold text-gray-900">Reports & Analytics</h2>
                         <p class="text-gray-600 text-sm mt-1">Generate comprehensive reports and analytics</p>
@@ -626,43 +574,6 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                             <p class="text-gray-600 text-sm">Revenue, expenses, and profit analysis</p>
                         </div>
                     </div>
-
-                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 card-flat mb-6">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-4">
-                            <i class="fas fa-chart-bar mr-2 text-indigo-600"></i>Collector Performance Reports
-                        </h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Filter by Date</label>
-                                <input type="date" id="collectorReportDate" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" value="<?php echo date('Y-m-d'); ?>">
-                            </div>
-                        </div>
-                        <div class="flex justify-between mt-6 gap-6 flex-col md:flex-row">
-                            <div class="mt-6 w-full" style="height: 300px;">
-                                <canvas id="collectorAmountCollectedChart"></canvas>
-                            </div>
-                            <div class="mt-6 w-full" style="height: 300px;">
-                                <canvas id="collectorClientsCollectedChart"></canvas>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 card-flat">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-4">
-                            <i class="fas fa-chart-area mr-2 text-indigo-600"></i>Advanced Analytics
-                        </h3>
-                        <div class="flex justify-between w-f mt-6 gap-6 flex-col md:flex-row">
-                            <div class="mt-6 w-full" style="height: 300px;">
-                                <canvas id="monthlyTrendsChart"></canvas>
-                            </div>
-                            <div class="mt-6 w-full" style="height: 300px;">
-                                <canvas id="loanAndPaymentsChart"></canvas>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <section id="settings" class="tab-content hidden fade-in">
                     <div class="mb-6">
                         <h2 class="text-2xl font-bold text-gray-900">System Settings</h2>
                         <p class="text-gray-600 text-sm mt-1">Configure your loan management system</p>
@@ -823,6 +734,83 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
         </div>
     </div>
 
+    <!-- Edit Collector Modal -->
+    <div id="editCollectorModal" class="hidden fixed inset-0 modal-overlay overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+        <div class="relative w-full max-w-lg shadow-2xl rounded-2xl bg-white p-6 sm:p-8 space-y-6 transform modal-content">
+            <div class="flex justify-between items-center border-b pb-4">
+                <h3 class="text-2xl font-bold text-gray-900"><i class="fas fa-user-edit text-primary mr-2"></i> Edit Collector</h3>
+                <button id="closeEditCollectorModal" class="text-gray-400 hover:text-gray-600 transition">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <form id="editCollectorForm" class="space-y-4">
+                <input type="hidden" id="editCollectorId" name="collector_id">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                    <input type="text" id="editCollectorFullname" name="col_fullname" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition" placeholder="Enter Full Name">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                    <input type="text" id="editCollectorUsername" name="col_username" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition" placeholder="Enter Username">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">New Password (leave blank to keep current)</label>
+                    <input type="password" name="col_password" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition" placeholder="Enter New Password">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Branch</label>
+                    <select id="editCollectorBranch" name="col_branch" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition">
+                        <option value="" disabled selected>Select Branch</option>
+                        <option value="malolos">Malolos</option>
+                        <option value="hagonoy">Hagonoy</option>
+                        <option value="calumpit">Calumpit</option>
+                        <option value="balagtas">Balagtas</option>
+                        <option value="marilao">Marilao</option>
+                        <option value="staMaria">Sta. Maria</option>
+                        <option value="plaridel">Plaridel</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                    <select id="editCollectorStatus" name="col_status" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition">
+                        <option value="Active">Active</option>
+                        <option value="Inactive">Inactive</option>
+                    </select>
+                </div>
+                <div id="editCollectorMessage" class="hidden p-3 text-center rounded-lg text-sm font-medium"></div>
+                <div class="flex justify-end space-x-3 pt-4 border-t mt-6">
+                    <button type="button" id="closeEditCollectorModal" class="bg-gray-200 text-gray-700 py-2.5 px-5 rounded-lg hover:bg-gray-300 transition-colors font-medium">
+                        Cancel
+                    </button>
+                    <button type="submit" id="editCollectorSubmitBtn" class="bg-primary text-white py-2.5 px-5 rounded-lg hover:bg-primary-dark transition-colors font-semibold shadow-lg shadow-primary/30">
+                        <i class="fas fa-save mr-2"></i> Update Collector
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Collector Confirmation Modal -->
+    <div id="deleteCollectorConfirmationModal" class="hidden fixed inset-0 modal-overlay overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+        <div class="relative p-8 border w-96 shadow-2xl rounded-2xl bg-white transform modal-content">
+            <div class="text-center">
+                <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-4">
+                    <i class="fas fa-trash text-red-600 text-2xl"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 mb-2">Confirm Deletion</h3>
+                <p id="deleteCollectorMessage" class="text-gray-600 mb-6">Are you sure you want to delete this collector?</p>
+                <div class="flex space-x-3">
+                    <button id="cancelDeleteCollectorBtn" class="w-1/2 bg-gray-200 text-gray-700 py-2.5 rounded-lg hover:bg-gray-300 transition-colors font-medium">
+                        Cancel
+                    </button>
+                    <button id="confirmDeleteCollectorBtn" class="w-1/2 bg-red-600 text-white py-2.5 rounded-lg hover:bg-red-700 transition-colors font-semibold">
+                        <i class="fas fa-trash mr-2"></i> Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Approve Loan Modal -->
     <div id="approveLoanModal" class="hidden fixed inset-0 modal-overlay overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
         <div class="relative w-full max-w-md shadow-2xl rounded-2xl bg-white p-6 sm:p-8 space-y-6 transform modal-content">
@@ -885,14 +873,18 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                     <input type="number" id="newLoanAmount" name="loan_amount" value="1000.00" step="0.01" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition">
                 </div>
                 <div class="bg-blue-50 p-3 rounded-lg border border-blue-200">
-                    <h4 class="font-semibold text-blue-800 mb-2">Loan Calculation (100 Days, 4.5% Interest)</h4>
+                    <h4 class="font-semibold text-blue-800 mb-2">Loan Calculation (100 Days, 15% Interest)</h4>
                     <div class="text-sm text-blue-700 space-y-1">
                         <div class="flex justify-between">
-                            <span>Principal:</span>
-                            <span id="calcPrincipal">₱0.00</span>
+                            <span>Processing Fee (₱200):</span>
+                            <span id="calcProcessingFee">₱200.00</span>
                         </div>
                         <div class="flex justify-between">
-                            <span>Interest (4.5%):</span>
+                            <span>Amount Received:</span>
+                            <span id="calcAmountReceived">₱0.00</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Interest (15%):</span>
                             <span id="calcInterest">₱0.00</span>
                         </div>
                         <div class="flex justify-between font-semibold">
@@ -1211,9 +1203,7 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                     activeLink.classList.add('active');
                 
                     let title = activeLink.textContent.trim();
-                    if (title.includes('Loans & Pending')) {
-                        title = 'Loans & Pending Management';
-                    } else if (title === 'Overview') {
+                    if (title === 'Overview') {
                         title = 'Dashboard Overview';
                     } else {
                         title = title + ' Management';
@@ -1236,11 +1226,6 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                     window.location.hash = targetId;
                     switchTab(targetId);
                 });
-            });
-            document.getElementById('pendingLoanCard').addEventListener('click', (e) => {
-                e.preventDefault();
-                window.location.hash = 'loans';
-                switchTab('loans');
             });
 
             function showMessageModal(title, message, type = 'success') {
@@ -1272,7 +1257,7 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
 
             function showDeclineLoanModal(){
                 const modal = document.getElementById('confirmDeclineModal');
-                const closeBtn = document.getElementById('closeDeclineModal');
+                const closeBtn = document.getElementById('closeConfirmDeclineModal');
                 closeBtn.onclick = () => modal.classList.add('hidden');
                 modal.classList.remove('hidden');
             }window.showDeclineLoanModal = showDeclineLoanModal;
@@ -1305,17 +1290,14 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                 modalMemberId.textContent = memberId;
                 modalClientName.textContent = clientName;
                 
-                // Store client ID for form submission
                 modal.dataset.clientId = clientId;
                 
                 closeBtn.onclick = () => modal.classList.add('hidden');
                 
-                // Update loan calculation when amount changes
                 const amountInput = document.getElementById('newLoanAmount');
                 amountInput.addEventListener('input', updateLoanCalculation);
-                updateLoanCalculation(); // Initial calculation
+                updateLoanCalculation();
                 
-                // Clear previous event listeners and add new one
                 submitBtn.onclick = () => handleNewLoanSubmission(clientId, memberId);
                 
                 modal.classList.remove('hidden');
@@ -1326,11 +1308,14 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                 const amountInput = document.getElementById('newLoanAmount');
                 const amount = parseFloat(amountInput.value) || 0;
                 
-                const interest = amount * 0.045; // 4.5%
+                const processingFee = 200;
+                const amountReceived = amount - processingFee;
+                const interest = amount * 0.15;
                 const totalBalance = amount + interest;
                 const dailyPayment = totalBalance / 100;
                 
-                document.getElementById('calcPrincipal').textContent = `₱${amount.toFixed(2)}`;
+                document.getElementById('calcProcessingFee').textContent = `₱${processingFee.toFixed(2)}`;
+                document.getElementById('calcAmountReceived').textContent = `₱${amountReceived.toFixed(2)}`;
                 document.getElementById('calcInterest').textContent = `₱${interest.toFixed(2)}`;
                 document.getElementById('calcTotalBalance').textContent = `₱${totalBalance.toFixed(2)}`;
                 document.getElementById('calcDailyPayment').textContent = `₱${dailyPayment.toFixed(2)}`;
@@ -1355,16 +1340,18 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                 modalClientAddress.textContent = clientAddress;
                 modalClientBranch.textContent = clientBranch.charAt(0).toUpperCase() + clientBranch.slice(1);
                 modalClientDateJoined.textContent = clientDateJoined;
-                
-                // Store client ID for deactivation
                 modal.dataset.clientId = clientId;
                 modal.dataset.clientName = clientName;
                 modal.dataset.memberId = memberId;
                 
                 closeBtn.onclick = () => modal.classList.add('hidden');
                 
-                // Set up deactivate button
-                deactivateBtn.onclick = () => showDeactivateClientConfirmation(clientId, clientName, memberId);
+                if (memberId.endsWith('-D')) {
+                    deactivateBtn.style.display = 'none';
+                } else {
+                    deactivateBtn.style.display = 'block';
+                    deactivateBtn.onclick = () => showDeactivateClientConfirmation(clientId, clientName, memberId);
+                }
                 
                 modal.classList.remove('hidden');
             }
@@ -1404,8 +1391,50 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                 }
             }
             window.toggleModal = toggleModal;
+            window.showEditCollectorModal = function(collectorId, fullname, username, branch, status) {
+                const modal = document.getElementById('editCollectorModal');
+                document.getElementById('editCollectorId').value = collectorId;
+                document.getElementById('editCollectorFullname').value = fullname;
+                document.getElementById('editCollectorUsername').value = username;
+                document.getElementById('editCollectorBranch').value = branch;
+                document.getElementById('editCollectorStatus').value = status;
+                
+                modal.classList.remove('hidden');
+            }
+            window.showDeleteCollectorModal = function(collectorId, fullname) {
+                const modal = document.getElementById('deleteCollectorConfirmationModal');
+                document.getElementById('deleteCollectorMessage').textContent = `Are you sure you want to delete collector ${fullname}? This action cannot be undone.`;
+                
+                document.getElementById('confirmDeleteCollectorBtn').onclick = function() {
+                    deleteCollector(collectorId);
+                };
+                
+                modal.classList.remove('hidden');
+            }
 
-            // Logout functionality
+            async function deleteCollector(collectorId) {
+                try {
+                    const formData = new FormData();
+                    formData.append('action', 'delete_collector');
+                    formData.append('collector_id', collectorId);
+
+                    const response = await fetch('api.php', { method: 'POST', body: formData });
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        showMessageModal('Collector Deleted!', result.message, 'success');
+                        document.getElementById('deleteCollectorConfirmationModal').classList.add('hidden');
+                        if (typeof fetchAdminData === 'function') {
+                            fetchAdminData();
+                        }
+                    } else {
+                        showMessageModal('Deletion Failed', result.message || 'An unexpected error occurred.', 'error');
+                    }
+                } catch (error) {
+                    showMessageModal('Network Error', 'Could not connect to the server.', 'error');
+                }
+            }
+
             document.getElementById('logoutBtn').addEventListener('click', function() {
                 document.getElementById('logoutConfirmationModal').classList.remove('hidden');
             });
@@ -1418,7 +1447,6 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                 window.location.href = "logout.php";
             });
 
-            // Deactivate client confirmation
             function showDeactivateClientConfirmation(clientId, clientName, memberId) {
                 const modal = document.getElementById('deactivateClientConfirmationModal');
                 const message = document.getElementById('deactivateClientMessage');
@@ -1448,7 +1476,6 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                     if (result.success) {
                         showMessageModal('Account Deactivated!', result.message, 'success');
                         document.getElementById('clientDetailsModal').classList.add('hidden');
-                        // Refresh client data
                         if (typeof fetchAdminData === 'function') {
                             fetchAdminData();
                         }
@@ -1523,8 +1550,6 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
             document.getElementById('backupDataBtn').addEventListener('click', () => {
                 window.location.href = 'api.php?action=backup_database';
             });
-
-            // Add collector modal
             document.getElementById('showAddCollectorModal').addEventListener('click', () => {
                 document.getElementById('addCollectorModal').classList.remove('hidden');
             });
@@ -1532,14 +1557,17 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
             document.getElementById('closeAddCollectorModal').addEventListener('click', () => {
                 document.getElementById('addCollectorModal').classList.add('hidden');
             });
+            document.getElementById('closeEditCollectorModal').addEventListener('click', () => {
+                document.getElementById('editCollectorModal').classList.add('hidden');
+            });
+            document.getElementById('cancelDeleteCollectorBtn').addEventListener('click', () => {
+                document.getElementById('deleteCollectorConfirmationModal').classList.add('hidden');
+            });
 
-            // New loan button
             document.getElementById('newLoanBtn').addEventListener('click', () => {
-                // This would typically open a modal to select client first
                 showMessageModal('Select Client', 'Please select a client from the Clients tab to create a new loan.', 'info');
             });
             
-            // Close modals when clicking outside
             document.addEventListener('click', function(e) {
                 if (e.target.classList.contains('modal-overlay')) {
                     e.target.classList.add('hidden');
