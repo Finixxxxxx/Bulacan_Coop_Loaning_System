@@ -870,7 +870,7 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Loan Amount (₱)</label>
-                    <input type="number" id="newLoanAmount" name="loan_amount" value="1000.00" step="0.01" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition">
+                    <input type="number" id="newLoanAmount" name="loan_amount" value="10000.00" step="0.01" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition">
                 </div>
                 <div class="bg-blue-50 p-3 rounded-lg border border-blue-200">
                     <h4 class="font-semibold text-blue-800 mb-2">Loan Calculation (100 Days, 15% Interest)</h4>
@@ -1492,8 +1492,8 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                 const messageDiv = document.getElementById('newLoanMessage');
                 const submitBtn = document.getElementById('submitNewLoanBtn');
 
-                if (!amount || amount < 1000 ) {
-                    messageDiv.textContent = 'Please enter a valid amount (min ₱1,000';
+                if (!amount || amount < 10000 ) {
+                    messageDiv.textContent = 'Please enter a valid amount (min ₱10,000';
                     messageDiv.className = 'p-3 text-center rounded-lg text-sm font-medium bg-red-100 text-red-700';
                     messageDiv.classList.remove('hidden');
                     return;
@@ -1508,10 +1508,19 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                     formData.append('action', 'submit_loan_admin');
                     formData.append('client_id', clientId);
                     formData.append('loan_amount', amount);
-
+                    
                     const response = await fetch('api.php', { method: 'POST', body: formData });
-                    const result = await response.json();
-                    console.log(result);
+                    const text = await response.text();
+                    console.log(text);
+                    let result;
+                    try {
+                        result = JSON.parse(text);
+                    } catch(e) {
+                        console.error('Invalid JSON response:', text);
+                        messageDiv.textContent = 'Server returned invalid response.';
+                        messageDiv.className = 'p-3 text-center rounded-lg text-sm font-medium bg-red-100 text-red-700';
+                        return;
+                    }
                     if (result.success) {
                         messageDiv.textContent = result.message;
                         messageDiv.className = 'p-3 text-center rounded-lg text-sm font-medium bg-green-100 text-green-700';

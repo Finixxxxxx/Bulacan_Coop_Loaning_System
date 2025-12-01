@@ -24,7 +24,7 @@ function generate_member_id($branch, $mysqli) {
         $new_number = 1;
     }
     
-    return $prefix . str_pad($new_number, 4, '0', STR_PAD_LEFT);
+    return $prefix . str_pad($new_number, 3, '0', STR_PAD_LEFT);
 }
 
 function generate_client_password($lastname, $member_id, $phone) {

@@ -1,7 +1,6 @@
 const API_URL = 'api.php';
 
 function showNotification(message, type = 'info') {
-    // Simple notification implementation
     const notification = document.createElement('div');
     notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg ${
         type === 'success' ? 'bg-green-500' : 
@@ -90,7 +89,7 @@ function updateUnpaidClients(unpaidClients) {
                     <p class="text-xs text-gray-500">Due Today</p>
                     <button onclick="recordPayment(${client.loan_id}, ${client.daily_payment})" 
                             class="mt-1 bg-primary text-white px-3 py-1 rounded text-xs hover:bg-primary-dark transition-colors">
-                        <i class="fas fa-qrcode mr-1"></i> Collect
+                        <i class="fas fa-peso-sign mr-1"></i> Collect
                     </button>
                 </div>
             </div>

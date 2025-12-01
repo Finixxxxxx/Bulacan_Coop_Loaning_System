@@ -6,7 +6,6 @@ let loansData = []
 let pendingLoans = []
 let collectorsData = []
 let branchChartInstance = null
-let monthlyTrendsChartInstance = null
 let riskAnalysisChartInstance = null
 let loansAndPaymentsChartInstance = null
 let collectorReportChartInstance = null
@@ -228,7 +227,6 @@ async function fetchAdminData(branch = 'all') {
         populateCollectorsTable()
         updateBranchChart()
         updateUpcomingPayments()
-        updateMonthlyTrendsChart()
         updateLoansAndPaymentsChart()
         fetchPaymentHistory(branch)
         generateCollectorReport()
@@ -241,7 +239,6 @@ async function fetchAdminData(branch = 'all') {
 }
 
 function checkNotifications() {
-    const notifPending = $('#notifPendingLoan').is(':checked')
     const notifOverdue = $('#notifOverdueLoan').is(':checked')
     const notifPayment = $('#notifNewPayment').is(':checked')
 
@@ -461,9 +458,9 @@ async function updateUpcomingPayments() {
     }
 }
 
-async function updateMonthlyTrendsChart() {
+async function updateLoansAndPaymentsChart() {
     try {
-        const response = await fetch(API_URL + '?action=get_monthly_trends_data')
+        const response = await fetch(API_URL + '?action=get_loans_payments_data')
         const data = await response.json()
         
         if (data.error) {
@@ -473,11 +470,11 @@ async function updateMonthlyTrendsChart() {
 
         const ctx = $('#monthlyTrendsChart')[0].getContext('2d')
         
-        if (monthlyTrendsChartInstance) {
-            monthlyTrendsChartInstance.destroy()
+        if (loansAndPaymentsChartInstance) {
+            loansAndPaymentsChartInstance.destroy()
         }
 
-        monthlyTrendsChartInstance = new Chart(ctx, {
+        loansAndPaymentsChartInstance = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: data.labels || [],
@@ -509,46 +506,6 @@ async function updateMonthlyTrendsChart() {
         })
     } catch (error) {
         console.error('Error fetching monthly trends:', error)
-    }
-}
-
-async function updateLoansAndPaymentsChart() {
-    try {
-        const response = await fetch(API_URL + '?action=get_loans_payments_data')
-        const data = await response.json()
-        
-        if (data.error) {
-            console.error('Loans payments error:', data.error)
-            return
-        }
-
-        const ctx = $('#loanAndPaymentsChart')[0].getContext('2d')
-        
-        if (loansAndPaymentsChartInstance) {
-            loansAndPaymentsChartInstance.destroy()
-        }
-
-        loansAndPaymentsChartInstance = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: data.labels || [],
-                datasets: [{
-                    label: 'Loan Status',
-                    data: data.data || [],
-                    backgroundColor: ['#3b82f6', '#10b981', '#ef4444', '#f59e0b']
-                }]
-            },
-            options: {
-                responsive: true,
-                scales: {
-                    y: {
-                        beginAtZero: true
-                    }
-                }
-            }
-        })
-    } catch (error) {
-        console.error('Error fetching loans payments:', error)
     }
 }
 

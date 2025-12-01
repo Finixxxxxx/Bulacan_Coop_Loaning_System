@@ -100,8 +100,16 @@ $client_id = $_SESSION["client_id"];
                                 <span id="daysPaid" class="font-semibold">0/100</span>
                             </div>
                             <div>
-                                <span>Total Amount:</span>
+                                <span>Total Loan Balance:</span>
                                 <span id="totalAmount" class="font-semibold">₱0.00</span>
+                            </div>
+                            <div>
+                                <span>Processing Fee:</span>
+                                <span id="processingFee" class="font-semibold">₱0.00</span>
+                            </div>
+                            <div>
+                                <span>Total Recieved:</span>
+                                <span id="netAmount" class="font-semibold">₱0.00</span>
                             </div>
                         </div>
                     </div>
@@ -216,7 +224,7 @@ $client_id = $_SESSION["client_id"];
                     Close
                 </button>
             </div>
-        </div>
+        </div>F
     </div>
 
     <script>

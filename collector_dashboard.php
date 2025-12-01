@@ -44,10 +44,14 @@ $collector_username = $_SESSION["collector_username"] ?? "";
             width: 100%;
             height: 300px;
         }
+        #qrReader__dashboard_section{
+            display: none;
+        }
     </style>
 </head>
 <body class="min-h-screen">
     <div class="flex min-h-screen">
+        
         <div class="w-64 bg-white shadow-lg">
             <div class="p-4 border-b">
                 <div class="flex items-center">
@@ -82,13 +86,16 @@ $collector_username = $_SESSION["collector_username"] ?? "";
             </div>
         </div>
 
+        
         <div class="flex-1 p-6">
             <header class="mb-8">
                 <h1 class="text-2xl font-bold text-gray-900" id="pageTitle">Collector Dashboard</h1>
                 <p class="text-gray-600" id="pageSubtitle">Manage daily payments and collections</p>
             </header>
 
+            
             <div id="dashboard" class="tab-content">
+                
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                     <div class="bg-white p-6 rounded-xl shadow-md card-hover">
                         <div class="flex items-center justify-between">
@@ -127,6 +134,7 @@ $collector_username = $_SESSION["collector_username"] ?? "";
                     </div>
                 </div>
 
+                
                 <div class="mb-8 flex space-x-4">
                     <button id="scanQRBtn" class="bg-primary text-white px-6 py-3 rounded-lg font-semibold hover:bg-primary-dark transition-colors flex items-center">
                         <i class="fas fa-qrcode mr-2"></i> Scan QR Code
@@ -137,6 +145,7 @@ $collector_username = $_SESSION["collector_username"] ?? "";
                 </div>
 
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    
                     <div class="bg-white rounded-xl shadow-md p-6 card-hover">
                         <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center justify-between">
                             <span><i class="fas fa-clock text-orange-500 mr-2"></i>Unpaid Clients Today</span>
@@ -150,6 +159,7 @@ $collector_username = $_SESSION["collector_username"] ?? "";
                         </div>
                     </div>
 
+                    
                     <div class="bg-white rounded-xl shadow-md p-6 card-hover">
                         <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center justify-between">
                             <span><i class="fas fa-check-circle text-green-500 mr-2"></i>Paid Clients Today</span>
@@ -164,6 +174,7 @@ $collector_username = $_SESSION["collector_username"] ?? "";
                     </div>
                 </div>
 
+                
                 <div class="bg-white rounded-xl shadow-md p-6 mt-6 card-hover">
                     <h3 class="text-lg font-semibold text-gray-900 mb-4">
                         <i class="fas fa-receipt text-blue-500 mr-2"></i>Today's Payments
@@ -177,6 +188,7 @@ $collector_username = $_SESSION["collector_username"] ?? "";
                 </div>
             </div>
 
+            
             <div id="profile" class="tab-content hidden">
                 <div class="bg-white rounded-xl shadow-md p-6 card-hover max-w-2xl">
                     <h2 class="text-2xl font-bold text-gray-900 mb-6">Collector Profile</h2>
@@ -233,6 +245,7 @@ $collector_username = $_SESSION["collector_username"] ?? "";
         </div>
     </div>
 
+    
     <div id="qrScannerModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-75 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
         <div class="relative p-6 border w-full max-w-md shadow-2xl rounded-2xl bg-white transform modal-content">
             <div class="flex justify-between items-center border-b pb-4 mb-6">
@@ -245,7 +258,7 @@ $collector_username = $_SESSION["collector_username"] ?? "";
                 </button>
             </div>
             <div class="text-center">
-                <div id="qrReader" class="w-full h-64 bg-gray-100 rounded-lg mb-4 flex items-center justify-center">
+                <div id="qrReader" class="w-full h-64 bg-gray-100 rounded-lg mb-4 items-center justify-center">
                     <p class="text-gray-500">Initializing camera...</p>
                 </div>
                 <p class="text-sm text-gray-600 mb-4">Scan client's payment QR code to record payment</p>
@@ -259,6 +272,7 @@ $collector_username = $_SESSION["collector_username"] ?? "";
         </div>
     </div>
 
+    
     <div id="manualPaymentModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-75 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
         <div class="relative p-6 border w-full max-w-md shadow-2xl rounded-2xl bg-white transform modal-content">
             <div class="flex justify-between items-center border-b pb-4 mb-6">
@@ -287,6 +301,7 @@ $collector_username = $_SESSION["collector_username"] ?? "";
         </div>
     </div>
 
+    
     <div id="paymentSuccessModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-75 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
         <div class="relative p-6 border w-96 shadow-2xl rounded-2xl bg-white transform modal-content">
             <div class="text-center">
@@ -370,14 +385,12 @@ $collector_username = $_SESSION["collector_username"] ?? "";
             if (html5QrcodeScanner) {
                 return;
             }
-            const scanTypes = window.Html5QrcodeScanType ? [Html5QrcodeScanType.SCAN_TYPE_QR_CODE] : undefined;
 
             html5QrcodeScanner = new Html5QrcodeScanner(
                 "qrReader",
                 { 
                     fps: 10, 
                     qrbox: { width: 250, height: 250 },
-                    supportedScanTypes: scanTypes
                 },
                 false
             );

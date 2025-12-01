@@ -417,7 +417,7 @@ switch ($action) {
         $client_id = $_POST['client_id'] ?? '';
         $amount = $_POST['loan_amount'] ?? '';
 
-        if (empty($client_id) || empty($amount) || !is_numeric($amount) || $amount < 1000) {
+        if (empty($client_id) || empty($amount) || !is_numeric($amount) || $amount < 10000) {
             json_error('Invalid loan details provided.');
         }
 
@@ -437,21 +437,22 @@ switch ($action) {
         $term_days = 100;
         $daily_payment = $loan_totals['daily_payment'];
         $total_balance = $loan_totals['total_balance'];
-
+        $interest_rate = 15.00;
         $next_payment_date = date('Y-m-d', strtotime('+1 day'));
 
         $sql_insert = "INSERT INTO loans (client_id, loan_amount, processing_fee, net_amount, interest_rate, term_days, daily_payment, total_balance, current_balance, loan_status, next_payment_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'Active', ?)";
         if ($stmt = $mysqli->prepare($sql_insert)) {
-            $stmt->bind_param("iddddddddds", 
-                $client_id, 
-                $amount, 
-                $loan_totals['processing_fee'], 
-                $loan_totals['net_amount'], 
-                15.00,
-                $term_days, 
-                $daily_payment, 
-                $total_balance, 
-                $total_balance, 
+            $stmt->bind_param(
+                "idddddddds",
+                $client_id,
+                $amount,
+                $loan_totals['processing_fee'],
+                $loan_totals['net_amount'],
+                $interest_rate,
+                $term_days,
+                $daily_payment,
+                $total_balance,
+                $total_balance,
                 $next_payment_date
             );
             if ($stmt->execute()) {
@@ -722,6 +723,136 @@ switch ($action) {
         }
 
         echo json_encode($response);
+        break;
+    // ==================
+    // Process QR Payment - Collector Dashboard
+    // ==================
+    case 'process_qr_payment':
+        if ($role !== 'collector' || $_SERVER['REQUEST_METHOD'] !== 'POST') json_error('Access denied.');
+        
+        $client_id = $_POST['client_id'] ?? 0;
+        $loan_id = $_POST['loan_id'] ?? 0;
+        $payment_amount = $_POST['payment_amount'] ?? 0.0;
+        $collector_id = $_SESSION['collector_id'];
+        
+        if (!is_numeric($client_id) || $client_id <= 0 || !is_numeric($loan_id) || $loan_id <= 0 || !is_numeric($payment_amount) || $payment_amount <= 0) {
+            json_error('Invalid payment details.');
+        }
+
+        // Verify client and loan match
+        $sql_verify = "SELECT l.loan_id FROM loans l WHERE l.loan_id = ? AND l.client_id = ? AND l.loan_status IN ('Active', 'Overdue')";
+        if ($stmt = $mysqli->prepare($sql_verify)) {
+            $stmt->bind_param("ii", $loan_id, $client_id);
+            $stmt->execute();
+            $stmt->store_result();
+            if ($stmt->num_rows === 0) {
+                $stmt->close();
+                json_error('Invalid loan or client combination.');
+            }
+            $stmt->close();
+        }
+
+        // Process payment using the same logic as record_payment
+        $mysqli->begin_transaction();
+        $success = false;
+
+        try {
+            $sql_fetch = "SELECT client_id, current_balance, daily_payment, days_paid, term_days, next_payment_date FROM loans WHERE loan_id = ?";
+            if ($stmt = $mysqli->prepare($sql_fetch)) {
+                $stmt->bind_param("i", $loan_id);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                if ($loan = $result->fetch_assoc()) {
+                    $client_id = $loan['client_id'];
+                    $current_balance = (float)$loan['current_balance'];
+                    $daily_payment = (float)$loan['daily_payment'];
+                    $days_paid = (int)$loan['days_paid'];
+                    $term_days = (int)$loan['term_days'];
+                    $next_payment_date = $loan['next_payment_date'];
+
+                    // Check for missed payments
+                    $missed_days = 0;
+                    if ($next_payment_date && $next_payment_date < date('Y-m-d')) {
+                        $missed_days = floor((strtotime(date('Y-m-d')) - strtotime($next_payment_date)) / (60 * 60 * 24));
+                    }
+
+                    // Add missed payments to current payment
+                    if ($missed_days > 0) {
+                        $payment_amount += ($daily_payment * $missed_days);
+                    }
+
+                    // Determine payment type
+                    $payment_type = 'daily';
+                    if ($payment_amount >= $current_balance) {
+                        $payment_type = 'full';
+                        $payment_amount = $current_balance;
+                    } elseif ($payment_amount > $daily_payment) {
+                        $payment_type = 'partial';
+                    }
+
+                    $final_balance = $current_balance - $payment_amount;
+                    $new_days_paid = $days_paid;
+                    
+                    if ($payment_type === 'daily') {
+                        $new_days_paid = $days_paid + 1 + $missed_days;
+                    } elseif ($payment_type === 'partial' || $payment_type === 'full') {
+                        $new_days_paid = $days_paid + ceil($payment_amount / $daily_payment);
+                    }
+
+                    $new_status = ($final_balance <= 0.01) ? 'Paid' : 'Active';
+                    $final_balance = max(0.00, $final_balance);
+
+                    $new_next_payment_date = $new_status == 'Active' ? date('Y-m-d', strtotime('+1 day')) : null;
+
+                    $sql_update = "UPDATE loans SET current_balance = ?, loan_status = ?, next_payment_date = ?, days_paid = ? WHERE loan_id = ?";
+                    if ($stmt_update = $mysqli->prepare($sql_update)) {
+                        $stmt_update->bind_param("dssii", $final_balance, $new_status, $new_next_payment_date, $new_days_paid, $loan_id);
+                        $stmt_update->execute();
+                        $stmt_update->close();
+                    } else {
+                        throw new Exception("Update prep failed: " . $mysqli->error);
+                    }
+
+                    $sql_insert = "INSERT INTO payments (loan_id, client_id, collector_id, payment_amount, payment_method, payment_type) VALUES (?, ?, ?, ?, 'QR Code', ?)";
+                    if ($stmt_insert = $mysqli->prepare($sql_insert)) {
+                        $stmt_insert->bind_param("iiids", $loan_id, $client_id, $collector_id, $payment_amount, $payment_type);
+                        $stmt_insert->execute();
+                        $stmt_insert->close();
+                    } else {
+                        throw new Exception("Insert prep failed: " . $mysqli->error);
+                    }
+                    
+                    $mysqli->commit();
+                    $success = true;
+
+                } else {
+                    json_error('Loan not found.');
+                }
+                $stmt->close();
+            } else {
+                json_error("Database prepare error: " . $mysqli->error);
+            }
+
+            if ($success) {
+                $message = "QR Payment of " . formatCurrency($payment_amount) . " recorded. New Balance: " . formatCurrency($final_balance);
+                if ($missed_days > 0) {
+                    $message .= " (Included {$missed_days} missed day" . ($missed_days > 1 ? 's' : '') . ")";
+                }
+                if ($new_status == 'Paid') {
+                    $message .= ' (Loan Fully Paid)';
+                }
+
+                echo json_encode([
+                    'success' => true, 
+                    'message' => $message,
+                    'new_balance' => $final_balance,
+                    'new_status' => $new_status,
+                ]);
+            }
+        } catch (Exception $e) {
+            $mysqli->rollback();
+            json_error("QR Payment processing failed: " . $e->getMessage());
+        }
         break;
 
     // ==================
@@ -1140,7 +1271,7 @@ switch ($action) {
     // ==================
     // Monthly Trends Data - Admin Dashboard | Reports
     // ==================
-    case 'get_monthly_trends_data':
+    case 'get_loans_payments_data':
         if ($role !== 'admin') json_error('Access denied.');
         
         $response = ['labels' => [], 'loans_issued' => [], 'payments' => []];
