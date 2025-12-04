@@ -191,7 +191,7 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
 
                         <div class="bg-white p-6 rounded-xl card-flat">
                             <h3 class="text-xl font-bold text-gray-800 mb-4 border-b pb-3">
-                                <i class="fas fa-chart-bar mr-2 text-primary"></i>Monthly Loan & Payment Trends
+                                <i class="fas fa-chart-bar mr-2 text-primary"></i>Loan & Payment Trends
                             </h3>
                             <div style="height: 350px;">
                                 <canvas id="monthlyTrendsChart" style="max-height: 350px;"></canvas>
@@ -547,10 +547,17 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                 <h3 class="text-2xl font-bold text-gray-900"><i class="fas fa-user-plus text-primary mr-2"></i> Add New Client</h3>
             </div>
             <form id="addClientForm" class="space-y-4">
-                <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-1">Full Name</label>
-                    <input type="text" name="c_fullname" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent input-focus-style" placeholder="Enter Full Name">
+                <div class="flex space-x-4">
+                    <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">First Name</label>
+                        <input type="text" name="c_firstname" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent input-focus-style" placeholder="Enter First Name">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Last Name</label>
+                        <input type="text" name="c_lastname" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent input-focus-style" placeholder="Enter Last Name">
+                    </div>
                 </div>
+                
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-1">Email</label>
                     <input type="email" name="c_email" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent input-focus-style" placeholder="Enter Email">
@@ -1272,7 +1279,6 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                     
                     const response = await fetch('api.php', { method: 'POST', body: formData });
                     const text = await response.text();
-                    console.log(text);
                     let result;
                     try {
                         result = JSON.parse(text);
@@ -1286,7 +1292,9 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
                         messageDiv.textContent = result.message;
                         messageDiv.className = 'p-3 text-center rounded-lg text-sm font-medium bg-green-100 text-green-700';
                         messageDiv.classList.remove('hidden');
-                        fetchAdminData();
+                        if (typeof fetchAdminData === 'function') {
+                            fetchAdminData();
+                        }
                     } else {
                         messageDiv.textContent = result.message || 'An unexpected error occurred.';
                         messageDiv.className = 'p-3 text-center rounded-lg text-sm font-medium bg-red-100 text-red-700';

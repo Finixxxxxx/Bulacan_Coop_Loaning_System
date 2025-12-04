@@ -1,2 +1,5 @@
+# Back-end Config
 api.php
 db_config.php
+
+/node_modules

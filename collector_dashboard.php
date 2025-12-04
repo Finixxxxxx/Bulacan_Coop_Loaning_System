@@ -18,8 +18,8 @@ $collector_username = $_SESSION["collector_username"] ?? "";
     <title>Bulacan Coop - Collector Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
     <link rel="stylesheet" href="./css/collector.css">
     <link rel="stylesheet" href="./css/global.css">
     <script type="module" src="./js/collector.js"></script>
@@ -324,7 +324,10 @@ $collector_username = $_SESSION["collector_username"] ?? "";
     </div>
 
     <script>
-        let html5QrcodeScanner = null;
+        let qrScannerActive = false;
+        let videoStream = null;
+        let animationFrameId = null;
+
         document.querySelectorAll('.sidebar-nav-item').forEach(button => {
             button.addEventListener('click', function() {
                 const targetTab = this.getAttribute('data-tab');
@@ -356,6 +359,7 @@ $collector_username = $_SESSION["collector_username"] ?? "";
                 pageSubtitle.textContent = 'Manage your account information';
             }
         }
+
         document.getElementById('scanQRBtn').addEventListener('click', function() {
             document.getElementById('qrScannerModal').classList.remove('hidden');
             initializeQRScanner();
@@ -380,67 +384,195 @@ $collector_username = $_SESSION["collector_username"] ?? "";
                 fetchCollectorData();
             }
         });
-
         document.getElementById('logoutBtn').addEventListener('click', function() {
             const modal = document.getElementById("logoutConfirmationModal")
             modal.classList.remove('hidden')
         });
+        
         document.getElementById('cancelLogoutBtn').addEventListener('click', function(){
             const modal = document.getElementById("logoutConfirmationModal")
             modal.classList.add('hidden')
         })
+        
         document.getElementById('confirmLogoutBtn').addEventListener('click', function(){
             window.location.href = 'logout.php';
         })
-        
 
-        function initializeQRScanner() {
-            if (html5QrcodeScanner) {
-                return;
-            }
-
-            html5QrcodeScanner = new Html5QrcodeScanner(
-                "qrReader",
-                { 
-                    fps: 10, 
-                    qrbox: { width: 250, height: 250 },
-                },
-                false
-            );
-
-            html5QrcodeScanner.render(onQRScanSuccess, onQRScanFailure);
-        }
-
-        function stopQRScanner() {
-            if (html5QrcodeScanner) {
-                html5QrcodeScanner.clear().then(() => {
-                    html5QrcodeScanner = null;
-                }).catch(err => {
-                    console.error("Failed to clear QR scanner", err);
+        async function initializeQRScanner() {
+            const qrReader = document.getElementById('qrReader');
+            
+            qrReader.innerHTML = `
+                <div class="text-center p-4">
+                    <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+                    <p>Initializing camera...</p>
+                </div>
+            `;
+            
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        facingMode: "environment",
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    } 
                 });
+                
+                videoStream = stream;
+                qrScannerActive = true;
+                
+                const video = document.createElement('video');
+                video.setAttribute('autoplay', '');
+                video.setAttribute('playsinline', '');
+                video.style.width = '100%';
+                video.style.height = '100%';
+                video.style.objectFit = 'cover';
+                
+                const canvas = document.createElement('canvas');
+                const canvasContext = canvas.getContext('2d');
+                
+                qrReader.innerHTML = '';
+                qrReader.appendChild(video);
+                
+                video.srcObject = stream;
+                
+                video.onloadedmetadata = () => {
+                    video.play();
+                    
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    
+                    scanQRCode(video, canvas, canvasContext);
+                };
+                
+                video.onerror = (error) => {
+                    console.error('Video error:', error);
+                    showCameraError('Failed to start video stream');
+                };
+                
+            } catch (error) {
+                console.error('Camera access error:', error);
+                showCameraError(getCameraErrorMessage(error));
             }
         }
 
-        function onQRScanSuccess(decodedText, decodedResult) {
+        function scanQRCode(video, canvas, canvasContext) {
+            if (!qrScannerActive) return;
+            
+            if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                canvasContext.drawImage(video, 0, 0, canvas.width, canvas.height);
+                
+                const imageData = canvasContext.getImageData(0, 0, canvas.width, canvas.height);
+                
+                try {
+                    const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                        inversionAttempts: "dontInvert",
+                    });
+                    
+                    if (code) {
+                        drawQRCodeBounds(canvasContext, code.location);
+                        
+                        processScannedQRCode(code.data);
+                        retur
+                    }
+                } catch (error) {
+                    console.error('QR decoding error:', error);
+                }
+            }
+            
+            animationFrameId = requestAnimationFrame(() => scanQRCode(video, canvas, canvasContext));
+        }
+
+        function drawQRCodeBounds(context, location) {
+            context.beginPath();
+            context.lineWidth = 4;
+            context.strokeStyle = "#10B981";
+            context.moveTo(location.topLeftCorner.x, location.topLeftCorner.y);
+            context.lineTo(location.topRightCorner.x, location.topRightCorner.y);
+            context.lineTo(location.bottomRightCorner.x, location.bottomRightCorner.y);
+            context.lineTo(location.bottomLeftCorner.x, location.bottomLeftCorner.y);
+            context.closePath();
+            context.stroke();
+        }
+
+        function processScannedQRCode(decodedText) {
             try {
                 const qrData = JSON.parse(decodedText);
+                
                 if (!qrData.clientId || !qrData.loanId || !qrData.paymentAmount) {
                     throw new Error('Invalid QR code format');
                 }
-                processQRPayment(qrData.clientId, qrData.loanId, qrData.paymentAmount);
+                
                 stopQRScanner();
+                
                 document.getElementById('qrScannerModal').classList.add('hidden');
                 
+                processQRPayment(qrData.clientId, qrData.loanId, qrData.paymentAmount);
+                
             } catch (error) {
-                console.error('QR scan error:', error);
+                console.error('QR data error:', error);
                 alert('Invalid QR code. Please make sure you are scanning a valid payment QR code.');
+                qrScannerActive = true;
             }
         }
 
-        function onQRScanFailure(error) {
-            console.log('QR scan failed:', error);
+        function stopQRScanner() {
+            qrScannerActive = false;
+            
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+                animationFrameId = null;
+            }
+            
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+                videoStream = null;
+            }
         }
 
+        function getCameraErrorMessage(error) {
+            switch (error.name) {
+                case 'NotAllowedError':
+                    return 'Camera access was denied. Please allow camera access in your browser settings.';
+                case 'NotFoundError':
+                    return 'No camera found. Please connect a camera and try again.';
+                case 'NotSupportedError':
+                    return 'Camera not supported. Please try a different browser or device.';
+                case 'NotReadableError':
+                    return 'Camera is already in use by another application.';
+                default:
+                    return 'Failed to access camera. Please check permissions.';
+            }
+        }
+
+        function showCameraError(message) {
+            const qrReader = document.getElementById('qrReader');
+            qrReader.innerHTML = `
+                <div class="text-center p-6">
+                    <div class="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                        <i class="fas fa-video-slash text-red-600 text-2xl"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-2">Camera Error</h3>
+                    <p class="text-gray-600 mb-4">${message}</p>
+                    <div class="space-y-3">
+                        <button id="retryCameraBtn" class="w-full px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition">
+                            <i class="fas fa-redo mr-2"></i> Try Again
+                        </button>
+                        <button id="manualEntryFallbackBtn" class="w-full px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition">
+                            <i class="fas fa-keyboard mr-2"></i> Use Manual Entry Instead
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('retryCameraBtn').addEventListener('click', function() {
+                initializeQRScanner();
+            });
+            
+            document.getElementById('manualEntryFallbackBtn').addEventListener('click', function() {
+                document.getElementById('qrScannerModal').classList.add('hidden');
+                document.getElementById('manualPaymentModal').classList.remove('hidden');
+            });
+        }
         async function processQRPayment(clientId, loanId, paymentAmount) {
             try {
                 const formData = new FormData();
@@ -449,7 +581,7 @@ $collector_username = $_SESSION["collector_username"] ?? "";
                 formData.append('loan_id', loanId);
                 formData.append('payment_amount', paymentAmount);
 
-                const response = await fetch('/api.php', {
+                const response = await fetch('api.php', {
                     method: 'POST',
                     body: formData
                 });
@@ -517,7 +649,6 @@ $collector_username = $_SESSION["collector_username"] ?? "";
                 messageDiv.classList.remove('hidden');
             }
         });
-
         document.getElementById('profileForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             const submitBtn = document.getElementById('profileSubmitBtn');
@@ -557,12 +688,6 @@ $collector_username = $_SESSION["collector_username"] ?? "";
                 submitBtn.disabled = false;
             }
         });
-        document.addEventListener('click', function(e) {
-            if (e.target.classList.contains('modal-overlay')) {
-                e.target.classList.add('hidden');
-                stopQRScanner();
-            }
-        });
 
         const sidebar = document.getElementById('sidebar');
         const overlay = document.getElementById('sidebarOverlay');
@@ -576,6 +701,13 @@ $collector_username = $_SESSION["collector_username"] ?? "";
         overlay.addEventListener('click', () => {
             sidebar.classList.add('-translate-x-full');
             overlay.classList.add('hidden');
+        });
+
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('modal-overlay')) {
+                e.target.classList.add('hidden');
+                stopQRScanner();
+            }
         });
     </script>
 </body>
