@@ -39,11 +39,12 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
             die("Connection failed: " . $mysqli->connect_error);
         }
 
-        $sql = "SELECT client_id, member_id, c_firstname, c_lastname, c_email, c_phone, c_password_hash, c_status FROM clients WHERE c_email = ?";
+        $sql = "SELECT client_id, member_id, c_firstname, c_lastname, c_email, c_phone, c_password_hash, c_status FROM clients WHERE member_id = ? OR c_email = ?";
         
         if($stmt = $mysqli->prepare($sql)){
-            $stmt->bind_param("s", $param_username);
-            $param_username = $username;
+            $stmt->bind_param("ss", $param_username1, $param_username2);
+            $param_username1 = $username;
+            $param_username2 = $username;
             
             if($stmt->execute()){
                 $stmt->store_result();

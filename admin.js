@@ -9,10 +9,10 @@ let branchChartInstance = null
 let riskAnalysisChartInstance = null
 let loansAndPaymentsChartInstance = null
 let collectorReportChartInstance = null
-const branches = ['malolos','hagonoy','calumpit','balagtas', 'marilao', 'stamaria', 'plaridel']
+const branches = ['malolos', 'hagonoy', 'calumpit', 'balagtas', 'marilao', 'stamaria', 'plaridel']
 let adminStats = {}
 
-$(document).ready(function() {
+$(document).ready(function () {
     initializeAdminDashboard()
 })
 
@@ -24,7 +24,7 @@ function initializeAdminDashboard() {
 
 function initializeModals() {
     if (typeof window.showMessageModal === 'undefined') {
-        window.showMessageModal = function(title, message, type = 'success') {
+        window.showMessageModal = function (title, message, type = 'success') {
             const modal = $('#adminMessageModal')
             const modalTitle = $('#adminModalTitle')
             const modalMessage = $('#adminModalMessage')
@@ -32,7 +32,7 @@ function initializeModals() {
 
             modalTitle.text(title)
             modalMessage.text(message)
-            
+
             modalIcon.attr('class', 'mx-auto flex items-center justify-center h-12 w-12 rounded-full mb-4')
             if (type === 'success') {
                 modalIcon.addClass('bg-green-100').html('<i class="fas fa-check text-green-600 text-xl"></i>')
@@ -49,39 +49,35 @@ function initializeModals() {
 
 function initializeEventListeners() {
 
-    $('#closeAdminMessageModal').on('click', function() {
+    $('#closeAdminMessageModal').on('click', function () {
         $('#adminMessageModal').addClass('hidden')
     })
 
-    $('#closeAddClientModal').on('click', function() {
+    $('#closeAddClientModal').on('click', function () {
         $('#addClientModal').addClass('hidden')
     })
 
-    $('#closeAddCollectorModal').on('click', function() {
+    $('#closeAddCollectorModal').on('click', function () {
         $('#addCollectorModal').addClass('hidden')
     })
 
-    $('#closeEditCollectorModal').on('click', function() {
+    $('#closeEditCollectorModal').on('click', function () {
         $('#editCollectorModal').addClass('hidden')
     })
 
-    $('#closeApproveModal').on('click', function() {
-        $('#approveLoanModal').addClass('hidden')
-    })
-
-    $('#closeChangePasswordModal').on('click', function() {
+    $('#closeChangePasswordModal').on('click', function () {
         $('#changePasswordModal').addClass('hidden')
     })
 
-    $('#closeNewLoanModal').on('click', function() {
+    $('#closeNewLoanModal').on('click', function () {
         $('#newLoanModal').addClass('hidden')
     })
 
-    $('#closeClientDetailsModal').on('click', function() {
+    $('#closeClientDetailsModal').on('click', function () {
         $('#clientDetailsModal').addClass('hidden')
     })
 
-    $('#closeLoanDetailsModal').on('click', function() {
+    $('#closeLoanDetailsModal').on('click', function () {
         $('#loanDetailsModal').addClass('hidden')
     })
 
@@ -89,63 +85,62 @@ function initializeEventListeners() {
     $('#addClientForm').on('submit', handleAddClient)
     $('#addCollectorForm').on('submit', handleAddCollector)
     $('#editCollectorForm').on('submit', handleEditCollector)
-    $('#approveLoanForm').on('submit', handleApproveLoan)
     $('#changePasswordForm').on('submit', handleChangePassword)
 
 
-    $('#clientSearch').on('input', function(e) {
+    $('#clientSearch').on('input', function (e) {
         populateClientsTable($(this).val())
     })
 
-    $('#loanSearch').on('input', function(e) {
+    $('#loanSearch').on('input', function (e) {
         populateLoansTable($(this).val())
     })
 
-    $('#branchSelector').on('change', function() {
+    $('#branchSelector').on('change', function () {
         const branch = $(this).val() || 'all'
         fetchAdminData(branch)
         fetchPaymentHistory(branch)
     })
 
 
-    $('#showAddClientModal').on('click', function() {
+    $('#showAddClientModal').on('click', function () {
         $('#addClientModal').removeClass('hidden')
     })
 
-    $('#showAddCollectorModal').on('click', function() {
+    $('#showAddCollectorModal').on('click', function () {
         $('#addCollectorModal').removeClass('hidden')
     })
 
-    $('#changePasswordBtn').on('click', function() {
+    $('#changePasswordBtn').on('click', function () {
         $('#changePasswordModal').removeClass('hidden')
     })
 
-    $('#exportClientsBtn').on('click', function() {
+    $('#exportClientsBtn').on('click', function () {
         const branch = $('#branchSelector').val() || 'all'
         window.location = API_URL + '?action=export_clients_csv&branch=' + encodeURIComponent(branch)
     })
 
-    $('#viewAllLoansBtn').on('click', function() {
+    $('#viewAllLoansBtn').on('click', function () {
         window.location.hash = 'loans'
         switchTab('loans')
     })
 
 
-    $('#logoutBtn').on('click', function(e) {
+    $('#logoutBtn').on('click', function (e) {
         e.preventDefault()
         $('#logoutConfirmationModal').removeClass('hidden')
     })
 
-    $('#cancelLogoutBtn').on('click', function() {
+    $('#cancelLogoutBtn').on('click', function () {
         $('#logoutConfirmationModal').addClass('hidden')
     })
 
-    $('#confirmLogoutBtn').on('click', function() {
+    $('#confirmLogoutBtn').on('click', function () {
         window.location.href = "logout.php"
     })
 
-    
-    $('.sidebar-nav-item').on('click', function(e) {
+
+    $('.sidebar-nav-item').on('click', function (e) {
         e.preventDefault()
         const targetId = $(this).data('tab')
         window.location.hash = targetId
@@ -153,15 +148,7 @@ function initializeEventListeners() {
     })
 
 
-    $('#totalClientsCard, #pendingLoanCard').on('click', function(e) {
-        e.preventDefault()
-        const targetTab = $(this).data('tab')
-        window.location.hash = targetTab
-        switchTab(targetTab)
-    })
-
-
-    $(document).on('click', function(e) {
+    $(document).on('click', function (e) {
         if ($(e.target).hasClass('modal-overlay')) {
             $(e.target).addClass('hidden')
         }
@@ -186,10 +173,10 @@ document.getElementById('sidebarOverlay').addEventListener('click', () => {
 function switchTab(targetId) {
     $('.tab-content').addClass('hidden')
     $(`#${targetId}`).removeClass('hidden')
-    
+
     $('.sidebar-nav-item').removeClass('active')
     $(`[data-tab="${targetId}"]`).addClass('active')
-    
+
     let title = $(`[data-tab="${targetId}"]`).text().trim()
     if (title === 'Overview') {
         title = 'Dashboard Overview'
@@ -197,21 +184,23 @@ function switchTab(targetId) {
         title = title + ' Management'
     }
     $('#page-title').text(title)
-    
+
 }
+
+
 
 function formatCurrency(amount) {
     return `₱${parseFloat(amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 window.fetchAdminData = fetchAdminData();
 
-async function fetchAdminData(branch = 'all') {
+export async function fetchAdminData(branch = 'all') {
     try {
         const url = API_URL + '?action=get_admin_data&branch=' + encodeURIComponent(branch)
         const response = await fetch(url)
-        
+
         if (!response.ok) throw new Error('Network response was not ok')
-        
+
         const data = await response.json()
 
         if (data.error) {
@@ -219,15 +208,13 @@ async function fetchAdminData(branch = 'all') {
             showMessageModal('Data Error', data.error, 'error')
             return
         }
-    
+
         clientsData = data.clients || []
         loansData = data.loans || []
-        pendingLoans = data.pending_loans || []
         collectorsData = data.collectors || []
         adminStats = data || {}
 
         updateDashboardStats()
-        populatePendingLoans()
         populateClientsTable()
         populateLoansTable()
         populateCollectorsTable()
@@ -290,8 +277,8 @@ function updateDashboardStats() {
 
 function updateBranchChart() {
     const branchSet = new Set(clientsData.map(c => c.c_branch).filter(Boolean))
-    const branches = Array.from(branchSet.length ? branchSet : ['malolos','hagonoy','calumpit','balagtas', 'marilao', 'stamaria', 'plaridel'])
-    const loanCounts = branches.map(branch => 
+    const branches = Array.from(branchSet.length ? branchSet : ['malolos', 'hagonoy', 'calumpit', 'balagtas', 'marilao', 'stamaria', 'plaridel'])
+    const loanCounts = branches.map(branch =>
         loansData.filter(loan => {
             const client = clientsData.find(c => c.client_id == loan.client_id)
             if (!client) return false
@@ -300,7 +287,7 @@ function updateBranchChart() {
     )
 
     const ctx = $('#branchChart')[0].getContext('2d')
-    
+
     if (branchChartInstance) {
         branchChartInstance.destroy()
     }
@@ -312,7 +299,7 @@ function updateBranchChart() {
             datasets: [{
                 label: 'Total Active/Paid Loans',
                 data: loanCounts,
-                backgroundColor: branches.map((b, i) => ['#3b82f6','#10b981','#f59e0b','#ef4444'][i % 4]),
+                backgroundColor: branches.map((b, i) => ['#3b82f6', '#10b981', '#f59e0b', '#ef4444'][i % 4]),
                 borderRadius: 4
             }]
         },
@@ -410,7 +397,7 @@ async function updateUpcomingPayments() {
     try {
         const response = await fetch(API_URL + '?action=get_upcoming_payments')
         const data = await response.json()
-        
+
         if (data.error) {
             console.error('Upcoming payments error:', data.error)
             return
@@ -449,7 +436,7 @@ async function updateUpcomingPayments() {
                     </div>
                 </div>
             `
-            
+
             container.append(paymentCard)
         })
 
@@ -470,14 +457,14 @@ async function updateLoansAndPaymentsChart() {
         const url = `${API_URL}?action=get_loans_payments_data&branch=${encodeURIComponent(branch)}`
         const response = await fetch(url)
         const data = await response.json()
-        
+
         if (data.error) {
             console.error('Monthly trends error:', data.error)
             return
         }
 
         const ctx = $('#monthlyTrendsChart')[0].getContext('2d')
-        
+
         if (loansAndPaymentsChartInstance) {
             loansAndPaymentsChartInstance.destroy()
         }
@@ -520,9 +507,9 @@ async function updateLoansAndPaymentsChart() {
 function populateClientsTable(searchTerm = '') {
     const clientsBody = $('#clientsTableBody')
     clientsBody.empty()
-    
-    const filteredClients = clientsData.filter(c => 
-        (c.c_firstname || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+
+    const filteredClients = clientsData.filter(c =>
+        (c.c_firstname || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         (c.c_lastname || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         (c.member_id || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         (c.c_email || '').toLowerCase().includes(searchTerm.toLowerCase())
@@ -537,7 +524,7 @@ function populateClientsTable(searchTerm = '') {
         const outstanding = loansData
             .filter(l => l.client_id == client.client_id && l.loan_status === 'Active')
             .reduce((sum, l) => sum + parseFloat(l.current_balance || 0), 0)
-        
+
         let statusBadge = ''
         if (client.c_status === 'Deactivated' || client.member_id.endsWith('-D')) {
             statusBadge = `<span class="status-badge bg-red-100 text-red-800">Deactivated</span>`
@@ -551,11 +538,11 @@ function populateClientsTable(searchTerm = '') {
             <tr>
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${client.member_id}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${client.c_firstname} ${client.c_lastname}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${client.c_email}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${client.c_email || 'N/A'}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-semibold">${formatCurrency(outstanding)}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm">${client.c_branch || 'N/A'}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                    <button onclick="showClientDetailsModal(${client.client_id}, '${client.member_id}', '${client.c_firstname} ${client.c_lastname}', '${(client.c_email||'N/A')}', '${(client.c_phone||'N/A')}', '${(client.c_address||'')}', '${(client.c_branch||'N/A')}', '${(client.date_joined||'N/A')}')" 
+                    <button onclick="showClientDetailsModal(${client.client_id}, '${client.member_id}', '${client.c_firstname} ${client.c_lastname}', '${(client.c_email || 'N/A')}', '${(client.c_phone || 'N/A')}', '${(client.c_address || '')}', '${(client.c_branch || 'N/A')}', '${(client.c_date_joined || 'N/A')}')" 
                             class="text-blue-600 hover:text-blue-900 mx-1 p-2 rounded-lg hover:bg-blue-50 transition-colors">
                         <i class="fas fa-eye"></i>
                     </button>
@@ -573,7 +560,7 @@ function populateClientsTable(searchTerm = '') {
                 </td>
             </tr>
         `
-        
+
         clientsBody.append(row)
     })
 }
@@ -608,7 +595,7 @@ function populateCollectorsTable() {
                 </td>
             </tr>
         `
-        
+
         collectorsBody.append(row)
     })
 }
@@ -617,13 +604,13 @@ function populateCollectorsTable() {
 function populateLoansTable(searchTerm = '') {
     const loansBody = $('#loansTableBody')
     loansBody.empty()
-    
+
     const activeAndPaidLoans = loansData.filter(l => l.loan_status !== 'Pending' && l.loan_status !== 'Declined')
-    
+
     const filteredLoans = activeAndPaidLoans.filter(loan => {
         const client = clientsData.find(c => c.client_id == loan.client_id)
         const name = client ? `${client.c_firstname} ${client.c_lastname}` : ''
-        return name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        return name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             loan.loan_id.toString().includes(searchTerm)
     })
 
@@ -635,7 +622,7 @@ function populateLoansTable(searchTerm = '') {
     filteredLoans.forEach(loan => {
         const client = clientsData.find(c => c.client_id == loan.client_id)
         const clientName = client ? `${client.c_firstname} ${client.c_lastname}` : 'N/A'
-        
+
         let statusBadge = ''
         if (loan.loan_status === 'Active') {
             statusBadge = `<span class="status-badge bg-blue-100 text-blue-800">${loan.loan_status}</span>`
@@ -644,9 +631,9 @@ function populateLoansTable(searchTerm = '') {
         } else if (loan.loan_status === 'Overdue') {
             statusBadge = `<span class="status-badge bg-red-100 text-red-800">${loan.loan_status}</span>`
         } else {
-             statusBadge = `<span class="status-badge bg-gray-100 text-gray-800">${loan.loan_status}</span>`
+            statusBadge = `<span class="status-badge bg-gray-100 text-gray-800">${loan.loan_status}</span>`
         }
-        
+
         const row = `
             <tr>
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">L${loan.loan_id}</td>
@@ -660,34 +647,8 @@ function populateLoansTable(searchTerm = '') {
                 </td>
             </tr>
         `
-        
+
         loansBody.append(row)
-    })
-}
-
-function populatePendingLoans() {
-    const pendingBody = $('#pendingLoansTableBody')
-    pendingBody.empty()
-    
-    if (pendingLoans.length === 0) {
-        pendingBody.html('<tr><td colspan="5" class="text-center py-4 text-gray-500">No pending applications.</td></tr>')
-        return
-    }
-
-    pendingLoans.forEach(loan => {
-        const row = `
-            <tr>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${loan.client_name}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatCurrency(loan.loan_amount)}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${loan.term_days || 100} Days</td>
-                <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                    <button onclick="showApproveLoanModal(${loan.loan_id})" class="text-green-600 hover:text-green-900 mx-1 p-2 rounded-lg hover:bg-green-50 transition-colors"><i class="fas fa-check"></i> Approve</button>
-                    <button onclick="declineLoan(${loan.loan_id})" class="text-red-600 hover:text-red-900 mx-1 p-2 rounded-lg hover:bg-red-50 transition-colors"><i class="fas fa-times"></i> Decline</button>
-                </td>
-            </tr>
-        `
-        
-        pendingBody.append(row)
     })
 }
 
@@ -733,13 +694,13 @@ async function deactivateClientAccount(clientId) {
         showMessageModal('Error', 'Client not found.', 'error')
         return
     }
-    
+
     $('#deactivateClientConfirmationModal').removeClass('hidden')
     $('#deactivateClientMessage').text(`Are you sure you want to deactivate ${client.c_firstname} ${client.c_lastname} (${client.member_id})? This action cannot be undone if the client has active loans.`)
-    
-    $('#confirmDeactivateClientBtn').off('click').on('click', async function() {
+
+    $('#confirmDeactivateClientBtn').off('click').on('click', async function () {
         $('#deactivateClientConfirmationModal').addClass('hidden')
-        
+
         try {
             const formData = new FormData()
             formData.append('action', 'deactivate_client')
@@ -766,12 +727,12 @@ async function reactivateClientAccount(clientId) {
         showMessageModal('Error', 'Client not found.', 'error')
         return
     }
-    
+
     showMessageModal('Confirm Reactivation', `Are you sure you want to reactivate ${client.c_firstname} ${client.c_lastname}?`, 'info')
-    
-    $('#closeAdminMessageModal').off('click').on('click', async function() {
+
+    $('#closeAdminMessageModal').off('click').on('click', async function () {
         $('#adminMessageModal').addClass('hidden')
-        
+
         try {
             const formData = new FormData()
             formData.append('action', 'reactivate_client')
@@ -789,7 +750,7 @@ async function reactivateClientAccount(clientId) {
         } catch (error) {
             showMessageModal('Network Error', 'Could not connect to the server.', 'error')
         } finally {
-            $('#closeAdminMessageModal').off('click').on('click', function() {
+            $('#closeAdminMessageModal').off('click').on('click', function () {
                 $('#adminMessageModal').addClass('hidden')
             })
         }
@@ -881,36 +842,6 @@ async function handleEditCollector(e) {
     }
 }
 
-async function handleApproveLoan(e) {
-    e.preventDefault()
-    const submitBtn = $('#approveLoanSubmitBtn')
-    const initialBtnText = submitBtn.html()
-    submitBtn.html('<i class="fas fa-spinner fa-spin mr-2"></i> Approving...').prop('disabled', true)
-
-    const loanId = $('#loanIdToApprove').val()
-
-    const formData = new FormData()
-    formData.append('action', 'approve_loan')
-    formData.append('loan_id', loanId)
-
-    try {
-        const response = await fetch(API_URL, { method: 'POST', body: formData })
-        const result = await response.json()
-
-        if (result.success) {
-            showMessageModal('Loan Approved!', result.message, 'success')
-            $('#approveLoanModal').addClass('hidden')
-            fetchAdminData()
-        } else {
-            showMessageModal('Approval Failed', result.message || 'An unexpected error occurred.', 'error')
-        }
-    } catch (error) {
-        showMessageModal('Network Error', 'Could not connect to the server.', 'error')
-    } finally {
-        submitBtn.html(initialBtnText).prop('disabled', false)
-    }
-}
-
 async function handleChangePassword(e) {
     e.preventDefault()
     const submitBtn = $('#changePasswordSubmitBtn')
@@ -938,65 +869,359 @@ async function handleChangePassword(e) {
     }
 }
 
-window.showApproveLoanModal = function(loanId) {
-    const loan = pendingLoans.find(l => l.loan_id == loanId)
-    if (!loan) {
-        showMessageModal('Error', 'Loan not found.', 'error')
-        return
-    }
-
-    $('#loanIdToApprove').val(loanId)
-    $('#approveClientName').text(loan.client_name)
-    $('#approveLoanAmount').text(formatCurrency(loan.loan_amount))
-    $('#approveLoanTerm').text(`${loan.term_days || 100} Days`)
-    
-
-    const principal = parseFloat(loan.loan_amount)
-    const interest = principal * 0.15
-    const totalBalance = principal + interest
-    const dailyPayment = totalBalance / 100
-    
-    $('#approveTotalBalance').text(formatCurrency(totalBalance))
-    $('#approveDailyPayment').text(formatCurrency(dailyPayment))
-
-    $('#approveLoanModal').removeClass('hidden')
-}
-
-window.declineLoan = async function(loanId) {
-    const loan = pendingLoans.find(l => l.loan_id == loanId)
-    if (!loan) {
-        showMessageModal('Error', 'Loan not found.', 'error')
-        return
-    }
-    
-    showDeclineLoanModal()
-    
-    $('#confirmConfirmDeclineModal').off('click').on('click', async function() {
-        $('#confirmDeclineModal').addClass('hidden')
-        
-        try {
-            const formData = new FormData()
-            formData.append('action', 'decline_loan')
-            formData.append('loan_id', loanId)
-
-            const response = await fetch(API_URL, { method: 'POST', body: formData })
-            const result = await response.json()
-
-            if (result.success) {
-                showMessageModal('Loan Declined!', result.message, 'success')
-                fetchAdminData()
-            } else {
-                showMessageModal('Decline Failed', result.message || 'An unexpected error occurred.', 'error')
-            }
-        } catch (error) {
-            showMessageModal('Network Error', 'Could not connect to the server.', 'error')
-        } finally {
-            $('#closeAdminMessageModal').off('click').on('click', function() {
-                $('#adminMessageModal').addClass('hidden')
-            })
-        }
-    })
-}
-
 const initialTab = window.location.hash.substring(1) || 'overview'
 switchTab(initialTab)
+
+
+const pageTitle = document.getElementById('page-title');
+const allTabs = document.querySelectorAll('.tab-content');
+const allLinks = document.querySelectorAll('.sidebar-nav-item');
+const logoutBtn = document.getElementById('logoutBtn');
+const cancelLogoutBtn = document.getElementById('cancelLogoutBtn');
+const confirmLogoutBtn = document.getElementById('confirmLogoutBtn');
+allLinks.forEach(link => {
+    link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const targetId = link.dataset.tab;
+        window.location.hash = targetId;
+        switchTab(targetId);
+        window.scrollTo({ top: 0 });
+    });
+});
+logoutBtn.addEventListener('click', () => {
+    document.getElementById('logoutConfirmationModal').classList.remove('hidden');
+});
+
+cancelLogoutBtn.addEventListener('click', () => {
+    document.getElementById('logoutConfirmationModal').classList.add('hidden');
+});
+
+confirmLogoutBtn.addEventListener('click', () => {
+    window.location.href = "logout.php";
+});
+
+document.getElementById("totalClients").addEventListener('click', function (e) {
+    e.preventDefault();
+    const targetId = this.getAttribute('go-to-tab');
+    window.location.hash = targetId;
+    switchTab(targetId);
+    window.scrollTo({ top: 0 });
+})
+
+function showMessageModal(title, message, type = 'success') {
+    const modal = document.getElementById('adminMessageModal');
+    const modalTitle = document.getElementById('adminModalTitle');
+    const modalMessage = document.getElementById('adminModalMessage');
+    const modalIcon = document.getElementById('adminModalIcon');
+    const closeBtn = document.getElementById('closeAdminMessageModal');
+
+    modalTitle.textContent = title;
+    modalMessage.textContent = message;
+
+    modalIcon.className = 'mx-auto flex items-center justify-center h-16 w-16 rounded-full mb-4';
+    if (type === 'success') {
+        modalIcon.classList.add('bg-emerald-100');
+        modalIcon.innerHTML = '<i class="fas fa-check text-emerald-600 text-2xl"></i>';
+    } else if (type === 'error') {
+        modalIcon.classList.add('bg-red-100');
+        modalIcon.innerHTML = '<i class="fas fa-times text-red-600 text-2xl"></i>';
+    } else {
+        modalIcon.classList.add('bg-blue-100');
+        modalIcon.innerHTML = '<i class="fas fa-info text-primary text-2xl"></i>';
+    }
+
+    closeBtn.onclick = () => modal.classList.add('hidden');
+    modal.classList.remove('hidden');
+}
+window.showMessageModal = showMessageModal;
+
+
+function showNotification(message, type = 'info') {
+    const container = document.getElementById('notificationContainer');
+    const notification = document.createElement('div');
+    notification.className = `notification border-l-${type === 'success' ? 'green' : type === 'warning' ? 'yellow' : type === 'error' ? 'red' : 'blue'}-500`;
+    notification.innerHTML = `
+                    <div class="flex items-center">
+                        <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'warning' ? 'exclamation-triangle' : type === 'error' ? 'times-circle' : 'info-circle'} text-${type === 'success' ? 'green' : type === 'warning' ? 'yellow' : type === 'error' ? 'red' : 'blue'}-500 mr-3"></i>
+                        <span class="text-sm font-medium">${message}</span>
+                    </div>
+                `;
+    container.appendChild(notification);
+
+    setTimeout(() => {
+        notification.remove();
+    }, 5000);
+}
+window.showNotification = showNotification;
+
+function showNewLoanModal(clientId, memberId, clientName) {
+    const modal = document.getElementById('newLoanModal');
+    const modalMemberId = document.getElementById('newLoanMemberId');
+    const modalClientName = document.getElementById('newLoanClientName');
+    const submitBtn = document.getElementById('submitNewLoanBtn');
+    const closeBtn = document.getElementById('cancelNewLoanBtn');
+
+    closeBtn.addEventListener('click', () => {
+        modal.classList.add('hidden')
+    })
+
+    modalMemberId.textContent = memberId;
+    modalClientName.textContent = clientName;
+
+    modal.dataset.clientId = clientId;
+
+    const amountInput = document.getElementById('newLoanAmount');
+    amountInput.addEventListener('input', updateLoanCalculation);
+    updateLoanCalculation();
+
+    submitBtn.onclick = () => handleNewLoanSubmission(clientId, memberId);
+
+    modal.classList.remove('hidden');
+}
+window.showNewLoanModal = showNewLoanModal;
+
+function updateLoanCalculation() {
+    const amountInput = document.getElementById('newLoanAmount');
+    const amount = parseFloat(amountInput.value) || 0;
+
+    const processingFee = 200;
+    const amountReceived = amount - processingFee;
+    const interest = amount * 0.15;
+    const totalBalance = amount + interest;
+    const dailyPayment = totalBalance / 100;
+
+    document.getElementById('calcProcessingFee').textContent = `₱${processingFee.toFixed(2)}`;
+    document.getElementById('calcAmountReceived').textContent = `₱${amountReceived.toFixed(2)}`;
+    document.getElementById('calcInterest').textContent = `₱${interest.toFixed(2)}`;
+    document.getElementById('calcTotalBalance').textContent = `₱${totalBalance.toFixed(2)}`;
+    document.getElementById('calcDailyPayment').textContent = `₱${dailyPayment.toFixed(2)}`;
+}
+
+function showClientDetailsModal(clientId, memberId, clientName, clientEmail, clientPhone, clientAddress, clientBranch, clientDateJoined) {
+    const modal = document.getElementById('clientDetailsModal');
+    const modalMemberId = document.getElementById('clientMemberID');
+    const modalClientName = document.getElementById('clientName');
+    const modalClientEmail = document.getElementById('clientEmail');
+    const modalClientPhone = document.getElementById('clientPhone');
+    const modalClientAddress = document.getElementById('clientAddress');
+    const modalClientBranch = document.getElementById('clientBranch');
+    const modalClientDateJoined = document.getElementById('clientDateJoined');
+    const closeBtn = document.getElementById('closeClientDetailsModal');
+    const deactivateBtn = document.getElementById('deactivateClientBtn');
+
+    modalMemberId.textContent = memberId;
+    modalClientName.textContent = clientName;
+    modalClientEmail.textContent = clientEmail;
+    modalClientPhone.textContent = clientPhone;
+    modalClientAddress.textContent = clientAddress;
+    modalClientBranch.textContent = clientBranch.charAt(0).toUpperCase() + clientBranch.slice(1);
+    modalClientDateJoined.textContent = clientDateJoined;
+    modal.dataset.clientId = clientId;
+    modal.dataset.clientName = clientName;
+    modal.dataset.memberId = memberId;
+
+    closeBtn.onclick = () => modal.classList.add('hidden');
+
+    if (memberId.endsWith('-D')) {
+        deactivateBtn.style.display = 'none';
+    } else {
+        deactivateBtn.style.display = 'block';
+        deactivateBtn.onclick = () => showDeactivateClientConfirmation(clientId, clientName, memberId);
+    }
+
+    modal.classList.remove('hidden');
+}
+window.showClientDetailsModal = showClientDetailsModal;
+
+function showLoanDetailsModal(loanId, loanStatus, loanAmount, loanBalance, loanDaily, loanClientName, daysPaid, termDays) {
+    const modal = document.getElementById('loanDetailsModal');
+    const modalLoanId = document.getElementById('loanId');
+    const modalLoanStatus = document.getElementById('loanStatus');
+    const modalLoanAmount = document.getElementById('loanAmount');
+    const modalLoanBalance = document.getElementById('loanBalance');
+    const modalDaily = document.getElementById('loanDaily');
+    const modalClientName = document.getElementById('loanClientName');
+    const modalDaysPaid = document.getElementById('loanDaysPaid');
+    const closeBtn = document.getElementById('closeLoanDetailsModal');
+
+    modalLoanId.textContent = loanId;
+    modalLoanStatus.textContent = loanStatus;
+    modalLoanAmount.textContent = loanAmount;
+    modalLoanBalance.textContent = loanBalance;
+    modalDaily.textContent = loanDaily;
+    modalClientName.textContent = loanClientName;
+    modalDaysPaid.textContent = `${daysPaid}/${termDays}`;
+
+    closeBtn.onclick = () => modal.classList.add('hidden');
+
+    modal.classList.remove('hidden');
+}
+window.showLoanDetailsModal = showLoanDetailsModal;
+
+function toggleModal(modalId, show) {
+    const modal = document.getElementById(modalId);
+    if (show) {
+        modal.classList.remove('hidden');
+    } else {
+        modal.classList.add('hidden');
+    }
+}
+window.toggleModal = toggleModal;
+window.showEditCollectorModal = function (collectorId, fullname, username, branch, status) {
+    const modal = document.getElementById('editCollectorModal');
+    document.getElementById('editCollectorId').value = collectorId;
+    document.getElementById('editCollectorFullname').value = fullname;
+    document.getElementById('editCollectorUsername').value = username;
+    document.getElementById('editCollectorBranch').value = branch;
+    document.getElementById('editCollectorStatus').value = status;
+
+    modal.classList.remove('hidden');
+}
+window.showDeleteCollectorModal = function (collectorId, fullname) {
+    const modal = document.getElementById('deleteCollectorConfirmationModal');
+    document.getElementById('deleteCollectorMessage').textContent = `Are you sure you want to delete collector ${fullname}? This action cannot be undone.`;
+
+    document.getElementById('confirmDeleteCollectorBtn').onclick = function () {
+        deleteCollector(collectorId);
+    };
+
+    modal.classList.remove('hidden');
+}
+
+async function deleteCollector(collectorId) {
+    try {
+        const formData = new FormData();
+        formData.append('action', 'delete_collector');
+        formData.append('collector_id', collectorId);
+
+        const response = await fetch('api.php', { method: 'POST', body: formData });
+        const result = await response.json();
+
+        if (result.success) {
+            showMessageModal('Collector Deleted!', result.message, 'success');
+            document.getElementById('deleteCollectorConfirmationModal').classList.add('hidden');
+            if (typeof fetchAdminData === 'function') {
+                fetchAdminData();
+            }
+        } else {
+            showMessageModal('Deletion Failed', result.message || 'An unexpected error occurred.', 'error');
+        }
+    } catch (error) {
+        showMessageModal('Network Error', 'Could not connect to the server.', 'error');
+    }
+}
+
+function showDeactivateClientConfirmation(clientId, clientName, memberId) {
+    const modal = document.getElementById('deactivateClientConfirmationModal');
+    const message = document.getElementById('deactivateClientMessage');
+    const cancelBtn = document.getElementById('cancelDeactivateClientBtn');
+    const confirmBtn = document.getElementById('confirmDeactivateClientBtn');
+
+    message.textContent = `Are you sure you want to deactivate ${clientName} (${memberId})? This action cannot be undone if the client has active loans.`;
+
+    cancelBtn.onclick = () => modal.classList.add('hidden');
+
+    confirmBtn.onclick = () => {
+        modal.classList.add('hidden');
+        deactivateClientAccount(clientId);
+    };
+
+    modal.classList.remove('hidden');
+}
+
+async function handleNewLoanSubmission(clientId, memberId) {
+    const amount = document.getElementById('newLoanAmount').value;
+    const messageDiv = document.getElementById('newLoanMessage');
+    const submitBtn = document.getElementById('submitNewLoanBtn');
+
+    if (!amount || amount < 10000) {
+        messageDiv.textContent = 'Please enter a valid amount (min ₱10,000';
+        messageDiv.className = 'p-3 text-center rounded-lg text-sm font-medium bg-red-100 text-red-700';
+        messageDiv.classList.remove('hidden');
+        return;
+    }
+
+    const initialBtnText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Submitting...';
+    submitBtn.disabled = true;
+
+    try {
+        const formData = new FormData();
+        formData.append('action', 'submit_loan_admin');
+        formData.append('client_id', clientId);
+        formData.append('loan_amount', amount);
+
+        const response = await fetch('api.php', { method: 'POST', body: formData });
+        const text = await response.text();
+        let result;
+        try {
+            result = JSON.parse(text);
+        } catch (e) {
+            console.error('Invalid JSON response:', text);
+            messageDiv.textContent = 'Server returned invalid response.';
+            messageDiv.className = 'p-3 text-center rounded-lg text-sm font-medium bg-red-100 text-red-700';
+            return;
+        }
+        if (result.success) {
+            messageDiv.textContent = result.message;
+            messageDiv.className = 'p-3 text-center rounded-lg text-sm font-medium bg-green-100 text-green-700';
+            messageDiv.classList.remove('hidden');
+            if (typeof fetchAdminData === 'function') {
+                fetchAdminData();
+            }
+        } else {
+            messageDiv.textContent = result.message || 'An unexpected error occurred.';
+            messageDiv.className = 'p-3 text-center rounded-lg text-sm font-medium bg-red-100 text-red-700';
+            messageDiv.classList.remove('hidden');
+        }
+    } catch (error) {
+        console.log(error);
+        messageDiv.textContent = 'Could not connect to the server. Please try again.';
+        messageDiv.className = 'p-3 text-center rounded-lg text-sm font-medium bg-red-100 text-red-700';
+        messageDiv.classList.remove('hidden');
+    } finally {
+        submitBtn.innerHTML = initialBtnText;
+        submitBtn.disabled = false;
+    }
+}
+
+document.getElementById('changePasswordBtn').addEventListener('click', () => {
+    document.getElementById('changePasswordModal').classList.remove('hidden');
+});
+
+document.getElementById('closeChangePasswordModal').addEventListener('click', () => {
+    document.getElementById('changePasswordModal').classList.add('hidden');
+});
+
+document.getElementById('backupDataBtn').addEventListener('click', () => {
+    window.location.href = 'api.php?action=backup_database';
+});
+document.getElementById('showAddCollectorModal').addEventListener('click', () => {
+    document.getElementById('addCollectorModal').classList.remove('hidden');
+});
+
+document.getElementById('closeAddCollectorModal').addEventListener('click', () => {
+    document.getElementById('addCollectorModal').classList.add('hidden');
+});
+document.getElementById('closeEditCollectorModal').addEventListener('click', () => {
+    document.getElementById('editCollectorModal').classList.add('hidden');
+});
+document.getElementById('cancelDeleteCollectorBtn').addEventListener('click', () => {
+    document.getElementById('deleteCollectorConfirmationModal').classList.add('hidden');
+});
+
+document.getElementById('newLoanBtn').addEventListener('click', () => {
+    showMessageModal('Select Client', 'Please select a client from the Clients tab to create a new loan.', 'info');
+});
+
+$("document").on('click', '.modal-overlay', function (e) {
+    if (e.target === this) {
+        $(this).addClass('hidden');
+    }
+});
+
+function downloadReport(type, format) {
+    const branch = document.getElementById('branchSelector').value || 'all';
+    window.location.href = `api.php?action=download_report&type=${type}&format=${format}&branch=${branch}`;
+}
+window.downloadReport = downloadReport;
