@@ -619,7 +619,7 @@ $collector_username = $_SESSION["collector_username"] ?? "";
                 formData.append('loan_id', loanId);
                 formData.append('payment_amount', paymentAmount);
 
-                const response = await fetch('/api.php', {
+                const response = await fetch('api.php', {
                     method: 'POST',
                     body: formData
                 });
@@ -662,7 +662,7 @@ $collector_username = $_SESSION["collector_username"] ?? "";
             formData.append('action', 'update_collector_profile');
 
             try {
-                const response = await fetch('/api.php', {
+                const response = await fetch('api.php', {
                     method: 'POST',
                     body: formData
                 });

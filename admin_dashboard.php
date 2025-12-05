@@ -940,16 +940,5 @@ $admin_name = $_SESSION["admin_name"] ?? "Admin";
             </div>
         </div>
     </div>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            
-
-        });
-
-        
-
-        
-    </script>
 </body>
 </html>
