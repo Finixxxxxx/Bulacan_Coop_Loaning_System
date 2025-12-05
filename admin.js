@@ -770,7 +770,7 @@ async function handleAddClient(e) {
     try {
         const response = await fetch(API_URL, { method: 'POST', body: formData })
         const result = await response.json()
-
+        
         if (result.success) {
             showMessageModal('Client Added!', result.message, 'success')
             this.reset()
@@ -779,7 +779,9 @@ async function handleAddClient(e) {
         } else {
             showMessageModal('Failed to Add Client', result.message || 'An unexpected error occurred.', 'error')
         }
+        
     } catch (error) {
+        console.error(error)
         showMessageModal('Network Error', 'Could not connect to the server.', 'error')
     } finally {
         submitBtn.html(initialBtnText).prop('disabled', false)
